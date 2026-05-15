@@ -1,22 +1,47 @@
 import { useState } from "react";
-import { FiHome, FiInfo } from "react-icons/fi";
+import { useParams, Link } from "react-router-dom";
+import { FiArrowLeft, FiInfo } from "react-icons/fi";
 import ModelViewer from "./components/viewer/ModelViewer";
 import ExplodeControls from "./components/viewer/ExplodeControls";
-import externalWallData from "./data/externalWall";
+import { getNodeData } from "./data/nodesIndex";
 
 const ACCENT = "#4A6FA5";
 
 function NodeDetail() {
-  const data = externalWallData;
+  const { nodeId } = useParams();
+  const data = getNodeData(nodeId);
+
   const [explodeValue, setExplodeValue] = useState(0);
   const [hoveredLayer, setHoveredLayer] = useState(null);
   const [selectedLayer, setSelectedLayer] = useState(null);
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 text-lg mb-4">未找到该构造节点</p>
+          <Link
+            to="/"
+            className="text-academic-500 hover:text-academic-600 text-sm underline underline-offset-2"
+          >
+            返回首页
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-700 flex flex-col">
       <nav className="flex items-center justify-between px-5 md:px-8 py-3 bg-white border-b border-gray-200">
         <div className="flex items-center gap-2.5">
-          <FiHome className="text-[#4A6FA5]" size={18} />
+          <Link
+            to="/"
+            className="text-academic-500 hover:text-academic-600 transition-colors"
+            title="返回首页"
+          >
+            <FiArrowLeft size={18} />
+          </Link>
           <span className="text-sm font-medium text-gray-500 tracking-wider">
             建筑构造交互系统
           </span>

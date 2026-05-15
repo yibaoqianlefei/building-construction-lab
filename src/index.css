@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+@theme {
+  --color-academic-50: #edf1f7;
+  --color-academic-100: #dbe3ef;
+  --color-academic-200: #b7c7df;
+  --color-academic-300: #93abcd;
+  --color-academic-400: #6f8fb9;
+  --color-academic-500: #4A6FA5;
+  --color-academic-600: #3d5c8a;
+  --color-academic-700: #314a6f;
+  --color-academic-800: #253754;
+  --color-academic-900: #19253a;
+}
+
 @layer base {
   html {
     font-family: "Noto Serif SC", "Source Han Serif SC", "PingFang SC",
