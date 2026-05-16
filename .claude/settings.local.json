@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(mkdir -p \"d:/vscode project/02-2/public/models/flat-roof-01\" && cp \"C:/Users/Administrator/Desktop/屋顶.glb\" \"d:/vscode project/02-2/public/models/flat-roof-01/屋顶.glb\" 2>&1)",
+      "Bash(node -e ' *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Administrator\\Desktop"
     ]
   }
 }

@@ -57,6 +57,7 @@ function WallAssembly({
   layers,
   explodeValue,
   explodeAxis = "x",
+  floatDirection = "y",
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
@@ -111,6 +112,7 @@ function WallAssembly({
             isHovered={hoveredLayer === i}
             isSelected={selectedLayer === i}
             explodeValue={explodeValue}
+            floatDirection={floatDirection}
             onPointerOver={() => onHoverLayer(i)}
             onPointerOut={() => onHoverLayer(null)}
             onClick={(e) => onLayerClick(i, layer, e)}
@@ -207,6 +209,7 @@ function Scene({
   layers,
   explodeValue,
   explodeAxis,
+  floatDirection,
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
@@ -244,6 +247,7 @@ function Scene({
         layers={layers}
         explodeValue={explodeValue}
         explodeAxis={explodeAxis}
+        floatDirection={floatDirection}
         hoveredLayer={hoveredLayer}
         selectedLayer={selectedLayer}
         onHoverLayer={onHoverLayer}
@@ -279,6 +283,7 @@ function ModelViewer({
   layers,
   explodeValue,
   explodeAxis = "x",
+  floatDirection = "y",
   cameraPosition = [1.2, 1.6, 2.8],
   autoRotate,
   hoveredLayer,
@@ -299,6 +304,7 @@ function ModelViewer({
           layers={layers}
           explodeValue={explodeValue}
           explodeAxis={explodeAxis}
+          floatDirection={floatDirection}
           hoveredLayer={hoveredLayer}
           selectedLayer={selectedLayer}
           onHoverLayer={onHoverLayer}
