@@ -1,13 +1,12 @@
 import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Grid, Html } from "@react-three/drei";
-import { useMotionValue, animate } from "framer-motion";
 import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 
 const EXPLODE_STEP = 0.003;
-
-const SPRING_CONFIG = { type: "spring", stiffness: 55, damping: 15, mass: 1 };
+const LERP_SPEED = 3.5;
+const LERP_DONE = 0.005;
 
 function getExplodedBounds(layers) {
   let xOffset = 0;
@@ -161,77 +160,52 @@ function CameraAdjuster({ layers, explodeValue, autoRotate }) {
   const { camera } = useThree();
   const controlsRef = useRef(null);
   const isTransitioning = useRef(false);
-  const userDragging = useRef(false);
 
-  /* motion values for spring-driven camera */
-  const camX = useMotionValue(1.2);
-  const camY = useMotionValue(1.6);
-  const camZ = useMotionValue(2.8);
-  const tgtX = useMotionValue(0);
-  const tgtY = useMotionValue(0);
-  const tgtZ = useMotionValue(0);
+  /* fixed goal target; lerp controls.target toward it each frame.
+     camera.position stays under OrbitControls full control so autoRotate
+     never stops. */
+  const goalTgt = useRef(new THREE.Vector3(0, 0, 0));
 
-  /* during transition: feed spring values into controls & call update() so
-     damping stays in sync — no handoff stutter when transition ends */
-  useFrame(() => {
+  /* original target for restore */
+  const origTgt = useRef(new THREE.Vector3(0, 0, 0));
+  const originalsSaved = useRef(false);
+
+  /* per-frame lerp — only guides controls.target; OrbitControls
+     continues to own camera.position so autoRotate never stops */
+  useFrame((_, delta) => {
     const ctrl = controlsRef.current;
     if (!ctrl || !isTransitioning.current) return;
 
-    ctrl.target.set(tgtX.get(), tgtY.get(), tgtZ.get());
-    camera.position.set(camX.get(), camY.get(), camZ.get());
-    ctrl.update();
+    const alpha = 1 - Math.exp(-LERP_SPEED * delta);
+    ctrl.target.lerp(goalTgt.current, alpha);
+
+    if (ctrl.target.distanceTo(goalTgt.current) < LERP_DONE) {
+      isTransitioning.current = false;
+    }
   });
 
-  const originalsSaved = useRef(false);
-  const origCam = useRef([1.2, 1.6, 2.8]);
-  const origTgt = useRef([0, 0, 0]);
-  const animToken = useRef(0);
-
-  /* animate on explode / un-explode */
+  /* trigger transition on explode / un-explode */
   const wasExploded = useRef(false);
   useEffect(() => {
     const isExploded = explodeValue >= 99;
     if ((isExploded && !wasExploded.current) || (!isExploded && wasExploded.current)) {
-      let targetCam, targetTgt;
-
       if (isExploded) {
-        const { centerX, width } = getExplodedBounds(layers);
-        const fovRad = (camera.fov ?? 40) * (Math.PI / 180);
-        const dist = Math.max((width / (2 * Math.tan(fovRad / 2))) * 1.3, 3.2);
-        targetCam = [centerX + 1.2, 1.6, dist];
-        targetTgt = [centerX, 0, 0];
-      } else {
-        if (!originalsSaved.current) return;
-        targetCam = origCam.current;
-        targetTgt = origTgt.current;
-      }
-
-      /* save originals once */
-      if (!originalsSaved.current && controlsRef.current) {
-        origCam.current = [camX.get(), camY.get(), camZ.get()];
-        const ctrl = controlsRef.current;
-        origTgt.current = [ctrl.target.x, ctrl.target.y, ctrl.target.z];
-        originalsSaved.current = true;
-      }
-
-      isTransitioning.current = true;
-      const token = ++animToken.current;
-
-      Promise.all([
-        animate(camX, targetCam[0], SPRING_CONFIG),
-        animate(camY, targetCam[1], SPRING_CONFIG),
-        animate(camZ, targetCam[2], SPRING_CONFIG),
-        animate(tgtX, targetTgt[0], SPRING_CONFIG),
-        animate(tgtY, targetTgt[1], SPRING_CONFIG),
-        animate(tgtZ, targetTgt[2], SPRING_CONFIG),
-      ]).then(() => {
-        if (token === animToken.current) {
-          isTransitioning.current = false;
+        if (!originalsSaved.current) {
+          const ctrl = controlsRef.current;
+          origTgt.current.copy(ctrl ? ctrl.target : new THREE.Vector3(0, 0, 0));
+          originalsSaved.current = true;
         }
-      });
+
+        const { centerX } = getExplodedBounds(layers);
+        goalTgt.current.set(centerX, 0, 0);
+        isTransitioning.current = true;
+      } else if (originalsSaved.current) {
+        goalTgt.current.copy(origTgt.current);
+        isTransitioning.current = true;
+      }
     }
     wasExploded.current = isExploded;
-  }, [explodeValue, layers, camera, camX, camY, camZ, tgtX, tgtY, tgtZ]);
+  }, [explodeValue, layers, camera]);
 
   return (
     <OrbitControls
@@ -247,11 +221,7 @@ function CameraAdjuster({ layers, explodeValue, autoRotate }) {
       autoRotate={autoRotate}
       autoRotateSpeed={0.5}
       onStart={() => {
-        userDragging.current = true;
         isTransitioning.current = false;
-      }}
-      onEnd={() => {
-        userDragging.current = false;
       }}
     />
   );
