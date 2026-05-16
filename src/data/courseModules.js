@@ -60,8 +60,8 @@ const courseModules = [
     title: "屋顶",
     icon: "🏠",
     description: "平屋面、坡屋面、种植屋面构造",
-    nodeIds: [],
-    available: false,
+    nodeIds: ["flat-roof-01"],
+    available: true,
   },
 ];
 

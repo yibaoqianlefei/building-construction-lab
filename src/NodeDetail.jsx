@@ -84,6 +84,8 @@ function NodeDetail() {
             <ModelViewer
               layers={data.layers}
               explodeValue={explodeValue}
+              explodeAxis={data.explodeAxis || "x"}
+              cameraPosition={data.cameraPosition || [1.2, 1.6, 2.8]}
               autoRotate={autoRotate}
               hoveredLayer={hoveredLayer}
               selectedLayer={selectedLayer}

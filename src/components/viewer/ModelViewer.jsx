@@ -7,24 +7,24 @@ import ConstructionLayer from "./ConstructionLayer";
 const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
 
-function getExplodedBounds(layers) {
-  let xOffset = 0;
-  const totalWidth = layers.reduce((s, l) => s + l.thickness, 0);
-  let minX = Infinity;
-  let maxX = -Infinity;
+function getExplodedBounds(layers, axis = "x") {
+  let offset = 0;
+  const total = layers.reduce((s, l) => s + l.thickness, 0);
+  let minV = Infinity;
+  let maxV = -Infinity;
 
   layers.forEach((layer, i) => {
     const half = layer.thickness / 2;
-    const baseX = xOffset + half - totalWidth / 2;
-    const cx = baseX + i * 100 * EXPLODE_STEP;
-    minX = Math.min(minX, cx - half);
-    maxX = Math.max(maxX, cx + half);
-    xOffset += layer.thickness;
+    const base = offset + half - total / 2;
+    const exploded = base + i * 100 * EXPLODE_STEP;
+    minV = Math.min(minV, exploded - half);
+    maxV = Math.max(maxV, exploded + half);
+    offset += layer.thickness;
   });
 
-  const centerX = (minX + maxX) / 2;
-  const width = maxX - minX;
-  return { centerX, width };
+  const center = (minV + maxV) / 2;
+  const span = maxV - minV;
+  return { center, span, axis, isX: axis === "x" };
 }
 
 function ShadowPlane() {
@@ -56,6 +56,7 @@ function RendererSetup() {
 function WallAssembly({
   layers,
   explodeValue,
+  explodeAxis = "x",
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
@@ -66,14 +67,16 @@ function WallAssembly({
   const groupRefs = useRef([]);
 
   const initialPositions = useMemo(() => {
-    let xOffset = 0;
-    const totalWidth = layers.reduce((sum, l) => sum + l.thickness, 0);
+    let offset = 0;
+    const total = layers.reduce((sum, l) => sum + l.thickness, 0);
     return layers.map((layer) => {
-      const x = xOffset + layer.thickness / 2 - totalWidth / 2;
-      xOffset += layer.thickness;
-      return x;
+      const pos = offset + layer.thickness / 2 - total / 2;
+      offset += layer.thickness;
+      return pos;
     });
   }, [layers]);
+
+  const isX = explodeAxis === "x";
 
   useFrame((_, delta) => {
     const target = explodeValue;
@@ -83,8 +86,14 @@ function WallAssembly({
     layers.forEach((layer, i) => {
       const grp = groupRefs.current[i];
       if (grp) {
-        grp.position.x =
-          initialPositions[i] + i * smoothExplodeRef.current * EXPLODE_STEP;
+        const off = i * smoothExplodeRef.current * EXPLODE_STEP;
+        if (isX) {
+          grp.position.x = initialPositions[i] + off;
+          grp.position.y = 0;
+        } else {
+          grp.position.y = initialPositions[i] + off;
+          grp.position.x = 0;
+        }
       }
     });
   });
@@ -95,7 +104,7 @@ function WallAssembly({
         <group
           key={layer.name}
           ref={(el) => (groupRefs.current[i] = el)}
-          position={[initialPositions[i], 0, 0]}
+          position={[isX ? initialPositions[i] : 0, isX ? 0 : initialPositions[i], 0]}
         >
           <ConstructionLayer
             layer={layer}
@@ -112,7 +121,7 @@ function WallAssembly({
   );
 }
 
-function CameraAdjuster({ layers, autoRotate, smoothExplodeRef }) {
+function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRef }) {
   const { camera } = useThree();
   const controlsRef = useRef(null);
   const userInteracting = useRef(false);
@@ -125,8 +134,8 @@ function CameraAdjuster({ layers, autoRotate, smoothExplodeRef }) {
   if (!cacheReady.current && controlsRef.current) {
     defaultTarget.current.copy(controlsRef.current.target);
 
-    const { centerX } = getExplodedBounds(layers);
-    explodedTarget.current.set(centerX, 0, 0);
+    const { center, isX } = getExplodedBounds(layers, explodeAxis);
+    explodedTarget.current.set(isX ? center : 0, isX ? 0 : center, 0);
     cacheReady.current = true;
   }
 
@@ -197,6 +206,7 @@ function ShadowLight({ targetRef }) {
 function Scene({
   layers,
   explodeValue,
+  explodeAxis,
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
@@ -233,6 +243,7 @@ function Scene({
       <WallAssembly
         layers={layers}
         explodeValue={explodeValue}
+        explodeAxis={explodeAxis}
         hoveredLayer={hoveredLayer}
         selectedLayer={selectedLayer}
         onHoverLayer={onHoverLayer}
@@ -257,6 +268,7 @@ function Scene({
       <CameraAdjuster
         layers={layers}
         autoRotate={autoRotate}
+        explodeAxis={explodeAxis}
         smoothExplodeRef={smoothExplodeRef}
       />
     </>
@@ -266,6 +278,8 @@ function Scene({
 function ModelViewer({
   layers,
   explodeValue,
+  explodeAxis = "x",
+  cameraPosition = [1.2, 1.6, 2.8],
   autoRotate,
   hoveredLayer,
   selectedLayer,
@@ -276,7 +290,7 @@ function ModelViewer({
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
       <Canvas
-        camera={{ near: 1, far: 100, position: [1.2, 1.6, 2.8], fov: 40 }}
+        camera={{ near: 1, far: 100, position: cameraPosition, fov: 40 }}
         shadows
         gl={{ antialias: true, alpha: false }}
         onPointerMissed={onBlankClick}
@@ -284,6 +298,7 @@ function ModelViewer({
         <Scene
           layers={layers}
           explodeValue={explodeValue}
+          explodeAxis={explodeAxis}
           hoveredLayer={hoveredLayer}
           selectedLayer={selectedLayer}
           onHoverLayer={onHoverLayer}
