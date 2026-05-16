@@ -37,7 +37,7 @@ function WallAssembly({
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
-  onSelectLayer,
+  onLayerClick,
 }) {
   const groupRefs = useRef([]);
   const smoothExplode = useRef(0);
@@ -81,9 +81,7 @@ function WallAssembly({
             explodeValue={explodeValue}
             onPointerOver={() => onHoverLayer(i)}
             onPointerOut={() => onHoverLayer(null)}
-            onClick={() =>
-              onSelectLayer(selectedLayer === i ? null : i)
-            }
+            onClick={(e) => onLayerClick(i, layer, e)}
           />
         </group>
       ))}
@@ -140,7 +138,7 @@ function Scene({
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
-  onSelectLayer,
+  onLayerClick,
   autoRotate,
 }) {
   return (
@@ -186,7 +184,7 @@ function Scene({
         hoveredLayer={hoveredLayer}
         selectedLayer={selectedLayer}
         onHoverLayer={onHoverLayer}
-        onSelectLayer={onSelectLayer}
+        onLayerClick={onLayerClick}
       />
 
       <DirectionIndicator layers={layers} />
@@ -225,7 +223,8 @@ function ModelViewer({
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
-  onSelectLayer,
+  onLayerClick,
+  onBlankClick,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -233,6 +232,7 @@ function ModelViewer({
         camera={{ position: [1.2, 1.6, 2.8], fov: 40 }}
         shadows
         gl={{ antialias: true, alpha: false }}
+        onPointerMissed={onBlankClick}
       >
         <Scene
           layers={layers}
@@ -240,7 +240,7 @@ function ModelViewer({
           hoveredLayer={hoveredLayer}
           selectedLayer={selectedLayer}
           onHoverLayer={onHoverLayer}
-          onSelectLayer={onSelectLayer}
+          onLayerClick={onLayerClick}
           autoRotate={autoRotate}
         />
       </Canvas>

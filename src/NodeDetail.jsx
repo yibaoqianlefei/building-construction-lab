@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
 import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
+import LayerLabel from "./components/viewer/LayerLabel";
 import { getNodeData } from "./data/nodesIndex";
 
 const ACCENT = "#B8891F";
@@ -16,12 +17,32 @@ function NodeDetail() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [hoveredLayer, setHoveredLayer] = useState(null);
   const [selectedLayer, setSelectedLayer] = useState(null);
+  const [activeCard, setActiveCard] = useState(null);
 
   useEffect(() => {
     if (explodeValue === 0) {
       setSelectedLayer(null);
+      setActiveCard(null);
     }
   }, [explodeValue]);
+
+  function handleLayerClick(index, layer, e) {
+    if (selectedLayer === index) {
+      setSelectedLayer(null);
+      setActiveCard(null);
+    } else {
+      setSelectedLayer(index);
+      setActiveCard({
+        layer,
+        x: e.clientX,
+        y: e.clientY,
+      });
+    }
+  }
+
+  function handleBlankClick() {
+    setActiveCard(null);
+  }
 
   if (!data) {
     return (
@@ -57,7 +78,8 @@ function NodeDetail() {
             hoveredLayer={hoveredLayer}
             selectedLayer={selectedLayer}
             onHoverLayer={setHoveredLayer}
-            onSelectLayer={setSelectedLayer}
+            onLayerClick={handleLayerClick}
+            onBlankClick={handleBlankClick}
           />
 
           <BottomControlBar
@@ -132,6 +154,17 @@ function NodeDetail() {
           </div>
         </motion.aside>
       </main>
+
+      <AnimatePresence>
+        {activeCard && (
+          <LayerLabel
+            layer={activeCard.layer}
+            screenX={activeCard.x}
+            screenY={activeCard.y}
+            onClose={() => setActiveCard(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

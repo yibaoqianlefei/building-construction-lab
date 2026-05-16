@@ -1,12 +1,15 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Edges } from "@react-three/drei";
-import { AnimatePresence } from "framer-motion";
 import * as THREE from "three";
-import LayerLabel from "./LayerLabel";
 
-const HOVER_LIFT = 0.08;
-const LERP_SPEED = 0.15;
+const HOVER_LIFT = 0.14;
+const LIFT_LERP = 0.06;
+const GLOW_LERP = 0.12;
+
+const COLOR_HOVER = new THREE.Color("#FFE8C0");
+const COLOR_SELECT = new THREE.Color("#F5D68A");
+const COLOR_OFF = new THREE.Color("#000000");
 
 function ConstructionLayer({
   layer,
@@ -19,40 +22,59 @@ function ConstructionLayer({
 }) {
   const meshRef = useRef();
   const groupRef = useRef();
-  const timerRef = useRef(null);
   const hoverOffset = useRef(0);
-  const [delayedShow, setDelayedShow] = useState(false);
-
-  useEffect(() => {
-    const shouldShow = isHovered || isSelected;
-
-    if (shouldShow) {
-      if (isSelected) {
-        setDelayedShow(true);
-      } else {
-        timerRef.current = setTimeout(() => setDelayedShow(true), 150);
-      }
-    } else {
-      setDelayedShow(false);
-    }
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [isHovered, isSelected]);
+  const glowIntensity = useRef(0);
+  const glowRoughness = useRef(0.45);
 
   useFrame(() => {
+    const material = meshRef.current?.material;
+    if (!material) return;
+
+    /* ---- lift ---- */
     const canLift = explodeValue > 0;
-    const target = isSelected && canLift ? 1 : 0;
+    const liftTarget = isSelected && canLift ? 1 : 0;
     hoverOffset.current = THREE.MathUtils.lerp(
       hoverOffset.current,
-      target,
-      LERP_SPEED
+      liftTarget,
+      LIFT_LERP
     );
-
     if (groupRef.current) {
       groupRef.current.position.y = hoverOffset.current * HOVER_LIFT;
     }
+
+    /* ---- glow ---- */
+    let targetIntensity;
+    let targetRoughness;
+    let targetEmissive;
+
+    if (isSelected) {
+      targetIntensity = 0.8;
+      targetRoughness = 0.25;
+      targetEmissive = COLOR_SELECT;
+    } else if (isHovered) {
+      targetIntensity = 0.6;
+      targetRoughness = 0.3;
+      targetEmissive = COLOR_HOVER;
+    } else {
+      targetIntensity = 0;
+      targetRoughness = 0.45;
+      targetEmissive = COLOR_OFF;
+    }
+
+    glowIntensity.current = THREE.MathUtils.lerp(
+      glowIntensity.current,
+      targetIntensity,
+      GLOW_LERP
+    );
+    glowRoughness.current = THREE.MathUtils.lerp(
+      glowRoughness.current,
+      targetRoughness,
+      GLOW_LERP
+    );
+
+    material.emissiveIntensity = glowIntensity.current;
+    material.roughness = glowRoughness.current;
+    material.emissive.lerp(targetEmissive, GLOW_LERP);
   });
 
   return (
@@ -61,7 +83,10 @@ function ConstructionLayer({
         ref={meshRef}
         onPointerOver={onPointerOver}
         onPointerOut={onPointerOut}
-        onClick={onClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(e);
+        }}
         castShadow
         receiveShadow
       >
@@ -70,8 +95,6 @@ function ConstructionLayer({
           color={layer.color}
           transparent={layer.name.includes("空气")}
           opacity={layer.name.includes("空气") ? 0.3 : 1}
-          emissive={isHovered ? layer.color : "#000000"}
-          emissiveIntensity={isHovered ? 0.25 : 0}
           roughness={0.45}
           metalness={0.05}
         />
@@ -86,19 +109,6 @@ function ConstructionLayer({
           />
         </Edges>
       </mesh>
-
-      <AnimatePresence>
-        {delayedShow && (
-          <LayerLabel
-            layer={layer}
-            position={[
-              0,
-              layer.name.includes("空气") ? 0 : 0.85,
-              layer.name.includes("空气") ? 0.55 : 0,
-            ]}
-          />
-        )}
-      </AnimatePresence>
     </group>
   );
 }
