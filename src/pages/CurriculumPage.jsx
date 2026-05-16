@@ -1,41 +1,52 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { FiArrowLeft } from "react-icons/fi";
 import courseModules from "../data/courseModules";
 import { nodesIndex } from "../data/nodesIndex";
 
-function NodeCard({ node }) {
+function NodeCard({ node, index }) {
   return (
-    <Link
-      to={`/node/${node.id}`}
-      className="block bg-white border border-gray-200 rounded-xl p-5
-        hover:shadow-md hover:border-academic-300 transition-all duration-200
-        cursor-pointer group"
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.06, ease: "easeOut" }}
     >
-      <div className="w-full h-20 bg-gray-50 rounded-lg mb-3 flex items-center justify-center text-3xl">
-        🧱
-      </div>
+      <Link
+        to={`/node/${node.id}`}
+        className="block bg-white/80 backdrop-blur-sm border border-gray-200/60
+          rounded-2xl p-6
+          shadow-[0_2px_8px_rgba(0,0,0,0.04)]
+          hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]
+          hover:-translate-y-1
+          transition-all duration-300
+          cursor-pointer group"
+      >
+        <div className="w-full h-20 bg-gray-50 rounded-xl mb-4 flex items-center justify-center text-3xl">
+          🧱
+        </div>
 
-      <h3 className="text-base font-semibold text-gray-800 group-hover:text-academic-600 transition-colors">
-        {node.title}
-      </h3>
-      <p className="text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2">
-        {node.description}
-      </p>
+        <h3 className="text-base font-semibold text-gray-900 group-hover:text-apple-500 transition-colors tracking-tight">
+          {node.title}
+        </h3>
+        <p className="text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2">
+          {node.description}
+        </p>
 
-      <div className="mt-2 flex items-center gap-1 text-xs text-academic-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-        进入节点
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </div>
-    </Link>
+        <div className="mt-3 flex items-center gap-1 text-xs text-apple-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+          进入节点
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -44,40 +55,48 @@ function ModuleDetail({ module, onBack }) {
     .map((id) => {
       const node = nodesIndex.find((n) => n.id === id);
       if (!node) {
-        console.warn(`课程模块 "${module.title}": 节点 "${id}" 未在 nodesIndex 中找到`);
+        console.warn(
+          `课程模块 "${module.title}": 节点 "${id}" 未在 nodesIndex 中找到`
+        );
       }
       return node;
     })
     .filter(Boolean);
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-academic-500 hover:text-academic-600 transition-colors mb-6"
+        className="flex items-center gap-1.5 text-sm text-apple-500 hover:text-apple-600 transition-colors mb-8"
       >
         <FiArrowLeft size={16} />
         返回模块列表
       </button>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">{module.title}</h1>
-        <p className="text-gray-500 text-sm mt-1">{module.description}</p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+          {module.title}
+        </h1>
+        <p className="text-gray-500 text-sm mt-1.5">{module.description}</p>
       </div>
 
       {moduleNodes.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <p>暂无节点</p>
-          <p className="text-xs mt-1">该模块的构造节点正在建设中</p>
+        <div className="text-center py-20 text-gray-400">
+          <p className="text-base">暂无节点</p>
+          <p className="text-xs mt-1.5">该模块的构造节点正在建设中</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {moduleNodes.map((node) => (
-            <NodeCard key={node.id} node={node} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {moduleNodes.map((node, i) => (
+            <NodeCard key={node.id} node={node} index={i} />
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -87,7 +106,7 @@ function CurriculumPage() {
   if (selectedModule) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        <main className="flex-1 px-4 md:px-8 py-8 max-w-5xl mx-auto w-full">
+        <main className="flex-1 px-6 md:px-10 py-10 max-w-5xl mx-auto w-full">
           <ModuleDetail
             module={selectedModule}
             onBack={() => setSelectedModule(null)}
@@ -99,63 +118,77 @@ function CurriculumPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <main className="flex-1 px-4 md:px-8 py-10 max-w-5xl mx-auto w-full">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
+      <main className="flex-1 px-6 md:px-10 py-12 max-w-5xl mx-auto w-full">
+        <motion.div
+          className="mb-12"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             课程目录
           </h1>
-          <p className="mt-2 text-gray-400 text-sm">
+          <p className="mt-2 text-gray-500 text-base">
             选择要学习的构造模块
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {courseModules.map((mod) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {courseModules.map((mod, i) => {
             const nodeCount = mod.nodeIds.filter((id) =>
               nodesIndex.some((n) => n.id === id)
             ).length;
 
             if (mod.available) {
               return (
-                <button
+                <motion.button
                   key={mod.id}
                   onClick={() => setSelectedModule(mod)}
-                  className="bg-white border border-gray-200 rounded-xl p-6
-                    shadow-sm hover:shadow-md hover:-translate-y-1
+                  className="bg-white/80 backdrop-blur-sm border border-gray-200/60
+                    rounded-3xl p-8
+                    shadow-[0_2px_8px_rgba(0,0,0,0.04)]
+                    hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]
+                    hover:-translate-y-2
                     transition-all duration-300 cursor-pointer
                     text-left group"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
                 >
                   <span className="text-4xl">{mod.icon}</span>
-                  <h3 className="text-xl font-semibold text-gray-800 mt-4 group-hover:text-academic-600 transition-colors">
+                  <h3 className="text-xl font-bold text-gray-900 mt-5 group-hover:text-apple-500 transition-colors tracking-tight">
                     {mod.title}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
                     {mod.description}
                   </p>
-                  <span className="inline-block mt-3 text-xs text-academic-500 bg-academic-50 px-2 py-0.5 rounded-full">
+                  <span className="inline-block mt-4 text-xs font-medium text-apple-600 bg-apple-50 px-3 py-1 rounded-full">
                     {nodeCount} 个节点
                   </span>
-                </button>
+                </motion.button>
               );
             }
 
             return (
-              <div
+              <motion.div
                 key={mod.id}
-                className="bg-gray-50 border border-gray-100 rounded-xl p-6
-                  opacity-60 cursor-default text-left"
+                className="bg-gray-50/80 border border-gray-100 rounded-3xl p-8
+                  opacity-50 cursor-default text-left"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 0.5, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
               >
                 <span className="text-4xl grayscale">{mod.icon}</span>
-                <h3 className="text-xl font-semibold text-gray-500 mt-4">
+                <h3 className="text-xl font-bold text-gray-400 mt-5 tracking-tight">
                   {mod.title}
                 </h3>
-                <p className="text-sm text-gray-400 mt-1.5 leading-relaxed">
+                <p className="text-sm text-gray-400 mt-2 leading-relaxed">
                   {mod.description}
                 </p>
-                <span className="inline-block mt-3 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                <span className="inline-block mt-4 text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
                   即将上线
                 </span>
-              </div>
+              </motion.div>
             );
           })}
         </div>

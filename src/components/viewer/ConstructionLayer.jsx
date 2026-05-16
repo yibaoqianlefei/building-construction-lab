@@ -31,8 +31,8 @@ function ConstructionLayer({
           opacity={layer.name.includes("空气") ? 0.3 : 1}
           emissive={isHovered ? layer.color : "#000000"}
           emissiveIntensity={isHovered ? 0.25 : 0}
-          roughness={0.65}
-          metalness={0.03}
+          roughness={0.5}
+          metalness={0.05}
         />
         <Edges scale={1}>
           <lineBasicMaterial

@@ -26,9 +26,9 @@ function MenuBackground() {
 
   return (
     <>
-      <color attach="background" args={["#f8f9fa"]} />
+      <color attach="background" args={["#f5f5f7"]} />
 
-      <ambientLight intensity={0.55} />
+      <ambientLight intensity={0.7} />
       <directionalLight position={[5, 8, 5]} intensity={1.1} castShadow />
       <directionalLight position={[-3, 2, -4]} intensity={0.3} />
 
@@ -45,8 +45,8 @@ function MenuBackground() {
               color={layer.color}
               transparent={layer.name.includes("空气")}
               opacity={layer.name.includes("空气") ? 0.3 : 1}
-              roughness={0.7}
-              metalness={0.03}
+              roughness={0.5}
+              metalness={0.05}
             />
             <Edges scale={1}>
               <lineBasicMaterial

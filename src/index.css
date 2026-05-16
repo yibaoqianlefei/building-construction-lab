@@ -1,29 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-academic-50: #edf1f7;
-  --color-academic-100: #dbe3ef;
-  --color-academic-200: #b7c7df;
-  --color-academic-300: #93abcd;
-  --color-academic-400: #6f8fb9;
-  --color-academic-500: #4A6FA5;
-  --color-academic-600: #3d5c8a;
-  --color-academic-700: #314a6f;
-  --color-academic-800: #253754;
-  --color-academic-900: #19253a;
+  --color-apple-50: #eef4fb;
+  --color-apple-100: #d6e7f7;
+  --color-apple-200: #add0ef;
+  --color-apple-300: #84b9e7;
+  --color-apple-400: #5ba2df;
+  --color-apple-500: #0071E3;
+  --color-apple-600: #005dbd;
+  --color-apple-700: #004997;
+  --color-apple-800: #003571;
+  --color-apple-900: #00214b;
 }
 
 @layer base {
   html {
-    font-family: "Noto Serif SC", "Source Han Serif SC", "PingFang SC",
-      "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    font-family: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+      "Hiragino Sans GB", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     margin: 0;
     background: #ffffff;
     color: #374151;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }

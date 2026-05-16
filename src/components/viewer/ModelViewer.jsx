@@ -110,9 +110,9 @@ function DirectionIndicator({ layers }) {
 function Scene({ layers, explodeValue, hoveredLayer, selectedLayer, onHoverLayer, onSelectLayer }) {
   return (
     <>
-      <color attach="background" args={["#f3f4f6"]} />
+      <color attach="background" args={["#f5f5f7"]} />
 
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.7} />
       <directionalLight
         position={[5, 8, 5]}
         intensity={1.4}

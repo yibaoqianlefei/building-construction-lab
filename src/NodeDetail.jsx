@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
 import ModelViewer from "./components/viewer/ModelViewer";
 import ExplodeControls from "./components/viewer/ExplodeControls";
 import { getNodeData } from "./data/nodesIndex";
 
-const ACCENT = "#4A6FA5";
+const ACCENT = "#0071E3";
 
 function NodeDetail() {
   const { nodeId } = useParams();
@@ -22,7 +23,7 @@ function NodeDetail() {
           <p className="text-gray-500 text-lg mb-4">未找到该构造节点</p>
           <Link
             to="/"
-            className="text-academic-500 hover:text-academic-600 text-sm underline underline-offset-2"
+            className="text-apple-500 hover:text-apple-600 text-sm underline underline-offset-2 transition-colors"
           >
             返回首页
           </Link>
@@ -32,13 +33,20 @@ function NodeDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-700 flex flex-col">
-      <div className="px-5 md:px-8 py-2 bg-white border-b border-gray-100">
-        <span className="text-sm text-gray-400 font-medium">{data.title}</span>
+    <div className="min-h-screen bg-white text-gray-600 flex flex-col">
+      <div className="px-6 md:px-10 py-2.5 bg-white border-b border-gray-100/50">
+        <span className="text-sm text-gray-400 font-medium tracking-tight">
+          {data.title}
+        </span>
       </div>
 
-      <main className="flex-1 flex flex-col lg:flex-row p-4 md:p-6 gap-4 md:gap-5 min-h-0">
-        <div className="flex-1 min-h-[380px] lg:min-h-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+      <main className="flex-1 flex flex-col lg:flex-row p-6 md:p-10 gap-6 md:gap-8 min-h-0">
+        <motion.div
+          className="flex-1 min-h-[380px] lg:min-h-0 rounded-2xl overflow-hidden border border-gray-200/60 bg-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
           <ModelViewer
             layers={data.layers}
             explodeValue={explodeValue}
@@ -47,34 +55,41 @@ function NodeDetail() {
             onHoverLayer={setHoveredLayer}
             onSelectLayer={setSelectedLayer}
           />
-        </div>
+        </motion.div>
 
-        <aside className="w-full lg:w-80 xl:w-88 flex flex-col gap-4">
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm">
-            <h2 className="text-gray-800 font-bold text-base flex items-center gap-2 mb-2.5">
+        <motion.aside
+          className="w-full lg:w-80 xl:w-88 flex flex-col gap-5"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+        >
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <h2 className="text-gray-900 font-bold text-base flex items-center gap-2 mb-3 tracking-tight">
               <FiInfo style={{ color: ACCENT }} />
               {data.title}
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed">
               {data.description}
             </p>
-            <p className="text-gray-400 text-xs mt-2.5">
+            <p className="text-gray-400 text-xs mt-3">
               方向：{data.directionLabel}
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm">
-            <h3 className="text-gray-800 font-bold text-sm mb-3">构造层图例</h3>
-            <div className="space-y-1.5">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <h3 className="text-gray-900 font-bold text-sm mb-3 tracking-tight">
+              构造层图例
+            </h3>
+            <div className="space-y-1">
               {data.layers.map((layer, i) => {
                 const active = hoveredLayer === i || selectedLayer === i;
                 return (
                   <div
                     key={layer.name}
-                    className={`flex items-center gap-3 p-2.5 rounded cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
                       active
-                        ? "bg-blue-50/70 ring-1 ring-[#4A6FA5]/30"
-                        : "hover:bg-gray-100"
+                        ? "bg-apple-50/80 ring-1 ring-apple-200"
+                        : "hover:bg-gray-50"
                     }`}
                     onMouseEnter={() => setHoveredLayer(i)}
                     onMouseLeave={() => setHoveredLayer(null)}
@@ -83,17 +98,17 @@ function NodeDetail() {
                     }
                   >
                     <div
-                      className="w-4 h-4 rounded-sm flex-shrink-0 border border-gray-300"
+                      className="w-4 h-4 rounded flex-shrink-0 border border-gray-300"
                       style={{ backgroundColor: layer.color }}
                     />
                     <div className="flex-1 min-w-0">
                       <div
-                        className="text-xs font-semibold"
+                        className="text-xs font-semibold tracking-tight"
                         style={{ color: active ? ACCENT : "#374151" }}
                       >
                         {layer.name}
                       </div>
-                      <div className="text-gray-400 text-[10px] truncate">
+                      <div className="text-gray-400 text-[10px] truncate tabular-nums">
                         {layer.material} · {(layer.thickness * 1000).toFixed(0)}mm
                       </div>
                     </div>
@@ -104,7 +119,7 @@ function NodeDetail() {
           </div>
 
           <ExplodeControls value={explodeValue} onChange={setExplodeValue} />
-        </aside>
+        </motion.aside>
       </main>
     </div>
   );

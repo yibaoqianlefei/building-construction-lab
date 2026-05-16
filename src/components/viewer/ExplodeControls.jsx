@@ -18,19 +18,22 @@ function ExplodeControls({ value, onChange }) {
 
   return (
     <div
-      className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm"
+      className="bg-white/60 backdrop-blur-sm rounded-2xl p-5 space-y-4
+        border border-gray-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerDown}
     >
-      <h3 className="text-gray-800 font-bold text-sm flex items-center gap-2">
-        <FiLayers style={{ color: "#4A6FA5" }} />
+      <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2 tracking-tight">
+        <FiLayers style={{ color: "#0071E3" }} />
         分解视图
       </h3>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-3">
         <button
           onClick={handleReset}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-600 text-xs transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200
+            bg-white/80 hover:bg-gray-100 text-gray-600 text-xs
+            transition-all duration-200 hover:shadow-sm"
           title="复原"
         >
           <FiRotateCcw size={13} />
@@ -44,23 +47,27 @@ function ExplodeControls({ value, onChange }) {
           max="100"
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="flex-1 h-1.5 bg-gray-200 rounded appearance-none cursor-pointer
-            accent-[#4A6FA5]
+          className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer
+            accent-[#0071E3]
             [&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-4
             [&::-webkit-slider-thumb]:h-4
-            [&::-webkit-slider-thumb]:rounded-sm
-            [&::-webkit-slider-thumb]:bg-[#4A6FA5]
+            [&::-webkit-slider-thumb]:rounded-full
+            [&::-webkit-slider-thumb]:bg-[#0071E3]
             [&::-webkit-slider-thumb]:cursor-pointer
-            [&::-webkit-slider-thumb]:shadow-sm"
+            [&::-webkit-slider-thumb]:shadow-sm
+            [&::-webkit-slider-thumb]:transition-transform
+            [&::-webkit-slider-thumb]:duration-150
+            [&::-webkit-slider-thumb]:hover:scale-110"
         />
 
         <button
           onClick={handleExplode}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-white text-xs transition-colors"
-          style={{ backgroundColor: "#4A6FA5" }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3d5c8a")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4A6FA5")}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs
+            transition-all duration-200 hover:shadow-md active:scale-95"
+          style={{ backgroundColor: "#0071E3" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#005dbd")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0071E3")}
           title="分解"
         >
           <FiLayers size={13} />
