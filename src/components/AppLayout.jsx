@@ -16,14 +16,14 @@ function AppLayout() {
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="text-apple-500 hover:text-apple-600 transition-colors"
+              className="text-gold-600 hover:text-gold-700 transition-colors"
               title="返回主菜单"
             >
               <FiArrowLeft size={18} />
             </Link>
             <Link
               to="/"
-              className="text-sm font-medium text-gray-500 tracking-tight hover:text-apple-500 transition-colors"
+              className="text-sm font-medium text-gray-500 tracking-tight hover:text-gold-600 transition-colors"
             >
               建筑构造交互系统
             </Link>

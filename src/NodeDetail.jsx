@@ -6,7 +6,7 @@ import ModelViewer from "./components/viewer/ModelViewer";
 import ExplodeControls from "./components/viewer/ExplodeControls";
 import { getNodeData } from "./data/nodesIndex";
 
-const ACCENT = "#0071E3";
+const ACCENT = "#B8891F";
 
 function NodeDetail() {
   const { nodeId } = useParams();
@@ -23,7 +23,7 @@ function NodeDetail() {
           <p className="text-gray-500 text-lg mb-4">未找到该构造节点</p>
           <Link
             to="/"
-            className="text-apple-500 hover:text-apple-600 text-sm underline underline-offset-2 transition-colors"
+            className="text-gold-600 hover:text-gold-700 text-sm underline underline-offset-2 transition-colors"
           >
             返回首页
           </Link>
@@ -88,7 +88,7 @@ function NodeDetail() {
                     key={layer.name}
                     className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
                       active
-                        ? "bg-apple-50/80 ring-1 ring-apple-200"
+                        ? "bg-gold-50/80 ring-1 ring-gold-200"
                         : "hover:bg-gray-50"
                     }`}
                     onMouseEnter={() => setHoveredLayer(i)}

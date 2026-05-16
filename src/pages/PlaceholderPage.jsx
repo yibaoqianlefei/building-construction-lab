@@ -48,7 +48,7 @@ function PlaceholderPage() {
           <p className="text-gray-400">{info.description}</p>
           <Link
             to="/"
-            className="inline-block mt-6 text-sm text-academic-500 hover:text-academic-600 underline underline-offset-2"
+            className="inline-block mt-6 text-sm text-gold-600 hover:text-gold-700 underline underline-offset-2"
           >
             返回主菜单
           </Link>

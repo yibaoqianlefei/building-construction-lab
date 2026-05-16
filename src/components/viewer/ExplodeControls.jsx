@@ -24,7 +24,7 @@ function ExplodeControls({ value, onChange }) {
       onPointerMove={handlePointerDown}
     >
       <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2 tracking-tight">
-        <FiLayers style={{ color: "#0071E3" }} />
+        <FiLayers style={{ color: "#D4A43A" }} />
         分解视图
       </h3>
 
@@ -32,8 +32,8 @@ function ExplodeControls({ value, onChange }) {
         <button
           onClick={handleReset}
           className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200
-            bg-white/80 hover:bg-gray-100 text-gray-600 text-xs
-            transition-all duration-200 hover:shadow-sm"
+            bg-white/80 hover:bg-gray-100 hover:scale-105 text-gray-600 text-xs
+            transition-all duration-200 ease-out hover:shadow-sm"
           title="复原"
         >
           <FiRotateCcw size={13} />
@@ -48,12 +48,12 @@ function ExplodeControls({ value, onChange }) {
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer
-            accent-[#0071E3]
+            accent-[#D4A43A]
             [&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-4
             [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
-            [&::-webkit-slider-thumb]:bg-[#0071E3]
+            [&::-webkit-slider-thumb]:bg-[#D4A43A]
             [&::-webkit-slider-thumb]:cursor-pointer
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:transition-transform
@@ -64,10 +64,12 @@ function ExplodeControls({ value, onChange }) {
         <button
           onClick={handleExplode}
           className="flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs
-            transition-all duration-200 hover:shadow-md active:scale-95"
-          style={{ backgroundColor: "#0071E3" }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#005dbd")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0071E3")}
+            transition-all duration-200 ease-out
+            hover:brightness-110 hover:scale-105
+            hover:shadow-md hover:shadow-gold-500/20 active:scale-95"
+          style={{ backgroundColor: "#D4A43A" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#B8891F")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#D4A43A")}
           title="分解"
         >
           <FiLayers size={13} />

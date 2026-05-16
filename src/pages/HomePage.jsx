@@ -44,9 +44,9 @@ function MenuItem({ item, onClick }) {
       <item.icon
         size={22}
         strokeWidth={1.5}
-        className="text-gray-400 group-hover:text-apple-500 transition-colors flex-shrink-0"
+        className="text-gray-400 group-hover:text-gold-600 transition-all duration-300 ease-out flex-shrink-0"
       />
-      <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
+      <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-all duration-300 ease-out">
         {item.label}
       </span>
     </>
@@ -54,8 +54,11 @@ function MenuItem({ item, onClick }) {
 
   const baseClass =
     "w-full flex items-center gap-3.5 px-5 py-3 rounded-xl" +
-    " border-l-4 border-transparent hover:border-l-apple-500" +
-    " transition-all duration-200 hover:bg-apple-50/80" +
+    " border-l-4 border-transparent hover:border-l-gold-500" +
+    " transition-all duration-300 ease-out" +
+    " hover:bg-gold-50/70 hover:backdrop-blur-sm" +
+    " hover:-translate-y-0.5" +
+    " hover:shadow-[0_4px_12px_rgba(212,164,58,0.12)]" +
     " cursor-pointer group text-left";
 
   if (onClick) {
@@ -83,7 +86,7 @@ function MenuContent({ onModalOpen }) {
         建筑构造交互系统
       </motion.h1>
       <motion.div
-        className="w-10 h-0.5 bg-apple-500 rounded-full my-5"
+        className="w-10 h-0.5 bg-gold-500 rounded-full my-5"
         variants={itemVariants}
       />
 
@@ -162,7 +165,7 @@ function AboutModal({ open, onClose }) {
                 <span className="text-gray-400">GitHub</span>
                 <a
                   href="#"
-                  className="text-apple-500 hover:text-apple-600 underline underline-offset-2 transition-colors"
+                  className="text-gold-600 hover:text-gold-700 underline underline-offset-2 transition-colors"
                 >
                   项目地址（待添加）
                 </a>
