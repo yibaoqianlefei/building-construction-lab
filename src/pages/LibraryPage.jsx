@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FiArrowLeft, FiBookOpen, FiHelpCircle, FiGithub } from "react-icons/fi";
+import { FiBookOpen, FiHelpCircle, FiGithub } from "react-icons/fi";
 import { nodesIndex } from "../data/nodesIndex";
 
 function WallThumbnail() {
@@ -70,24 +70,18 @@ function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <nav className="flex items-center px-5 md:px-8 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2.5">
-          <Link
-            to="/"
-            className="text-academic-500 hover:text-academic-600 transition-colors"
-            title="返回主菜单"
-          >
-            <FiArrowLeft size={18} />
-          </Link>
-          <span className="text-sm font-medium text-gray-500 tracking-wider">
-            节点库
-          </span>
-        </div>
-      </nav>
+      <header className="pt-10 pb-8 md:pt-14 md:pb-10 px-6 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 tracking-tight">
+          节点库
+        </h1>
+        <p className="mt-2 text-gray-400 text-sm max-w-lg mx-auto">
+          浏览所有建筑构造节点，选择感兴趣的系统进行交互式探索。
+        </p>
+      </header>
 
       <main className="flex-1 px-4 md:px-8 pb-16 max-w-5xl mx-auto w-full">
         {categories.map((category) => (
-          <section key={category} className="mt-10 mb-12">
+          <section key={category} className="mb-10">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-1 h-6 bg-academic-500 rounded-full flex-shrink-0" />
               <h2 className="text-xl text-gray-600 font-medium tracking-wide">

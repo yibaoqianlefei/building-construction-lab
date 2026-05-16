@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { FiArrowLeft, FiInfo } from "react-icons/fi";
+import { FiInfo } from "react-icons/fi";
 import ModelViewer from "./components/viewer/ModelViewer";
 import ExplodeControls from "./components/viewer/ExplodeControls";
 import { getNodeData } from "./data/nodesIndex";
@@ -33,21 +33,9 @@ function NodeDetail() {
 
   return (
     <div className="min-h-screen bg-white text-gray-700 flex flex-col">
-      <nav className="flex items-center justify-between px-5 md:px-8 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2.5">
-          <Link
-            to="/"
-            className="text-academic-500 hover:text-academic-600 transition-colors"
-            title="返回首页"
-          >
-            <FiArrowLeft size={18} />
-          </Link>
-          <span className="text-sm font-medium text-gray-500 tracking-wider">
-            建筑构造交互系统
-          </span>
-        </div>
-        <div className="text-sm text-gray-400 font-medium">{data.title}</div>
-      </nav>
+      <div className="px-5 md:px-8 py-2 bg-white border-b border-gray-100">
+        <span className="text-sm text-gray-400 font-medium">{data.title}</span>
+      </div>
 
       <main className="flex-1 flex flex-col lg:flex-row p-4 md:p-6 gap-4 md:gap-5 min-h-0">
         <div className="flex-1 min-h-[380px] lg:min-h-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">

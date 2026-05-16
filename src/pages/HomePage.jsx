@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Compass,
+  Library,
   Layers,
   Wrench,
   BookOpen,
@@ -14,7 +14,7 @@ import {
 import MenuBackground from "../components/viewer/MenuBackground";
 
 const menuItems = [
-  { icon: Compass, label: "开始探索", to: "/curriculum" },
+  { icon: Library, label: "课程目录", to: "/curriculum" },
   { icon: Layers, label: "节点库", to: "/library" },
   { icon: Wrench, label: "构造工具", to: "/tools" },
   { icon: BookOpen, label: "我的笔记", to: "/notes" },
@@ -25,21 +25,91 @@ const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.3,
-    },
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, x: -30 },
   show: {
     opacity: 1,
-    y: 0,
+    x: 0,
     transition: { duration: 0.5, ease: "easeOut" },
   },
 };
+
+function MenuItem({ item, onClick }) {
+  const content = (
+    <>
+      <item.icon
+        size={22}
+        strokeWidth={1.8}
+        className="text-gray-500 group-hover:text-academic-600 transition-colors flex-shrink-0"
+      />
+      <span className="text-lg font-medium text-gray-700 group-hover:text-academic-700 transition-colors">
+        {item.label}
+      </span>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl
+          border-l-4 border-transparent hover:border-l-academic-600
+          transition-all duration-300 hover:bg-academic-50 cursor-pointer
+          group text-left"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      to={item.to}
+      className="flex items-center gap-3 px-4 py-2.5 rounded-xl
+        border-l-4 border-transparent hover:border-l-academic-600
+        transition-all duration-300 hover:bg-academic-50
+        group"
+    >
+      {content}
+    </Link>
+  );
+}
+
+function MenuContent({ onModalOpen }) {
+  return (
+    <motion.div variants={containerVariants} initial="hidden" animate="show">
+      <motion.h1
+        className="text-3xl font-bold text-gray-800 mb-2"
+        variants={itemVariants}
+      >
+        建筑构造交互系统
+      </motion.h1>
+      <motion.div
+        className="w-12 h-0.5 bg-academic-600 my-4"
+        variants={itemVariants}
+      />
+
+      <motion.div className="space-y-1.5" variants={itemVariants}>
+        {menuItems.map((item) => (
+          <MenuItem key={item.label} item={item} />
+        ))}
+
+        <MenuItem
+          item={{ icon: Info, label: "关于项目" }}
+          onClick={onModalOpen}
+        />
+      </motion.div>
+
+      <motion.p className="text-xs text-gray-400 mt-8" variants={itemVariants}>
+        开源教育工具 · 探索建筑构造的空间逻辑
+      </motion.p>
+    </motion.div>
+  );
+}
 
 function AboutModal({ open, onClose }) {
   return (
@@ -112,10 +182,18 @@ function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#f8f9fa]">
-      <div className="absolute inset-0 z-0">
+    <div className="flex h-screen overflow-hidden bg-[#f8f9fa]">
+      <aside
+        className="hidden md:flex w-80 lg:w-[340px] flex-shrink-0
+          bg-white/80 backdrop-blur-md border-r border-gray-100
+          flex-col justify-center h-full px-8"
+      >
+        <MenuContent onModalOpen={() => setModalOpen(true)} />
+      </aside>
+
+      <div className="hidden md:block flex-1 h-full">
         <Canvas
-          camera={{ position: [1.2, 1.6, 3.2], fov: 38 }}
+          camera={{ position: [1.4, 1.8, 3.4], fov: 38 }}
           shadows
           gl={{ antialias: true }}
         >
@@ -123,86 +201,12 @@ function HomePage() {
         </Canvas>
       </div>
 
-      <nav className="absolute top-0 left-0 right-0 z-20 flex items-center px-5 md:px-8 py-3">
-        <Link
-          to="/"
-          className="text-sm font-medium text-gray-500 tracking-wider hover:text-academic-500 transition-colors"
-        >
-          建筑构造交互系统
-        </Link>
-      </nav>
-
-      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-        <motion.div
-          className="pointer-events-auto"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 tracking-wide">
-              建筑构造交互系统
-            </h1>
-            <div className="w-16 h-0.5 bg-academic-600 mx-auto my-4" />
-          </div>
-
-          <div className="space-y-3 md:space-y-4">
-            {menuItems.map((item) => (
-              <motion.div key={item.label} variants={itemVariants}>
-                <Link
-                  to={item.to}
-                  className="flex items-center gap-4 px-8 py-4
-                    bg-white/70 backdrop-blur-md
-                    border border-white/50 rounded-2xl
-                    shadow-lg shadow-black/5
-                    transition-all duration-300
-                    hover:shadow-xl hover:-translate-y-1 hover:bg-white/80
-                    hover:border-l-4 hover:border-l-academic-600 hover:border-l-[4px]
-                    group"
-                >
-                  <item.icon
-                    size={24}
-                    className="text-gray-500 group-hover:text-academic-600 transition-colors flex-shrink-0"
-                    strokeWidth={1.8}
-                  />
-                  <span className="text-lg font-medium text-gray-700 group-hover:text-academic-700 transition-colors">
-                    {item.label}
-                  </span>
-                </Link>
-              </motion.div>
-            ))}
-
-            <motion.div variants={itemVariants}>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="w-full flex items-center gap-4 px-8 py-4
-                  bg-white/70 backdrop-blur-md
-                  border border-white/50 rounded-2xl
-                  shadow-lg shadow-black/5
-                  transition-all duration-300
-                  hover:shadow-xl hover:-translate-y-1 hover:bg-white/80
-                  hover:border-l-4 hover:border-l-academic-600 hover:border-l-[4px]
-                  group cursor-pointer"
-              >
-                <Info
-                  size={24}
-                  className="text-gray-500 group-hover:text-academic-600 transition-colors flex-shrink-0"
-                  strokeWidth={1.8}
-                />
-                <span className="text-lg font-medium text-gray-700 group-hover:text-academic-700 transition-colors">
-                  关于项目
-                </span>
-              </button>
-            </motion.div>
-          </div>
-
-          <motion.p
-            className="text-xs text-gray-400 mt-8 text-center"
-            variants={itemVariants}
-          >
-            开源教育工具 · 探索建筑构造的空间逻辑
-          </motion.p>
-        </motion.div>
+      <div
+        className="flex md:hidden w-full h-full
+          bg-gradient-to-b from-gray-50 to-white
+          flex-col justify-center px-6"
+      >
+        <MenuContent onModalOpen={() => setModalOpen(true)} />
       </div>
 
       <AboutModal open={modalOpen} onClose={() => setModalOpen(false)} />

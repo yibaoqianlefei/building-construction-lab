@@ -19,7 +19,7 @@ function MenuBackground() {
 
   useFrame(({ clock }) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = clock.elapsedTime * 0.25;
+      groupRef.current.rotation.y = clock.elapsedTime * 0.2;
       groupRef.current.position.y = Math.sin(clock.elapsedTime * 0.5) * 0.08;
     }
   });
