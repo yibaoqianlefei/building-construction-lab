@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Compass, Wrench, BookOpen, GitPullRequest } from "lucide-react";
 
 const pageInfo = {
@@ -46,12 +46,6 @@ function PlaceholderPage() {
             {info.title}
           </h1>
           <p className="text-gray-400">{info.description}</p>
-          <Link
-            to="/"
-            className="inline-block mt-6 text-sm text-gold-600 hover:text-gold-700 underline underline-offset-2"
-          >
-            返回主菜单
-          </Link>
         </div>
       </main>
     </div>

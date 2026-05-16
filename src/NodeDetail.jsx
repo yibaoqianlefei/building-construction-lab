@@ -20,13 +20,7 @@ function NodeDetail() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 text-lg mb-4">未找到该构造节点</p>
-          <Link
-            to="/"
-            className="text-gold-600 hover:text-gold-700 text-sm underline underline-offset-2 transition-colors"
-          >
-            返回首页
-          </Link>
+          <p className="text-gray-500 text-lg">未找到该构造节点</p>
         </div>
       </div>
     );
@@ -35,8 +29,10 @@ function NodeDetail() {
   return (
     <div className="min-h-screen bg-white text-gray-600 flex flex-col">
       <div className="px-6 md:px-10 py-2.5 bg-white border-b border-gray-100/50">
-        <span className="text-sm text-gray-400 font-medium tracking-tight">
-          {data.title}
+        <span className="text-sm text-gray-400">
+          <Link to="/library" className="text-gold-600 hover:text-gold-700 transition-colors">节点库</Link>
+          <span className="mx-1.5 text-gray-300">›</span>
+          <span className="text-gray-500">{data.title}</span>
         </span>
       </div>
 

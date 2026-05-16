@@ -1,6 +1,7 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Grid, Html } from "@react-three/drei";
+import { RotateCw } from "lucide-react";
 import ConstructionLayer from "./ConstructionLayer";
 
 const EXPLODE_STEP = 0.003;
@@ -107,7 +108,15 @@ function DirectionIndicator({ layers }) {
   );
 }
 
-function Scene({ layers, explodeValue, hoveredLayer, selectedLayer, onHoverLayer, onSelectLayer }) {
+function Scene({
+  layers,
+  explodeValue,
+  hoveredLayer,
+  selectedLayer,
+  onHoverLayer,
+  onSelectLayer,
+  autoRotate,
+}) {
   return (
     <>
       <color attach="background" args={["#f5f5f7"]} />
@@ -153,6 +162,8 @@ function Scene({ layers, explodeValue, hoveredLayer, selectedLayer, onHoverLayer
         maxDistance={8}
         maxPolarAngle={Math.PI * 0.7}
         target={[0, 0, 0]}
+        autoRotate={autoRotate}
+        autoRotateSpeed={0.5}
       />
     </>
   );
@@ -166,8 +177,10 @@ function ModelViewer({
   onHoverLayer,
   onSelectLayer,
 }) {
+  const [autoRotate, setAutoRotate] = useState(true);
+
   return (
-    <div className="w-full h-full rounded-lg overflow-hidden">
+    <div className="relative w-full h-full rounded-lg overflow-hidden">
       <Canvas
         camera={{ position: [1.2, 1.6, 2.8], fov: 40 }}
         shadows
@@ -180,8 +193,38 @@ function ModelViewer({
           selectedLayer={selectedLayer}
           onHoverLayer={onHoverLayer}
           onSelectLayer={onSelectLayer}
+          autoRotate={autoRotate}
         />
       </Canvas>
+
+      <button
+        onClick={() => setAutoRotate((v) => !v)}
+        className="absolute right-4 bottom-4 z-10
+          w-11 h-11 rounded-full
+          bg-white/70 backdrop-blur-md
+          border border-white/20
+          shadow-lg shadow-black/5
+          hover:bg-white/90 hover:shadow-xl hover:shadow-black/10
+          transition-all duration-300
+          flex items-center justify-center
+          pointer-events-auto cursor-pointer"
+        title={autoRotate ? "暂停旋转" : "开始旋转"}
+      >
+        <RotateCw
+          size={20}
+          strokeWidth={1.5}
+          className={
+            autoRotate
+              ? "text-gold-600"
+              : "text-gray-500"
+          }
+          style={{
+            animation: autoRotate
+              ? "spin 4s linear infinite"
+              : "none",
+          }}
+        />
+      </button>
     </div>
   );
 }

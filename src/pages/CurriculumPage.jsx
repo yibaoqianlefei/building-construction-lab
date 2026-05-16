@@ -1,7 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { FiArrowLeft } from "react-icons/fi";
+import { Link, useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import courseModules from "../data/courseModules";
 import { nodesIndex } from "../data/nodesIndex";
 
@@ -51,7 +49,89 @@ function NodeCard({ node, index }) {
   );
 }
 
-function ModuleDetail({ module, onBack }) {
+function ModuleGrid({ onSelectModule }) {
+  return (
+    <motion.div
+      key="grid"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
+      <div className="mb-12">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+          课程目录
+        </h1>
+        <p className="mt-2 text-gray-500 text-base">
+          选择要学习的构造模块
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {courseModules.map((mod, i) => {
+          const nodeCount = mod.nodeIds.filter((id) =>
+            nodesIndex.some((n) => n.id === id)
+          ).length;
+
+          if (mod.available) {
+            return (
+              <motion.button
+                key={mod.id}
+                onClick={() => onSelectModule(mod.id)}
+                className="bg-white/80 backdrop-blur-sm border border-gray-200/60
+                  rounded-3xl p-8
+                  shadow-[0_2px_8px_rgba(0,0,0,0.04)]
+                  hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.05),0_8px_20px_rgba(212,164,58,0.1)]
+                  hover:-translate-y-2 hover:scale-[1.02]
+                  hover:bg-white hover:border-gold-200
+                  transition-all duration-300 ease-out cursor-pointer
+                  text-left group"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
+              >
+                <span className="text-4xl transition-transform duration-300 ease-out group-hover:scale-110 inline-block">{mod.icon}</span>
+                <h3 className="text-xl font-bold text-gray-900 mt-5 group-hover:text-gold-600 transition-colors tracking-tight">
+                  {mod.title}
+                </h3>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                  {mod.description}
+                </p>
+                <span className="inline-block mt-4 text-xs font-medium text-gold-600 bg-gold-50 px-3 py-1 rounded-full">
+                  {nodeCount} 个节点
+                </span>
+              </motion.button>
+            );
+          }
+
+          return (
+            <motion.div
+              key={mod.id}
+              className="bg-gray-50/80 border border-gray-100 rounded-3xl p-8
+                opacity-50 cursor-default text-left"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 0.5, y: 0 }}
+              transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
+            >
+              <span className="text-4xl grayscale">{mod.icon}</span>
+              <h3 className="text-xl font-bold text-gray-400 mt-5 tracking-tight">
+                {mod.title}
+              </h3>
+              <p className="text-sm text-gray-400 mt-2 leading-relaxed">
+                {mod.description}
+              </p>
+              <span className="inline-block mt-4 text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                即将上线
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+function ModuleDetail({ module }) {
   const moduleNodes = module.nodeIds
     .map((id) => {
       const node = nodesIndex.find((n) => n.id === id);
@@ -66,19 +146,26 @@ function ModuleDetail({ module, onBack }) {
 
   return (
     <motion.div
+      key="detail"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-gold-600 hover:text-gold-600 transition-colors mb-8"
-      >
-        <FiArrowLeft size={16} />
-        返回模块列表
-      </button>
+      <div className="mb-2">
+        <span className="text-sm text-gray-400">
+          <Link
+            to="/curriculum"
+            className="text-gold-600 hover:text-gold-700 transition-colors"
+          >
+            课程目录
+          </Link>
+          <span className="mx-1.5 text-gray-300">›</span>
+          <span className="text-gray-500">{module.title}</span>
+        </span>
+      </div>
 
-      <div className="mb-8">
+      <div className="mb-8 mt-6">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
           {module.title}
         </h1>
@@ -102,98 +189,27 @@ function ModuleDetail({ module, onBack }) {
 }
 
 function CurriculumPage() {
-  const [selectedModule, setSelectedModule] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const moduleId = searchParams.get("module");
 
-  if (selectedModule) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <main className="flex-1 px-6 md:px-10 py-10 max-w-5xl mx-auto w-full">
-          <ModuleDetail
-            module={selectedModule}
-            onBack={() => setSelectedModule(null)}
-          />
-        </main>
-      </div>
-    );
+  const selectedModule = moduleId
+    ? courseModules.find((m) => m.id === moduleId && m.available)
+    : null;
+
+  function handleSelectModule(id) {
+    setSearchParams({ module: id });
   }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <main className="flex-1 px-6 md:px-10 py-12 max-w-5xl mx-auto w-full">
-        <motion.div
-          className="mb-12"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        >
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            课程目录
-          </h1>
-          <p className="mt-2 text-gray-500 text-base">
-            选择要学习的构造模块
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {courseModules.map((mod, i) => {
-            const nodeCount = mod.nodeIds.filter((id) =>
-              nodesIndex.some((n) => n.id === id)
-            ).length;
-
-            if (mod.available) {
-              return (
-                <motion.button
-                  key={mod.id}
-                  onClick={() => setSelectedModule(mod)}
-                  className="bg-white/80 backdrop-blur-sm border border-gray-200/60
-                    rounded-3xl p-8
-                    shadow-[0_2px_8px_rgba(0,0,0,0.04)]
-                    hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.05),0_8px_20px_rgba(212,164,58,0.1)]
-                    hover:-translate-y-2 hover:scale-[1.02]
-                    hover:bg-white hover:border-gold-200
-                    transition-all duration-300 ease-out cursor-pointer
-                    text-left group"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
-                >
-                  <span className="text-4xl transition-transform duration-300 ease-out group-hover:scale-110 inline-block">{mod.icon}</span>
-                  <h3 className="text-xl font-bold text-gray-900 mt-5 group-hover:text-gold-600 transition-colors tracking-tight">
-                    {mod.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                    {mod.description}
-                  </p>
-                  <span className="inline-block mt-4 text-xs font-medium text-gold-600 bg-gold-50 px-3 py-1 rounded-full">
-                    {nodeCount} 个节点
-                  </span>
-                </motion.button>
-              );
-            }
-
-            return (
-              <motion.div
-                key={mod.id}
-                className="bg-gray-50/80 border border-gray-100 rounded-3xl p-8
-                  opacity-50 cursor-default text-left"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 0.5, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.06, ease: "easeOut" }}
-              >
-                <span className="text-4xl grayscale">{mod.icon}</span>
-                <h3 className="text-xl font-bold text-gray-400 mt-5 tracking-tight">
-                  {mod.title}
-                </h3>
-                <p className="text-sm text-gray-400 mt-2 leading-relaxed">
-                  {mod.description}
-                </p>
-                <span className="inline-block mt-4 text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-                  即将上线
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
+      <main className="flex-1 px-6 md:px-10 py-10 max-w-5xl mx-auto w-full">
+        <AnimatePresence mode="wait">
+          {selectedModule ? (
+            <ModuleDetail module={selectedModule} />
+          ) : (
+            <ModuleGrid onSelectModule={handleSelectModule} />
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
