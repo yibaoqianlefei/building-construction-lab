@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Grid, Html } from "@react-three/drei";
+import { OrbitControls, Grid } from "@react-three/drei";
 import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 
@@ -106,29 +106,6 @@ function WallAssembly({
             onPointerOut={() => onHoverLayer(null)}
             onClick={(e) => onLayerClick(i, layer, e)}
           />
-          {(i === 0 || i === layers.length - 1) && (
-            <Html position={[0, -0.22, 0]} center>
-              <div className="flex items-center gap-1.5 select-none pointer-events-none
-                bg-white/70 backdrop-blur-md rounded-full px-3 py-1.5
-                border border-white/30 shadow-sm text-xs font-medium text-gray-600">
-                {i === 0 ? (
-                  <>
-                    <span>室内</span>
-                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-                      <path d="M1 5h12M9 1l4 4-4 4" stroke="#D4A43A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </>
-                ) : (
-                  <>
-                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-                      <path d="M13 5H1M5 1l-4 4 4 4" stroke="#D4A43A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>室外</span>
-                  </>
-                )}
-              </div>
-            </Html>
-          )}
         </group>
       ))}
     </group>
