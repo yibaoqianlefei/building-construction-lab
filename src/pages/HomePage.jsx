@@ -197,9 +197,9 @@ function HomePage() {
 
       <div className="hidden md:block flex-1 h-full">
         <Canvas
-          camera={{ position: [1.6, 1.8, 3.6], fov: 36 }}
+          camera={{ near: 1, far: 100, position: [1.6, 1.8, 3.6], fov: 36 }}
           shadows
-          gl={{ antialias: true }}
+          gl={{ antialias: true, alpha: false }}
         >
           <MenuBackground />
         </Canvas>

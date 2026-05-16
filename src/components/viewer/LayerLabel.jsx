@@ -3,27 +3,41 @@ import { motion } from "framer-motion";
 
 const CARD_WIDTH = 210;
 const CARD_HEIGHT = 160;
-const OFFSET = 16;
+const MARGIN = 8;
+
+const isTouchDevice =
+  typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
+
+const springTransition = {
+  type: "spring",
+  stiffness: 120,
+  damping: 20,
+  mass: 0.8,
+};
 
 function LayerLabel({ layer, screenX, screenY, onClose }) {
   const cardRef = useRef(null);
   const [pos, setPos] = useState({ left: 0, top: 0 });
 
   useEffect(() => {
-    let left = screenX + OFFSET;
-    let top = screenY - OFFSET;
+    let left = screenX - CARD_WIDTH / 2;
+    let top = screenY - CARD_HEIGHT / 2;
 
-    if (left + CARD_WIDTH > window.innerWidth - OFFSET) {
-      left = screenX - CARD_WIDTH - OFFSET;
+    if (isTouchDevice) {
+      top -= 12;
     }
-    if (top < OFFSET) {
-      top = OFFSET;
+
+    if (left < MARGIN) {
+      left = MARGIN;
     }
-    if (top + CARD_HEIGHT > window.innerHeight - OFFSET) {
-      top = window.innerHeight - CARD_HEIGHT - OFFSET;
+    if (left + CARD_WIDTH > window.innerWidth - MARGIN) {
+      left = window.innerWidth - CARD_WIDTH - MARGIN;
     }
-    if (left < OFFSET) {
-      left = OFFSET;
+    if (top < MARGIN) {
+      top = MARGIN;
+    }
+    if (top + CARD_HEIGHT > window.innerHeight - MARGIN) {
+      top = window.innerHeight - CARD_HEIGHT - MARGIN;
     }
 
     setPos({ left, top });
@@ -36,12 +50,18 @@ function LayerLabel({ layer, screenX, screenY, onClose }) {
       style={{ left: pos.left, top: pos.top }}
       initial={{ opacity: 0, scale: 0.92, y: 8, filter: "blur(4px)" }}
       animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-      exit={{ opacity: 0, scale: 0.95, y: 4, filter: "blur(4px)" }}
+      exit={{
+        opacity: 0,
+        scale: 0.95,
+        y: 4,
+        filter: "blur(4px)",
+        transition: { duration: 0.25, ease: "easeInOut" },
+      }}
       transition={{
-        opacity: { type: "spring", stiffness: 400, damping: 28, mass: 0.8 },
-        scale: { type: "spring", stiffness: 400, damping: 28, mass: 0.8 },
-        y: { type: "spring", stiffness: 400, damping: 28, mass: 0.8 },
-        filter: { duration: 0.25, ease: "easeOut" },
+        opacity: { ...springTransition, delay: 0.1 },
+        scale: { ...springTransition, delay: 0.1 },
+        y: { ...springTransition, delay: 0.1 },
+        filter: { duration: 0.4, ease: "easeOut", delay: 0.1 },
       }}
     >
       <div

@@ -5,7 +5,7 @@ import * as THREE from "three";
 
 const HOVER_LIFT = 0.14;
 const LIFT_LERP = 0.06;
-const GLOW_LERP = 0.12;
+const GLOW_LERP = 0.2;
 
 const COLOR_HOVER = new THREE.Color("#FFE8C0");
 const COLOR_SELECT = new THREE.Color("#F5D68A");
@@ -48,9 +48,9 @@ function ConstructionLayer({
     let targetEmissive;
 
     if (isSelected) {
-      targetIntensity = 0.8;
-      targetRoughness = 0.25;
-      targetEmissive = COLOR_SELECT;
+      targetIntensity = 0;
+      targetRoughness = 0.45;
+      targetEmissive = COLOR_OFF;
     } else if (isHovered) {
       targetIntensity = 0.6;
       targetRoughness = 0.3;
@@ -97,15 +97,14 @@ function ConstructionLayer({
           opacity={layer.name.includes("空气") ? 0.3 : 1}
           roughness={0.45}
           metalness={0.05}
+          depthWrite={layer.name.includes("空气") ? false : true}
         />
         <Edges scale={1}>
           <lineBasicMaterial
-            color={
-              isSelected ? "#D4A43A" : isHovered ? "#1F2937" : "#4B5563"
-            }
+            color={isHovered && !isSelected ? "#1F2937" : "#4B5563"}
             linewidth={1}
             transparent
-            opacity={isSelected ? 0.9 : isHovered ? 0.85 : 0.45}
+            opacity={isHovered && !isSelected ? 0.85 : 0.45}
           />
         </Edges>
       </mesh>

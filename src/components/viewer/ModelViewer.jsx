@@ -1,10 +1,33 @@
 import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Grid, Html } from "@react-three/drei";
+import { useMotionValue, animate } from "framer-motion";
 import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 
 const EXPLODE_STEP = 0.003;
+
+const SPRING_CONFIG = { type: "spring", stiffness: 55, damping: 15, mass: 1 };
+
+function getExplodedBounds(layers) {
+  let xOffset = 0;
+  const totalWidth = layers.reduce((s, l) => s + l.thickness, 0);
+  let minX = Infinity;
+  let maxX = -Infinity;
+
+  layers.forEach((layer, i) => {
+    const half = layer.thickness / 2;
+    const baseX = xOffset + half - totalWidth / 2;
+    const cx = baseX + i * 100 * EXPLODE_STEP;
+    minX = Math.min(minX, cx - half);
+    maxX = Math.max(maxX, cx + half);
+    xOffset += layer.thickness;
+  });
+
+  const centerX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  return { centerX, width };
+}
 
 function ShadowPlane() {
   return (
@@ -14,7 +37,7 @@ function ShadowPlane() {
       receiveShadow
     >
       <planeGeometry args={[8, 8]} />
-      <shadowMaterial opacity={0.15} />
+      <shadowMaterial opacity={0.3} />
     </mesh>
   );
 }
@@ -23,6 +46,7 @@ function RendererSetup() {
   const { gl } = useThree();
 
   useEffect(() => {
+    gl.shadowMap.enabled = true;
     gl.shadowMap.type = THREE.PCFSoftShadowMap;
     gl.toneMapping = THREE.CineonToneMapping;
     gl.toneMappingExposure = 0.9;
@@ -38,6 +62,7 @@ function WallAssembly({
   selectedLayer,
   onHoverLayer,
   onLayerClick,
+  wallRef,
 }) {
   const groupRefs = useRef([]);
   const smoothExplode = useRef(0);
@@ -67,7 +92,7 @@ function WallAssembly({
   });
 
   return (
-    <group>
+    <group ref={wallRef}>
       {layers.map((layer, i) => (
         <group
           key={layer.name}
@@ -132,6 +157,129 @@ function DirectionIndicator({ layers }) {
   );
 }
 
+function CameraAdjuster({ layers, explodeValue, autoRotate }) {
+  const { camera } = useThree();
+  const controlsRef = useRef(null);
+  const isTransitioning = useRef(false);
+  const userDragging = useRef(false);
+
+  /* motion values for spring-driven camera */
+  const camX = useMotionValue(1.2);
+  const camY = useMotionValue(1.6);
+  const camZ = useMotionValue(2.8);
+  const tgtX = useMotionValue(0);
+  const tgtY = useMotionValue(0);
+  const tgtZ = useMotionValue(0);
+
+  /* during transition: feed spring values into controls & call update() so
+     damping stays in sync — no handoff stutter when transition ends */
+  useFrame(() => {
+    const ctrl = controlsRef.current;
+    if (!ctrl || !isTransitioning.current) return;
+
+    ctrl.target.set(tgtX.get(), tgtY.get(), tgtZ.get());
+    camera.position.set(camX.get(), camY.get(), camZ.get());
+    ctrl.update();
+  });
+
+  const originalsSaved = useRef(false);
+  const origCam = useRef([1.2, 1.6, 2.8]);
+  const origTgt = useRef([0, 0, 0]);
+  const animToken = useRef(0);
+
+  /* animate on explode / un-explode */
+  const wasExploded = useRef(false);
+  useEffect(() => {
+    const isExploded = explodeValue >= 99;
+    if ((isExploded && !wasExploded.current) || (!isExploded && wasExploded.current)) {
+      let targetCam, targetTgt;
+
+      if (isExploded) {
+        const { centerX, width } = getExplodedBounds(layers);
+        const fovRad = (camera.fov ?? 40) * (Math.PI / 180);
+        const dist = Math.max((width / (2 * Math.tan(fovRad / 2))) * 1.3, 3.2);
+        targetCam = [centerX + 1.2, 1.6, dist];
+        targetTgt = [centerX, 0, 0];
+      } else {
+        if (!originalsSaved.current) return;
+        targetCam = origCam.current;
+        targetTgt = origTgt.current;
+      }
+
+      /* save originals once */
+      if (!originalsSaved.current && controlsRef.current) {
+        origCam.current = [camX.get(), camY.get(), camZ.get()];
+        const ctrl = controlsRef.current;
+        origTgt.current = [ctrl.target.x, ctrl.target.y, ctrl.target.z];
+        originalsSaved.current = true;
+      }
+
+      isTransitioning.current = true;
+      const token = ++animToken.current;
+
+      Promise.all([
+        animate(camX, targetCam[0], SPRING_CONFIG),
+        animate(camY, targetCam[1], SPRING_CONFIG),
+        animate(camZ, targetCam[2], SPRING_CONFIG),
+        animate(tgtX, targetTgt[0], SPRING_CONFIG),
+        animate(tgtY, targetTgt[1], SPRING_CONFIG),
+        animate(tgtZ, targetTgt[2], SPRING_CONFIG),
+      ]).then(() => {
+        if (token === animToken.current) {
+          isTransitioning.current = false;
+        }
+      });
+    }
+    wasExploded.current = isExploded;
+  }, [explodeValue, layers, camera, camX, camY, camZ, tgtX, tgtY, tgtZ]);
+
+  return (
+    <OrbitControls
+      ref={(el) => {
+        controlsRef.current = el;
+      }}
+      enableDamping
+      dampingFactor={0.08}
+      minDistance={0.8}
+      maxDistance={12}
+      maxPolarAngle={Math.PI * 0.7}
+      target={[0, 0, 0]}
+      autoRotate={autoRotate}
+      autoRotateSpeed={0.5}
+      onStart={() => {
+        userDragging.current = true;
+        isTransitioning.current = false;
+      }}
+      onEnd={() => {
+        userDragging.current = false;
+      }}
+    />
+  );
+}
+
+function ShadowLight({ targetRef }) {
+  const lightRef = useRef();
+
+  return (
+    <directionalLight
+      ref={lightRef}
+      position={[8, 12, 6]}
+      intensity={2.5}
+      color="#fffdf7"
+      castShadow
+      shadow-mapSize-width={4096}
+      shadow-mapSize-height={4096}
+      shadow-camera-near={0.5}
+      shadow-camera-far={30}
+      shadow-camera-left={-8}
+      shadow-camera-right={8}
+      shadow-camera-top={8}
+      shadow-camera-bottom={-8}
+      shadow-bias={-0.00015}
+    />
+  );
+}
+
 function Scene({
   layers,
   explodeValue,
@@ -141,6 +289,8 @@ function Scene({
   onLayerClick,
   autoRotate,
 }) {
+  const wallRef = useRef();
+
   return (
     <>
       <RendererSetup />
@@ -149,20 +299,7 @@ function Scene({
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
-      <directionalLight
-        position={[8, 12, 6]}
-        intensity={2.5}
-        color="#fffdf7"
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={50}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
-        shadow-bias={-0.0004}
-      />
+      <ShadowLight targetRef={wallRef} />
 
       <directionalLight
         position={[-6, 3, -4]}
@@ -185,6 +322,7 @@ function Scene({
         selectedLayer={selectedLayer}
         onHoverLayer={onHoverLayer}
         onLayerClick={onLayerClick}
+        wallRef={wallRef}
       />
 
       <DirectionIndicator layers={layers} />
@@ -202,15 +340,10 @@ function Scene({
         infinite
       />
 
-      <OrbitControls
-        enableDamping
-        dampingFactor={0.08}
-        minDistance={0.8}
-        maxDistance={8}
-        maxPolarAngle={Math.PI * 0.7}
-        target={[0, 0, 0]}
+      <CameraAdjuster
+        layers={layers}
+        explodeValue={explodeValue}
         autoRotate={autoRotate}
-        autoRotateSpeed={0.5}
       />
     </>
   );
@@ -229,7 +362,7 @@ function ModelViewer({
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
       <Canvas
-        camera={{ position: [1.2, 1.6, 2.8], fov: 40 }}
+        camera={{ near: 1, far: 100, position: [1.2, 1.6, 2.8], fov: 40 }}
         shadows
         gl={{ antialias: true, alpha: false }}
         onPointerMissed={onBlankClick}

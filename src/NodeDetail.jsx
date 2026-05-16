@@ -158,6 +158,7 @@ function NodeDetail() {
       <AnimatePresence>
         {activeCard && (
           <LayerLabel
+            key={activeCard.layer.name}
             layer={activeCard.layer}
             screenX={activeCard.x}
             screenY={activeCard.y}
