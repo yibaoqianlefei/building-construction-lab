@@ -1,10 +1,35 @@
-import { useRef, useMemo, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef, useMemo, useEffect } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Grid, Html } from "@react-three/drei";
-import { RotateCw } from "lucide-react";
+import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 
 const EXPLODE_STEP = 0.003;
+
+function ShadowPlane() {
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.78, 0]}
+      receiveShadow
+    >
+      <planeGeometry args={[8, 8]} />
+      <shadowMaterial opacity={0.15} />
+    </mesh>
+  );
+}
+
+function RendererSetup() {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    gl.toneMapping = THREE.CineonToneMapping;
+    gl.toneMappingExposure = 0.9;
+  }, [gl]);
+
+  return null;
+}
 
 function WallAssembly({
   layers,
@@ -53,6 +78,7 @@ function WallAssembly({
             layer={layer}
             isHovered={hoveredLayer === i}
             isSelected={selectedLayer === i}
+            explodeValue={explodeValue}
             onPointerOver={() => onHoverLayer(i)}
             onPointerOut={() => onHoverLayer(null)}
             onClick={() =>
@@ -119,17 +145,40 @@ function Scene({
 }) {
   return (
     <>
+      <RendererSetup />
+
       <color attach="background" args={["#f5f5f7"]} />
 
-      <ambientLight intensity={0.7} />
+      <ambientLight intensity={1.2} color="#ffffff" />
+
       <directionalLight
-        position={[5, 8, 5]}
-        intensity={1.4}
+        position={[8, 12, 6]}
+        intensity={2.5}
+        color="#fffdf7"
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-far={50}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
+        shadow-bias={-0.0004}
       />
-      <directionalLight position={[-2, 2, -3]} intensity={0.35} />
+
+      <directionalLight
+        position={[-6, 3, -4]}
+        intensity={0.8}
+        color="#d4e3f0"
+      />
+
+      <directionalLight
+        position={[0, 10, 2]}
+        intensity={0.6}
+        color="#ffffff"
+      />
+
+      <ShadowPlane />
 
       <WallAssembly
         layers={layers}
@@ -172,19 +221,18 @@ function Scene({
 function ModelViewer({
   layers,
   explodeValue,
+  autoRotate,
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
   onSelectLayer,
 }) {
-  const [autoRotate, setAutoRotate] = useState(true);
-
   return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden">
+    <div className="w-full h-full rounded-lg overflow-hidden">
       <Canvas
         camera={{ position: [1.2, 1.6, 2.8], fov: 40 }}
         shadows
-        gl={{ antialias: true }}
+        gl={{ antialias: true, alpha: false }}
       >
         <Scene
           layers={layers}
@@ -196,35 +244,6 @@ function ModelViewer({
           autoRotate={autoRotate}
         />
       </Canvas>
-
-      <button
-        onClick={() => setAutoRotate((v) => !v)}
-        className="absolute right-4 bottom-4 z-10
-          w-11 h-11 rounded-full
-          bg-white/70 backdrop-blur-md
-          border border-white/20
-          shadow-lg shadow-black/5
-          hover:bg-white/90 hover:shadow-xl hover:shadow-black/10
-          transition-all duration-300
-          flex items-center justify-center
-          pointer-events-auto cursor-pointer"
-        title={autoRotate ? "暂停旋转" : "开始旋转"}
-      >
-        <RotateCw
-          size={20}
-          strokeWidth={1.5}
-          className={
-            autoRotate
-              ? "text-gold-600"
-              : "text-gray-500"
-          }
-          style={{
-            animation: autoRotate
-              ? "spin 4s linear infinite"
-              : "none",
-          }}
-        />
-      </button>
     </div>
   );
 }

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
 import ModelViewer from "./components/viewer/ModelViewer";
-import ExplodeControls from "./components/viewer/ExplodeControls";
+import BottomControlBar from "./components/viewer/BottomControlBar";
 import { getNodeData } from "./data/nodesIndex";
 
 const ACCENT = "#B8891F";
@@ -13,8 +13,15 @@ function NodeDetail() {
   const data = getNodeData(nodeId);
 
   const [explodeValue, setExplodeValue] = useState(0);
+  const [autoRotate, setAutoRotate] = useState(true);
   const [hoveredLayer, setHoveredLayer] = useState(null);
   const [selectedLayer, setSelectedLayer] = useState(null);
+
+  useEffect(() => {
+    if (explodeValue === 0) {
+      setSelectedLayer(null);
+    }
+  }, [explodeValue]);
 
   if (!data) {
     return (
@@ -38,7 +45,7 @@ function NodeDetail() {
 
       <main className="flex-1 flex flex-col lg:flex-row p-6 md:p-10 gap-6 md:gap-8 min-h-0">
         <motion.div
-          className="flex-1 min-h-[380px] lg:min-h-0 rounded-2xl overflow-hidden border border-gray-200/60 bg-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+          className="relative flex-1 min-h-[380px] lg:min-h-0 rounded-2xl overflow-hidden border border-gray-200/60 bg-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
@@ -46,10 +53,20 @@ function NodeDetail() {
           <ModelViewer
             layers={data.layers}
             explodeValue={explodeValue}
+            autoRotate={autoRotate}
             hoveredLayer={hoveredLayer}
             selectedLayer={selectedLayer}
             onHoverLayer={setHoveredLayer}
             onSelectLayer={setSelectedLayer}
+          />
+
+          <BottomControlBar
+            explodeValue={explodeValue}
+            onExplodeChange={setExplodeValue}
+            onExplodeReset={() => setExplodeValue(0)}
+            onExplodeMax={() => setExplodeValue(100)}
+            autoRotate={autoRotate}
+            onAutoRotateToggle={() => setAutoRotate((v) => !v)}
           />
         </motion.div>
 
@@ -113,8 +130,6 @@ function NodeDetail() {
               })}
             </div>
           </div>
-
-          <ExplodeControls value={explodeValue} onChange={setExplodeValue} />
         </motion.aside>
       </main>
     </div>
