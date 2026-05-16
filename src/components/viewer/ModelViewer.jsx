@@ -5,8 +5,7 @@ import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 
 const EXPLODE_STEP = 0.003;
-const LERP_SPEED = 3.5;
-const LERP_DONE = 0.005;
+const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
 
 function getExplodedBounds(layers) {
   let xOffset = 0;
@@ -62,9 +61,9 @@ function WallAssembly({
   onHoverLayer,
   onLayerClick,
   wallRef,
+  smoothExplodeRef,
 }) {
   const groupRefs = useRef([]);
-  const smoothExplode = useRef(0);
 
   const initialPositions = useMemo(() => {
     let xOffset = 0;
@@ -78,14 +77,14 @@ function WallAssembly({
 
   useFrame((_, delta) => {
     const target = explodeValue;
-    smoothExplode.current +=
-      (target - smoothExplode.current) * Math.min(delta * 8, 1);
+    const alpha = 1 - Math.exp(-EXPLODE_LERP * delta);
+    smoothExplodeRef.current += (target - smoothExplodeRef.current) * alpha;
 
     layers.forEach((layer, i) => {
       const grp = groupRefs.current[i];
       if (grp) {
         grp.position.x =
-          initialPositions[i] + i * smoothExplode.current * EXPLODE_STEP;
+          initialPositions[i] + i * smoothExplodeRef.current * EXPLODE_STEP;
       }
     });
   });
@@ -107,105 +106,70 @@ function WallAssembly({
             onPointerOut={() => onHoverLayer(null)}
             onClick={(e) => onLayerClick(i, layer, e)}
           />
+          {(i === 0 || i === layers.length - 1) && (
+            <Html position={[0, -0.22, 0]} center>
+              <div className="flex items-center gap-1.5 select-none pointer-events-none
+                bg-white/70 backdrop-blur-md rounded-full px-3 py-1.5
+                border border-white/30 shadow-sm text-xs font-medium text-gray-600">
+                {i === 0 ? (
+                  <>
+                    <span>室内</span>
+                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+                      <path d="M1 5h12M9 1l4 4-4 4" stroke="#D4A43A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+                      <path d="M13 5H1M5 1l-4 4 4 4" stroke="#D4A43A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>室外</span>
+                  </>
+                )}
+              </div>
+            </Html>
+          )}
         </group>
       ))}
     </group>
   );
 }
 
-function DirectionIndicator({ layers }) {
-  const totalWidth = layers.reduce((sum, l) => sum + l.thickness, 0);
-  const leftEdge = -totalWidth / 2;
-  const rightEdge = totalWidth / 2;
-  const y = -1.05;
-  const z = 0;
-
-  return (
-    <>
-      <Html position={[leftEdge, y, z]} center>
-        <div className="text-gray-500 text-[10px] whitespace-nowrap select-none bg-white/75 backdrop-blur-sm px-2 py-0.5 rounded-sm border border-gray-200/60">
-          室内
-        </div>
-      </Html>
-      <Html position={[rightEdge, y, z]} center>
-        <div className="text-gray-500 text-[10px] whitespace-nowrap select-none bg-white/75 backdrop-blur-sm px-2 py-0.5 rounded-sm border border-gray-200/60">
-          室外
-        </div>
-      </Html>
-
-      <mesh position={[0, y + 0.12, z]}>
-        <boxGeometry args={[totalWidth + 0.1, 0.012, 0.012]} />
-        <meshStandardMaterial color="#9CA3AF" />
-      </mesh>
-
-      <mesh
-        position={[leftEdge - 0.08, y + 0.12, z]}
-        rotation={[0, 0, Math.PI / 2]}
-      >
-        <coneGeometry args={[0.04, 0.08, 8]} />
-        <meshStandardMaterial color="#9CA3AF" />
-      </mesh>
-      <mesh
-        position={[rightEdge + 0.08, y + 0.12, z]}
-        rotation={[0, 0, -Math.PI / 2]}
-      >
-        <coneGeometry args={[0.04, 0.08, 8]} />
-        <meshStandardMaterial color="#9CA3AF" />
-      </mesh>
-    </>
-  );
-}
-
-function CameraAdjuster({ layers, explodeValue, autoRotate }) {
+function CameraAdjuster({ layers, autoRotate, smoothExplodeRef }) {
   const { camera } = useThree();
   const controlsRef = useRef(null);
-  const isTransitioning = useRef(false);
+  const userInteracting = useRef(false);
 
-  /* fixed goal target; lerp controls.target toward it each frame.
-     camera.position stays under OrbitControls full control so autoRotate
-     never stops. */
-  const goalTgt = useRef(new THREE.Vector3(0, 0, 0));
+  const explodedTarget = useRef(new THREE.Vector3());
+  const defaultTarget = useRef(new THREE.Vector3());
+  const cacheReady = useRef(false);
 
-  /* original target for restore */
-  const origTgt = useRef(new THREE.Vector3(0, 0, 0));
-  const originalsSaved = useRef(false);
+  /* set up on first frame */
+  if (!cacheReady.current && controlsRef.current) {
+    defaultTarget.current.copy(controlsRef.current.target);
 
-  /* per-frame lerp — only guides controls.target; OrbitControls
-     continues to own camera.position so autoRotate never stops */
+    const { centerX } = getExplodedBounds(layers);
+    explodedTarget.current.set(centerX, 0, 0);
+    cacheReady.current = true;
+  }
+
+  /* only lerp controls.target — never touch camera.position.
+     OrbitControls owns the camera and will orbit around the shifting target
+     without any direction change. */
   useFrame((_, delta) => {
     const ctrl = controlsRef.current;
-    if (!ctrl || !isTransitioning.current) return;
+    if (!ctrl || !cacheReady.current || userInteracting.current) return;
 
-    const alpha = 1 - Math.exp(-LERP_SPEED * delta);
-    ctrl.target.lerp(goalTgt.current, alpha);
+    const t = smoothExplodeRef.current / 100;
+    const goal = new THREE.Vector3().lerpVectors(
+      defaultTarget.current,
+      explodedTarget.current,
+      t
+    );
 
-    if (ctrl.target.distanceTo(goalTgt.current) < LERP_DONE) {
-      isTransitioning.current = false;
-    }
+    const alpha = 1 - Math.exp(-8.0 * delta);
+    ctrl.target.lerp(goal, alpha);
   });
-
-  /* trigger transition on explode / un-explode */
-  const wasExploded = useRef(false);
-  useEffect(() => {
-    const isExploded = explodeValue >= 99;
-    if ((isExploded && !wasExploded.current) || (!isExploded && wasExploded.current)) {
-      if (isExploded) {
-        if (!originalsSaved.current) {
-          const ctrl = controlsRef.current;
-          origTgt.current.copy(ctrl ? ctrl.target : new THREE.Vector3(0, 0, 0));
-          originalsSaved.current = true;
-        }
-
-        const { centerX } = getExplodedBounds(layers);
-        goalTgt.current.set(centerX, 0, 0);
-        isTransitioning.current = true;
-      } else if (originalsSaved.current) {
-        goalTgt.current.copy(origTgt.current);
-        isTransitioning.current = true;
-      }
-    }
-    wasExploded.current = isExploded;
-  }, [explodeValue, layers, camera]);
 
   return (
     <OrbitControls
@@ -221,7 +185,10 @@ function CameraAdjuster({ layers, explodeValue, autoRotate }) {
       autoRotate={autoRotate}
       autoRotateSpeed={0.5}
       onStart={() => {
-        isTransitioning.current = false;
+        userInteracting.current = true;
+      }}
+      onEnd={() => {
+        userInteracting.current = false;
       }}
     />
   );
@@ -260,6 +227,7 @@ function Scene({
   autoRotate,
 }) {
   const wallRef = useRef();
+  const smoothExplodeRef = useRef(0);
 
   return (
     <>
@@ -293,9 +261,8 @@ function Scene({
         onHoverLayer={onHoverLayer}
         onLayerClick={onLayerClick}
         wallRef={wallRef}
+        smoothExplodeRef={smoothExplodeRef}
       />
-
-      <DirectionIndicator layers={layers} />
 
       <Grid
         position={[0, -1.2, 0]}
@@ -312,8 +279,8 @@ function Scene({
 
       <CameraAdjuster
         layers={layers}
-        explodeValue={explodeValue}
         autoRotate={autoRotate}
+        smoothExplodeRef={smoothExplodeRef}
       />
     </>
   );
