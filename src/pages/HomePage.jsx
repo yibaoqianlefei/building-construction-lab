@@ -10,8 +10,12 @@ import {
   Info,
   GitPullRequest,
   X,
+  LogIn,
+  LogOut,
+  Users,
 } from "lucide-react";
 import MenuBackground from "../components/viewer/MenuBackground";
+import { useAuth } from "../contexts/AuthContext";
 
 const menuItems = [
   { icon: Library, label: "课程目录", to: "/curriculum" },
@@ -77,6 +81,8 @@ function MenuItem({ item, onClick }) {
 }
 
 function MenuContent({ onModalOpen }) {
+  const { user, profile, signOut } = useAuth();
+
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show">
       <motion.h1
@@ -101,8 +107,57 @@ function MenuContent({ onModalOpen }) {
         />
       </motion.div>
 
+      {/* ── auth section ── */}
+      <motion.div variants={itemVariants}>
+        <div className="border-t border-gray-200/50 my-5" />
+
+        {user ? (
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-3 px-5 py-2">
+              <div className="w-9 h-9 rounded-full bg-gold-100 flex items-center justify-center text-gold-600 text-sm font-semibold flex-shrink-0">
+                {(profile?.full_name || user.email || "?")[0]}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-800 truncate">
+                  {profile?.full_name || user.email}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {profile?.role === "teacher" ? "教师" : "学生"}
+                </p>
+              </div>
+            </div>
+
+            <MenuItem
+              item={{ icon: Users, label: "我的班级", to: "/classes" }}
+            />
+
+            <button
+              onClick={() => signOut()}
+              className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
+                border-l-4 border-transparent
+                transition-all duration-300 ease-out
+                hover:bg-red-50/50
+                cursor-pointer group text-left mt-0.5"
+            >
+              <LogOut
+                size={22}
+                strokeWidth={1.5}
+                className="text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out flex-shrink-0"
+              />
+              <span className="text-base font-medium text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out">
+                退出登录
+              </span>
+            </button>
+          </div>
+        ) : (
+          <MenuItem
+            item={{ icon: LogIn, label: "登录 / 注册", to: "/auth" }}
+          />
+        )}
+      </motion.div>
+
       <motion.p
-        className="text-xs text-gray-400 mt-10 tracking-wide"
+        className="text-xs text-gray-400 mt-8 tracking-wide"
         variants={itemVariants}
       >
         开源教育工具 · 探索建筑构造的空间逻辑

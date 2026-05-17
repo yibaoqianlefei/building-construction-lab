@@ -28,13 +28,28 @@ function AuthPage() {
     try {
       if (isLogin) {
         const { error: err } = await signIn(email, password);
-        if (err) setError(err.message);
+        if (err) {
+          const msg = err.message;
+          if (msg.includes("Invalid login") || msg.includes("invalid")) {
+            setError("邮箱或密码错误，请重试");
+          } else if (msg.includes("Email not confirmed")) {
+            setError("邮箱尚未验证，请检查收件箱或关闭邮箱验证（见下方提示）");
+          } else {
+            setError(msg);
+          }
+        }
       } else {
         const { error: err } = await signUp(email, password, fullName, role);
-        if (err) setError(err.message);
+        if (err) {
+          setError(err.message);
+        } else {
+          setError("");
+          setIsLogin(true);
+          setPassword("");
+        }
       }
     } catch (err) {
-      setError("发生未知错误");
+      setError("无法连接服务器，请检查 Supabase 配置");
     } finally {
       setLoading(false);
     }
