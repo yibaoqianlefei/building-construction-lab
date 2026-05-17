@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { Edges, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-const HOVER_LIFT = 0.14;
+const DEFAULT_LIFT = 0.14;
 const LIFT_LERP = 0.06;
 const GLOW_LERP = 0.2;
 
@@ -37,6 +37,7 @@ function ConstructionLayer({
   isSelected,
   explodeValue,
   floatDirection = "y",
+  floatDistance = DEFAULT_LIFT,
   onPointerOver,
   onPointerOut,
   onClick,
@@ -59,7 +60,7 @@ function ConstructionLayer({
       LIFT_LERP
     );
     if (groupRef.current) {
-      const lift = hoverOffset.current * HOVER_LIFT;
+      const lift = hoverOffset.current * floatDistance;
       if (floatDirection === "x") groupRef.current.position.x = lift;
       else if (floatDirection === "z") groupRef.current.position.z = lift;
       else groupRef.current.position.y = lift;

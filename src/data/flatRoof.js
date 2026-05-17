@@ -7,6 +7,7 @@ const flatRoofData = {
   directionLabel: "由上至下：保护层→结构层",
   explodeAxis: "y",
   floatDirection: "z",
+  floatDistance: 0.22,
   cameraPosition: [4, 5, 6],
   layers: [
     {

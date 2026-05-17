@@ -86,6 +86,7 @@ function NodeDetail() {
               explodeValue={explodeValue}
               explodeAxis={data.explodeAxis || "x"}
               floatDirection={data.floatDirection || "y"}
+              floatDistance={data.floatDistance}
               cameraPosition={data.cameraPosition || [1.2, 1.6, 2.8]}
               autoRotate={autoRotate}
               hoveredLayer={hoveredLayer}
