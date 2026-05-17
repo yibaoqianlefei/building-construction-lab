@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npx vite *)",
       "Bash(mkdir -p \"d:/vscode project/02-2/public/models/flat-roof-01\" && cp \"C:/Users/Administrator/Desktop/屋顶.glb\" \"d:/vscode project/02-2/public/models/flat-roof-01/屋顶.glb\" 2>&1)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(npm install *)",
+      "Bash(curl -s \"https://otdzghreqymfombnxkhk.supabase.co/rest/v1/\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90ZHpnaHJlcXltZm9tYm54a2hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTgyMTAsImV4cCI6MjA5NDUzNDIxMH0.V6RdB989BJdkzLv2Ly514dpHTI33uJZvhbHLaYBH6DA\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Administrator\\Desktop"
