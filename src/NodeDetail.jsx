@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
@@ -6,6 +6,8 @@ import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
 import ConstructionKnowledgePanel from "./components/viewer/ConstructionKnowledgePanel";
 import LayerLabel from "./components/viewer/LayerLabel";
+import ScreenshotTool from "./components/viewer/ScreenshotTool";
+import { saveNote } from "./services/noteService";
 import { getNodeData } from "./data/nodesIndex";
 
 const ACCENT = "#B8891F";
@@ -19,6 +21,8 @@ function NodeDetail() {
   const [hoveredLayer, setHoveredLayer] = useState(null);
   const [selectedLayer, setSelectedLayer] = useState(null);
   const [activeCard, setActiveCard] = useState(null);
+  const [screenshotMode, setScreenshotMode] = useState(false);
+  const viewerRef = useRef(null);
 
   useEffect(() => {
     if (explodeValue === 0) {
@@ -76,6 +80,7 @@ function NodeDetail() {
       <main className="flex-1 flex flex-col lg:flex-row min-h-0">
         <div className="flex-1 flex flex-col min-h-0 relative">
           <motion.div
+            ref={viewerRef}
             className="flex-1 relative rounded-2xl overflow-hidden border border-gray-200/60 bg-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] m-4 md:m-6 md:mr-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -103,7 +108,23 @@ function NodeDetail() {
               onExplodeMax={() => setExplodeValue(100)}
               autoRotate={autoRotate}
               onAutoRotateToggle={() => setAutoRotate((v) => !v)}
+              screenshotActive={screenshotMode}
+              onScreenshotToggle={() => setScreenshotMode((v) => !v)}
             />
+
+            {screenshotMode && (
+              <ScreenshotTool
+                containerRef={viewerRef}
+                onScreenshot={(dataUrl) => {
+                  saveNote({
+                    nodeId: data.id,
+                    nodeTitle: data.title,
+                    image: dataUrl,
+                  });
+                }}
+                onClose={() => setScreenshotMode(false)}
+              />
+            )}
           </motion.div>
         </div>
 

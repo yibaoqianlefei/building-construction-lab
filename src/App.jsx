@@ -10,6 +10,7 @@ import ClassesPage from "./pages/ClassesPage";
 import ClassDetailPage from "./pages/ClassDetailPage";
 import NodeDetail from "./NodeDetail";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import NotesPage from "./pages/NotesPage";
 
 function App() {
   return (
@@ -23,7 +24,7 @@ function App() {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/node/:nodeId" element={<NodeDetail />} />
             <Route path="/tools" element={<PlaceholderPage />} />
-            <Route path="/notes" element={<PlaceholderPage />} />
+            <Route path="/notes" element={<NotesPage />} />
             <Route path="/contribute" element={<PlaceholderPage />} />
             <Route path="/admin" element={<PlaceholderPage />} />
             <Route

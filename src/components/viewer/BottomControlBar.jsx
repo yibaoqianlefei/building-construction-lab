@@ -8,6 +8,8 @@ function BottomControlBar({
   onExplodeMax,
   autoRotate,
   onAutoRotateToggle,
+  screenshotActive,
+  onScreenshotToggle,
 }) {
   const sliderRef = useRef();
 
@@ -89,6 +91,36 @@ function BottomControlBar({
           }}
         />
       </button>
+
+      {onScreenshotToggle && (
+        <>
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+          <button
+            onClick={onScreenshotToggle}
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
+              transition-all duration-300
+              ${screenshotActive ? "bg-gold-50" : ""}`}
+            title="截图"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`sm:size-[18px] transition-colors duration-300 ${
+                screenshotActive ? "text-gold-500" : "text-gray-400"
+              }`}
+            >
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+              <circle cx="12" cy="13" r="3" />
+            </svg>
+          </button>
+        </>
+      )}
     </div>
   );
 }
