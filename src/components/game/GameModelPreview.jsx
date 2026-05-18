@@ -5,7 +5,7 @@ import * as THREE from "three";
 const CORRECT_COLOR = new THREE.Color("#4CAF50");
 const WRONG_COLOR = new THREE.Color("#EF4444");
 
-function LayeredModel({ layers, feedback, explodeAxis = "x" }) {
+function LayeredModel({ layers, feedback, explodeAxis = "x", isDragging }) {
   const groupRef = useRef();
 
   const initialPositions = useMemo(() => {
@@ -21,7 +21,7 @@ function LayeredModel({ layers, feedback, explodeAxis = "x" }) {
   const meshRefs = useRef([]);
 
   useFrame(({ clock }) => {
-    if (groupRef.current) {
+    if (groupRef.current && !isDragging) {
       groupRef.current.rotation.y = clock.elapsedTime * 0.25;
     }
   });
@@ -77,7 +77,7 @@ function LayeredModel({ layers, feedback, explodeAxis = "x" }) {
   );
 }
 
-function GameModelPreview({ layers, feedback, explodeAxis }) {
+function GameModelPreview({ layers, feedback, explodeAxis, isDragging }) {
   if (!layers?.length) return null;
   return (
     <div className="w-full h-full min-h-[320px] rounded-2xl overflow-hidden bg-gray-50 border border-gray-200">
@@ -85,7 +85,7 @@ function GameModelPreview({ layers, feedback, explodeAxis }) {
         <ambientLight intensity={0.9} color="#ffffff" />
         <directionalLight position={[5, 8, 5]} intensity={1.5} color="#fffdf7" />
         <directionalLight position={[-3, 2, -3]} intensity={0.4} color="#d4e3f0" />
-        <LayeredModel layers={layers} feedback={feedback} explodeAxis={explodeAxis} />
+        <LayeredModel layers={layers} feedback={feedback} explodeAxis={explodeAxis} isDragging={isDragging} />
         <gridHelper args={[8, 8, "#e5e7eb", "#d1d5db"]} position={[0, -1, 0]} />
       </Canvas>
     </div>

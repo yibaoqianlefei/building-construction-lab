@@ -1,8 +1,9 @@
-import { useState, memo, useCallback } from "react";
+import { useState, memo, useMemo, useCallback, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   DragOverlay,
@@ -16,6 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Check, RefreshCw } from "lucide-react";
 
+/* ── helpers ── */
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -25,17 +27,29 @@ function shuffle(arr) {
   return a;
 }
 
-/* ── memo'd card — removes transition-all conflict ── */
-const SortableCard = memo(function SortableCard({ item, isCorrect, isWrong }) {
+const HW_ACCEL = {
+  transform: "translate3d(0,0,0)",
+  backfaceVisibility: "hidden",
+  perspective: "1000px",
+};
+
+/* ── memo'd sortable card ── */
+const SortableCard = memo(function SortableCard({
+  item,
+  isCorrect,
+  isWrong,
+  isDraggingAny,
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item.id });
+    useSortable({ id: item.id, animateLayoutChanges: () => false });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDraggingAny ? "none" : transition,
     zIndex: isDragging ? 50 : 0,
-    touchAction: "none",
     willChange: isDragging ? "transform" : "auto",
+    isolation: isDragging ? "isolate" : undefined,
+    ...HW_ACCEL,
   };
 
   return (
@@ -45,31 +59,34 @@ const SortableCard = memo(function SortableCard({ item, isCorrect, isWrong }) {
       className={`flex items-center gap-3 rounded-2xl p-4 border shadow-sm
         bg-white/80 backdrop-blur-sm
         ${isDragging ? "scale-[1.03] shadow-lg border-gold-400" : ""}
-        ${isCorrect ? "border-green-400 bg-green-50/50" : ""}
-        ${isWrong ? "border-red-300 bg-red-50/30 animate-pulse" : ""}
+        ${!isDragging && isCorrect ? "border-green-400 bg-green-50/50" : ""}
+        ${!isDragging && isWrong ? "border-red-300 bg-red-50/30 animate-pulse" : ""}
         ${!isCorrect && !isWrong && !isDragging ? "border-gray-200/50" : ""}
       `}
     >
-      {!isDragging && (
-        <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: item.layer.color }} />
-      )}
+      <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: item.layer.color }} />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-800 text-sm">{item.layer.name}</p>
-        {!isDragging && (
-          <p className="text-xs text-gray-500 truncate">{item.layer.material}</p>
-        )}
+        <p className="text-xs text-gray-500 truncate">{item.layer.material}</p>
       </div>
-      <button {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing touch-none">
+      <button
+        {...listeners}
+        {...attributes}
+        className="cursor-grab active:cursor-grabbing touch-none p-1"
+      >
         <GripVertical size={18} className="text-gray-400 hover:text-gold-500 transition-colors" />
       </button>
     </div>
   );
 });
 
-/* ── overlay shown while dragging ── */
+/* ── drag overlay ── */
 function DragCard({ item }) {
   return (
-    <div className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-gold-400 shadow-xl scale-105">
+    <div
+      style={HW_ACCEL}
+      className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-gold-400 shadow-xl scale-105"
+    >
       <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: item.layer.color }} />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-800 text-sm">{item.layer.name}</p>
@@ -80,68 +97,73 @@ function DragCard({ item }) {
   );
 }
 
-function SortChallenge({ layers, onFeedback }) {
+/* ── main component ── */
+function SortChallenge({ layers, onFeedback, onDragChange }) {
+  const [draggingId, setDraggingId] = useState(null);
   const [items, setItems] = useState(() => {
-    let shuffled = shuffle(layers.map((l, i) => ({ id: `layer-${i}`, layer: l, correctIndex: i })));
-    while (shuffled.every((s, i) => s.correctIndex === i)) {
-      shuffled = shuffle(shuffled);
-    }
-    return shuffled;
+    let s = shuffle(layers.map((l, i) => ({ id: `l-${i}`, layer: l, correctIndex: i })));
+    while (s.every((x, i) => x.correctIndex === i)) s = shuffle(s);
+    return s;
   });
-
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(null);
   const [results, setResults] = useState(null);
-  const [activeItem, setActiveItem] = useState(null);
+
+  const itemIds = useMemo(() => items.map((i) => i.id), [items]);
+  const activeItem = useMemo(
+    () => draggingId ? items.find((i) => i.id === draggingId) : null,
+    [draggingId, items],
+  );
+  const isDragging = draggingId !== null;
+
+  /* notify parent when dragging state changes */
+  useEffect(() => {
+    onDragChange?.(isDragging);
+  }, [isDragging, onDragChange]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
+    useSensor(KeyboardSensor),
   );
 
-  const handleDragStart = useCallback((event) => {
-    const item = items.find((i) => i.id === event.active.id);
-    setActiveItem(item);
+  const handleDragStart = useCallback(({ active }) => {
+    setDraggingId(active.id);
     document.body.style.overflow = "hidden";
-  }, [items]);
+  }, []);
 
-  const handleDragEnd = useCallback((event) => {
-    setActiveItem(null);
+  const handleDragEnd = useCallback(({ active, over }) => {
+    setDraggingId(null);
     document.body.style.overflow = "";
-    const { active, over } = event;
     if (over && active.id !== over.id) {
       setItems((prev) => {
-        const oldIdx = prev.findIndex((i) => i.id === active.id);
-        const newIdx = prev.findIndex((i) => i.id === over.id);
-        return arrayMove(prev, oldIdx, newIdx);
+        const o = prev.findIndex((i) => i.id === active.id);
+        const n = prev.findIndex((i) => i.id === over.id);
+        return arrayMove(prev, o, n);
       });
     }
   }, []);
 
-  function handleSubmit() {
-    const correctIndices = [];
-    const incorrectIndices = [];
-    let correct = 0;
+  const handleSubmit = useCallback(() => {
+    const ci = [], wi = [];
+    let c = 0;
     items.forEach((item, pos) => {
-      if (item.correctIndex === pos) { correct++; correctIndices.push(item.correctIndex); }
-      else { incorrectIndices.push(item.correctIndex); }
+      if (item.correctIndex === pos) { c++; ci.push(item.correctIndex); }
+      else { wi.push(item.correctIndex); }
     });
-    const s = Math.round((correct / items.length) * 100);
-    setScore(s);
-    setResults({ correctIndices, incorrectIndices });
+    setScore(Math.round((c / items.length) * 100));
+    setResults({ correctIndices: ci, incorrectIndices: wi });
     setSubmitted(true);
-    onFeedback?.({ correctIndices, incorrectIndices });
-  }
+    onFeedback?.({ correctIndices: ci, incorrectIndices: wi });
+  }, [items, onFeedback]);
 
-  function handleReset() {
-    let shuffled = shuffle(layers.map((l, i) => ({ id: `layer-${i}`, layer: l, correctIndex: i })));
-    while (shuffled.every((s, i) => s.correctIndex === i)) {
-      shuffled = shuffle(shuffled);
-    }
-    setItems(shuffled);
+  const handleReset = useCallback(() => {
+    let s = shuffle(layers.map((l, i) => ({ id: `l-${i}`, layer: l, correctIndex: i })));
+    while (s.every((x, i) => x.correctIndex === i)) s = shuffle(s);
+    setItems(s);
     setSubmitted(false);
     setScore(null);
     setResults(null);
-  }
+  }, [layers]);
 
   return (
     <div className="flex flex-col h-full">
@@ -151,8 +173,7 @@ function SortChallenge({ layers, onFeedback }) {
           onClick={handleReset}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
         >
-          <RefreshCw size={14} />
-          重新挑战
+          <RefreshCw size={14} /> 重新挑战
         </button>
       </div>
 
@@ -162,7 +183,7 @@ function SortChallenge({ layers, onFeedback }) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-3 flex-1">
             {items.map((item) => (
               <SortableCard
@@ -170,6 +191,7 @@ function SortChallenge({ layers, onFeedback }) {
                 item={item}
                 isCorrect={submitted && results?.correctIndices?.includes(item.correctIndex)}
                 isWrong={submitted && results?.incorrectIndices?.includes(item.correctIndex)}
+                isDraggingAny={isDragging}
               />
             ))}
           </div>
