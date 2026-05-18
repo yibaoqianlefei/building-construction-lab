@@ -23,6 +23,7 @@ function NodeDetail() {
   const [activeCard, setActiveCard] = useState(null);
   const [screenshotMode, setScreenshotMode] = useState(false);
   const viewerRef = useRef(null);
+  const controlsRef = useRef(null);
 
   useEffect(() => {
     if (explodeValue === 0) {
@@ -30,6 +31,12 @@ function NodeDetail() {
       setActiveCard(null);
     }
   }, [explodeValue]);
+
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.enabled = !screenshotMode;
+    }
+  }, [screenshotMode]);
 
   function handleLayerClick(index, layer, e) {
     if (selectedLayer === index) {
@@ -99,6 +106,7 @@ function NodeDetail() {
               onHoverLayer={setHoveredLayer}
               onLayerClick={handleLayerClick}
               onBlankClick={handleBlankClick}
+              onControlsReady={(ctrl) => { controlsRef.current = ctrl; }}
             />
 
             <BottomControlBar

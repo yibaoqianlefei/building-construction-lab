@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Library,
   Layers,
-  Wrench,
+  Gamepad2,
   BookOpen,
   Info,
   GitPullRequest,
@@ -14,7 +14,6 @@ import {
   LogOut,
   Users,
   SwitchCamera,
-  StickyNote,
 } from "lucide-react";
 import MenuBackground from "../components/viewer/MenuBackground";
 import { useAuth } from "../contexts/AuthContext";
@@ -23,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 const menuItems = [
   { icon: Library, label: "课程目录", to: "/curriculum" },
   { icon: Layers, label: "节点库", to: "/library" },
-  { icon: Wrench, label: "构造工具", to: "/tools" },
+  { icon: Gamepad2, label: "构造游戏", to: "/games" },
   { icon: BookOpen, label: "我的笔记", to: "/notes" },
   { icon: GitPullRequest, label: "贡献节点", to: "/contribute" },
 ];
@@ -42,6 +41,29 @@ const itemVariants = {
     opacity: 1,
     x: 0,
     transition: { type: "spring", stiffness: 200, damping: 20 },
+  },
+};
+
+const titleContainerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+const charVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] },
+  },
+};
+
+const lineVariants = {
+  hidden: { opacity: 0, scaleX: 0 },
+  show: {
+    opacity: 1,
+    scaleX: 1,
+    transition: { duration: 0.5, ease: "easeOut", delay: 0.4 },
   },
 };
 
@@ -95,14 +117,20 @@ function MenuContent({ onModalOpen }) {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show">
       <motion.h1
-        className="text-2xl font-bold text-gray-900 tracking-tight mb-1.5"
-        variants={itemVariants}
+        className="text-3xl font-bold text-gray-800 tracking-tight mb-1.5
+          hover:text-gray-900 hover:scale-[1.02] transition-all duration-300 cursor-default origin-left"
+        variants={titleContainerVariants}
       >
-        建筑构造交互系统
+        {"建筑构造".split("").map((ch, i) => (
+          <motion.span key={i} variants={charVariants} className="inline-block">
+            {ch}
+          </motion.span>
+        ))}
       </motion.h1>
       <motion.div
-        className="w-10 h-0.5 bg-gold-500 rounded-full my-5"
-        variants={itemVariants}
+        className="w-12 h-0.5 bg-gold-500 rounded-full my-5
+          hover:w-20 hover:bg-gold-400 transition-all duration-300 origin-left"
+        variants={lineVariants}
       />
 
       <motion.div className="space-y-0.5" variants={itemVariants}>
@@ -138,9 +166,6 @@ function MenuContent({ onModalOpen }) {
 
             <MenuItem
               item={{ icon: Users, label: "我的班级", to: "/classes" }}
-            />
-            <MenuItem
-              item={{ icon: StickyNote, label: "我的笔记", to: "/notes" }}
             />
 
             <button

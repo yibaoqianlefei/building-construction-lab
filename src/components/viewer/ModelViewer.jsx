@@ -125,7 +125,7 @@ function WallAssembly({
   );
 }
 
-function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRef }) {
+function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRef, onControlsReady }) {
   const { camera } = useThree();
   const controlsRef = useRef(null);
   const userInteracting = useRef(false);
@@ -165,6 +165,7 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRe
     <OrbitControls
       ref={(el) => {
         controlsRef.current = el;
+        if (el && onControlsReady) onControlsReady(el);
       }}
       enableDamping
       dampingFactor={0.08}
@@ -218,6 +219,7 @@ function Scene({
   onHoverLayer,
   onLayerClick,
   autoRotate,
+  onControlsReady,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -278,6 +280,7 @@ function Scene({
         autoRotate={autoRotate}
         explodeAxis={explodeAxis}
         smoothExplodeRef={smoothExplodeRef}
+        onControlsReady={onControlsReady}
       />
     </>
   );
@@ -290,6 +293,7 @@ function ModelViewer({
   floatDirection = "y",
   floatDistance,
   cameraPosition = [1.2, 1.6, 2.8],
+  onControlsReady,
   autoRotate,
   hoveredLayer,
   selectedLayer,
@@ -302,7 +306,7 @@ function ModelViewer({
       <Canvas
         camera={{ near: 1, far: 100, position: cameraPosition, fov: 40 }}
         shadows
-        gl={{ antialias: true, alpha: false }}
+        gl={{ preserveDrawingBuffer: true, antialias: true, alpha: false }}
         onPointerMissed={onBlankClick}
       >
         <Scene
@@ -311,6 +315,7 @@ function ModelViewer({
           explodeAxis={explodeAxis}
           floatDirection={floatDirection}
           floatDistance={floatDistance}
+          onControlsReady={onControlsReady}
           hoveredLayer={hoveredLayer}
           selectedLayer={selectedLayer}
           onHoverLayer={onHoverLayer}
