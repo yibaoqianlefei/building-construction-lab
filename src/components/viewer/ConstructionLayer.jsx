@@ -35,6 +35,7 @@ function ConstructionLayer({
   layer,
   isHovered,
   isSelected,
+  isDimmed,
   explodeValue,
   floatDirection = "y",
   floatDistance = DEFAULT_LIFT,
@@ -45,9 +46,13 @@ function ConstructionLayer({
   const meshRef = useRef();
   const groupRef = useRef();
   const modelGroupRef = useRef();
+  const lineMatRef = useRef();
   const hoverOffset = useRef(0);
   const glowIntensity = useRef(0);
   const glowRoughness = useRef(0.45);
+  const currentOpacity = useRef(layer.name.includes("空气") ? 0.3 : 1);
+  const currentLineOpacity = useRef(0.45);
+  const currentLineColor = useRef(new THREE.Color("#4B5563"));
   const hasGLB = !!layer.modelPath;
 
   useFrame(() => {
@@ -66,14 +71,10 @@ function ConstructionLayer({
       else groupRef.current.position.y = lift;
     }
 
-    /* ---- glow targets ---- */
+    /* ---- glow targets (hover always wins so it works on selected/dimmed layers too) ---- */
     let targetIntensity, targetRoughness, targetEmissive;
 
-    if (isSelected) {
-      targetIntensity = 0;
-      targetRoughness = 0.45;
-      targetEmissive = COLOR_OFF;
-    } else if (isHovered) {
+    if (isHovered) {
       targetIntensity = 0.6;
       targetRoughness = 0.3;
       targetEmissive = COLOR_HOVER;
@@ -83,26 +84,55 @@ function ConstructionLayer({
       targetEmissive = COLOR_OFF;
     }
 
-    glowIntensity.current = THREE.MathUtils.lerp(
-      glowIntensity.current,
-      targetIntensity,
-      GLOW_LERP
-    );
-    glowRoughness.current = THREE.MathUtils.lerp(
-      glowRoughness.current,
-      targetRoughness,
-      GLOW_LERP
-    );
+    /* ---- dim / highlight opacity targets ---- */
+    const DIM_LERP = 0.2;
+    let opacityTarget, lineOpacityTarget;
+    const lineColorTarget = new THREE.Color();
 
-    /* apply glow to all meshes */
+    if (isSelected) {
+      opacityTarget = 1;
+      lineOpacityTarget = 0.9;
+      lineColorTarget.set("#D4A43A");
+    } else if (isDimmed) {
+      if (isHovered) {
+        opacityTarget = 0.7;
+        lineOpacityTarget = 0.65;
+        lineColorTarget.set("#1F2937");
+      } else {
+        opacityTarget = 0.25;
+        lineOpacityTarget = 0.25;
+        lineColorTarget.set("#4B5563");
+      }
+    } else {
+      opacityTarget = layer.name.includes("空气") ? 0.3 : 1;
+      lineOpacityTarget = isHovered ? 0.85 : 0.45;
+      lineColorTarget.set(isHovered ? "#1F2937" : "#4B5563");
+    }
+
+    currentOpacity.current = THREE.MathUtils.lerp(currentOpacity.current, opacityTarget, DIM_LERP);
+    currentLineOpacity.current = THREE.MathUtils.lerp(currentLineOpacity.current, lineOpacityTarget, DIM_LERP);
+    currentLineColor.current.lerp(lineColorTarget, DIM_LERP);
+
+    if (lineMatRef.current) {
+      lineMatRef.current.opacity = currentLineOpacity.current;
+      lineMatRef.current.color.copy(currentLineColor.current);
+    }
+
+    /* lerp glow values */
+    glowIntensity.current = THREE.MathUtils.lerp(glowIntensity.current, targetIntensity, GLOW_LERP);
+    glowRoughness.current = THREE.MathUtils.lerp(glowRoughness.current, targetRoughness, GLOW_LERP);
+
+    /* apply to all visible meshes */
     const targets = hasGLB
       ? collectMeshes(modelGroupRef.current)
       : [meshRef.current];
     targets.forEach((m) => {
-      if (m?.material) {
+      if (m?.material && m.visible !== false) {
         m.material.emissiveIntensity = glowIntensity.current;
         m.material.roughness = glowRoughness.current;
         m.material.emissive?.lerp(targetEmissive, GLOW_LERP);
+        m.material.transparent = true;
+        m.material.opacity = currentOpacity.current;
       }
     });
   });
@@ -142,18 +172,18 @@ function ConstructionLayer({
           <boxGeometry args={[layer.thickness, 1.5, 0.8]} />
           <meshStandardMaterial
             color={layer.color}
-            transparent={layer.name.includes("空气")}
-            opacity={layer.name.includes("空气") ? 0.3 : 1}
             roughness={0.45}
             metalness={0.05}
-            depthWrite={layer.name.includes("空气") ? false : true}
+            transparent
+            depthWrite={!layer.name.includes("空气")}
           />
           <Edges scale={1}>
             <lineBasicMaterial
-              color={isHovered && !isSelected ? "#1F2937" : "#4B5563"}
+              ref={lineMatRef}
+              color="#4B5563"
               linewidth={1}
               transparent
-              opacity={isHovered && !isSelected ? 0.85 : 0.45}
+              opacity={0.45}
             />
           </Edges>
         </mesh>

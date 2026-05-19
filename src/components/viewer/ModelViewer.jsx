@@ -7,7 +7,7 @@ import ConstructionLayer from "./ConstructionLayer";
 const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
 
-function getExplodedBounds(layers, axis = "x") {
+function getExplodedBounds(layers, axis = "x", t = 1) {
   let offset = 0;
   const total = layers.reduce((s, l) => s + l.thickness, 0);
   let minV = Infinity;
@@ -16,7 +16,7 @@ function getExplodedBounds(layers, axis = "x") {
   layers.forEach((layer, i) => {
     const half = layer.thickness / 2;
     const base = offset + half - total / 2;
-    const exploded = base + i * 100 * EXPLODE_STEP;
+    const exploded = base + i * t * 100 * EXPLODE_STEP;
     minV = Math.min(minV, exploded - half);
     maxV = Math.max(maxV, exploded + half);
     offset += layer.thickness;
@@ -79,6 +79,7 @@ function WallAssembly({
   }, [layers]);
 
   const isX = explodeAxis === "x";
+  const hasSelection = selectedLayer !== null && selectedLayer !== undefined;
 
   useFrame((_, delta) => {
     const target = explodeValue;
@@ -112,6 +113,7 @@ function WallAssembly({
             layer={layer}
             isHovered={hoveredLayer === i}
             isSelected={selectedLayer === i}
+            isDimmed={hasSelection && selectedLayer !== i}
             explodeValue={explodeValue}
             floatDirection={floatDirection}
             floatDistance={floatDistance}
@@ -185,8 +187,32 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRe
   );
 }
 
-function ShadowLight({ targetRef }) {
+function ShadowLight({ layers, explodeAxis, smoothExplodeRef }) {
   const lightRef = useRef();
+
+  useFrame(() => {
+    const light = lightRef.current;
+    if (!light || !layers?.length) return;
+
+    const t = smoothExplodeRef.current / 100;
+    const { center, span, isX } = getExplodedBounds(layers, explodeAxis, t);
+
+    const pad = Math.max(span * 0.3, 2);
+    const half = span / 2 + pad;
+
+    if (isX) {
+      light.shadow.camera.left = center - half;
+      light.shadow.camera.right = center + half;
+      light.shadow.camera.top = half;
+      light.shadow.camera.bottom = -half;
+    } else {
+      light.shadow.camera.left = -half;
+      light.shadow.camera.right = half;
+      light.shadow.camera.top = center + half;
+      light.shadow.camera.bottom = center - half;
+    }
+    light.shadow.camera.updateProjectionMatrix();
+  });
 
   return (
     <directionalLight
@@ -203,7 +229,7 @@ function ShadowLight({ targetRef }) {
       shadow-camera-right={8}
       shadow-camera-top={8}
       shadow-camera-bottom={-8}
-      shadow-bias={-0.00015}
+      shadow-bias={-0.0002}
     />
   );
 }
@@ -232,7 +258,7 @@ function Scene({
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
-      <ShadowLight targetRef={wallRef} />
+      <ShadowLight layers={layers} explodeAxis={explodeAxis} smoothExplodeRef={smoothExplodeRef} />
 
       <directionalLight
         position={[-6, 3, -4]}

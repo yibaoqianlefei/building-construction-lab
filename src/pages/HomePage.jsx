@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Library,
   Layers,
-  Gamepad2,
+  Hammer,
   BookOpen,
   Info,
   GitPullRequest,
@@ -130,7 +130,7 @@ function MenuContent({ onModalOpen }) {
       <motion.div className="space-y-0.5" variants={itemVariants}>
         <MenuItem item={{ icon: BookOpen, label: "课程目录", to: "/curriculum" }} />
         <MenuItem item={{ icon: Layers, label: "节点库", to: "/library" }} />
-        <MenuItem item={{ icon: Gamepad2, label: "构造游戏", to: "/games" }} />
+        <MenuItem item={{ icon: Hammer, label: "构建工坊", to: "/games" }} />
       </motion.div>
 
       <div className="border-t border-gray-200/50 my-3" />
