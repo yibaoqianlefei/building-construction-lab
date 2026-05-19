@@ -14,18 +14,11 @@ import {
   LogOut,
   Users,
   SwitchCamera,
+  StickyNote,
 } from "lucide-react";
 import MenuBackground from "../components/viewer/MenuBackground";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-const menuItems = [
-  { icon: Library, label: "课程目录", to: "/curriculum" },
-  { icon: Layers, label: "节点库", to: "/library" },
-  { icon: Gamepad2, label: "构造游戏", to: "/games" },
-  { icon: BookOpen, label: "我的笔记", to: "/notes" },
-  { icon: GitPullRequest, label: "贡献节点", to: "/contribute" },
-];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -133,21 +126,17 @@ function MenuContent({ onModalOpen }) {
         variants={lineVariants}
       />
 
+      {/* ── group 1: 学习探索 ── */}
       <motion.div className="space-y-0.5" variants={itemVariants}>
-        {menuItems.map((item) => (
-          <MenuItem key={item.label} item={item} />
-        ))}
-
-        <MenuItem
-          item={{ icon: Info, label: "关于项目" }}
-          onClick={onModalOpen}
-        />
+        <MenuItem item={{ icon: BookOpen, label: "课程目录", to: "/curriculum" }} />
+        <MenuItem item={{ icon: Layers, label: "节点库", to: "/library" }} />
+        <MenuItem item={{ icon: Gamepad2, label: "构造游戏", to: "/games" }} />
       </motion.div>
 
-      {/* ── auth section ── */}
-      <motion.div variants={itemVariants}>
-        <div className="border-t border-gray-200/50 my-5" />
+      <div className="border-t border-gray-200/50 my-3" />
 
+      {/* ── group 2: 个人中心 ── */}
+      <motion.div variants={itemVariants}>
         {user ? (
           <div className="space-y-0.5">
             <div className="flex items-center gap-3 px-5 py-2">
@@ -166,6 +155,9 @@ function MenuContent({ onModalOpen }) {
 
             <MenuItem
               item={{ icon: Users, label: "我的班级", to: "/classes" }}
+            />
+            <MenuItem
+              item={{ icon: StickyNote, label: "我的笔记", to: "/notes" }}
             />
 
             <button
@@ -186,26 +178,6 @@ function MenuContent({ onModalOpen }) {
                 切换账号
               </span>
             </button>
-
-            <div className="border-t border-gray-200/50 my-1.5" />
-
-            <button
-              onClick={() => signOut()}
-              className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
-                border-l-4 border-transparent
-                transition-all duration-300 ease-out
-                hover:bg-red-50/50
-                cursor-pointer group text-left"
-            >
-              <LogOut
-                size={22}
-                strokeWidth={1.5}
-                className="text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out flex-shrink-0"
-              />
-              <span className="text-base font-medium text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out">
-                退出登录
-              </span>
-            </button>
           </div>
         ) : (
           <MenuItem
@@ -213,6 +185,44 @@ function MenuContent({ onModalOpen }) {
           />
         )}
       </motion.div>
+
+      <div className="border-t border-gray-200/50 my-3" />
+
+      {/* ── group 3: 项目与社区 ── */}
+      <motion.div className="space-y-0.5" variants={itemVariants}>
+        <MenuItem
+          item={{ icon: GitPullRequest, label: "贡献节点", to: "/contribute" }}
+        />
+        <MenuItem
+          item={{ icon: Info, label: "关于项目" }}
+          onClick={onModalOpen}
+        />
+      </motion.div>
+
+      {/* ── bottom: 退出登录 ── */}
+      {user && (
+        <motion.div variants={itemVariants}>
+          <div className="border-t border-gray-200/50 my-3" />
+
+          <button
+            onClick={() => signOut()}
+            className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
+              border-l-4 border-transparent
+              transition-all duration-300 ease-out
+              hover:bg-red-50/50
+              cursor-pointer group text-left"
+          >
+            <LogOut
+              size={22}
+              strokeWidth={1.5}
+              className="text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out flex-shrink-0"
+            />
+            <span className="text-base font-medium text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out">
+              退出登录
+            </span>
+          </button>
+        </motion.div>
+      )}
 
       <motion.p
         className="text-xs text-gray-400 mt-8 tracking-wide"
