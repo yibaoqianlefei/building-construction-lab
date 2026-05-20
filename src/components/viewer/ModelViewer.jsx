@@ -8,6 +8,8 @@ const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
 
 function getExplodedBounds(layers, axis = "x", t = 1) {
+  const dir = axis.startsWith("-") ? -1 : 1;
+  const cleanAxis = axis.replace("-", "");
   let offset = 0;
   const total = layers.reduce((s, l) => s + l.thickness, 0);
   let minV = Infinity;
@@ -16,7 +18,7 @@ function getExplodedBounds(layers, axis = "x", t = 1) {
   layers.forEach((layer, i) => {
     const half = layer.thickness / 2;
     const base = offset + half - total / 2;
-    const exploded = base + i * t * 100 * EXPLODE_STEP;
+    const exploded = base + i * dir * t * 100 * EXPLODE_STEP;
     minV = Math.min(minV, exploded - half);
     maxV = Math.max(maxV, exploded + half);
     offset += layer.thickness;
@@ -24,7 +26,7 @@ function getExplodedBounds(layers, axis = "x", t = 1) {
 
   const center = (minV + maxV) / 2;
   const span = maxV - minV;
-  return { center, span, axis, isX: axis === "x" };
+  return { center, span, axis: cleanAxis, isX: cleanAxis === "x" };
 }
 
 function ShadowPlane() {
@@ -78,7 +80,9 @@ function WallAssembly({
     });
   }, [layers]);
 
-  const isX = explodeAxis === "x";
+  const explodeDir = explodeAxis.startsWith("-") ? -1 : 1;
+  const cleanAxis = explodeAxis.replace("-", "");
+  const isX = cleanAxis === "x";
   const hasSelection = selectedLayer !== null && selectedLayer !== undefined;
 
   useFrame((_, delta) => {
@@ -89,7 +93,7 @@ function WallAssembly({
     layers.forEach((layer, i) => {
       const grp = groupRefs.current[i];
       if (grp) {
-        const off = i * smoothExplodeRef.current * EXPLODE_STEP;
+        const off = i * explodeDir * smoothExplodeRef.current * EXPLODE_STEP;
         if (isX) {
           grp.position.x = initialPositions[i] + off;
           grp.position.y = 0;
@@ -240,6 +244,7 @@ function Scene({
   explodeAxis,
   floatDirection,
   floatDistance,
+  modelRotation,
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
@@ -274,19 +279,21 @@ function Scene({
 
       <ShadowPlane />
 
-      <WallAssembly
-        layers={layers}
-        explodeValue={explodeValue}
-        explodeAxis={explodeAxis}
-        floatDirection={floatDirection}
-        floatDistance={floatDistance}
-        hoveredLayer={hoveredLayer}
-        selectedLayer={selectedLayer}
-        onHoverLayer={onHoverLayer}
-        onLayerClick={onLayerClick}
-        wallRef={wallRef}
-        smoothExplodeRef={smoothExplodeRef}
-      />
+      <group rotation={modelRotation}>
+        <WallAssembly
+          layers={layers}
+          explodeValue={explodeValue}
+          explodeAxis={explodeAxis}
+          floatDirection={floatDirection}
+          floatDistance={floatDistance}
+          hoveredLayer={hoveredLayer}
+          selectedLayer={selectedLayer}
+          onHoverLayer={onHoverLayer}
+          onLayerClick={onLayerClick}
+          wallRef={wallRef}
+          smoothExplodeRef={smoothExplodeRef}
+        />
+      </group>
 
       <Grid
         position={[0, -1.2, 0]}
@@ -318,6 +325,7 @@ function ModelViewer({
   explodeAxis = "x",
   floatDirection = "y",
   floatDistance,
+  modelRotation = [0, 0, 0],
   cameraPosition = [1.2, 1.6, 2.8],
   onControlsReady,
   autoRotate,
@@ -341,6 +349,7 @@ function ModelViewer({
           explodeAxis={explodeAxis}
           floatDirection={floatDirection}
           floatDistance={floatDistance}
+          modelRotation={modelRotation}
           onControlsReady={onControlsReady}
           hoveredLayer={hoveredLayer}
           selectedLayer={selectedLayer}

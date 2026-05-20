@@ -64,6 +64,7 @@ const flatRoofData = {
         "建筑主体承重结构，承受屋面全部荷载并传递给梁柱。",
       modelPath: "/models/flat-roof-01/layer_06_structure.glb",
     },
+    
   ],
 };
 

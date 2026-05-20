@@ -1,0 +1,65 @@
+const membraneRoofData = {
+  id: "membrane-roof-01",
+  title: "卷材防水屋面",
+  category: "屋顶",
+  description:
+    "典型卷材防水屋面构造，由棚顶至保护层共六层。",
+  directionLabel: "由上至下：保护层→棚顶层",
+  explodeAxis: "y",
+  floatDirection: "z",
+  floatDistance: 0.22,
+  cameraPosition: [4, 5, 6],
+  layers: [
+    {
+      name: "保护层",
+      material: "细石混凝土/地砖",
+      thickness: 0.04,
+      color: "#C4B5A5",
+      modelPath: "/models/membrane-roof-01/保护层glb.glb",
+      description: "保护防水层免受紫外线及机械损伤。",
+    },
+    {
+      name: "防水层",
+      material: "SBS改性沥青卷材",
+      thickness: 0.01,
+      color: "#3A3A3A",
+      modelPath: "/models/membrane-roof-01/防水层glb.glb",
+      description: "核心防水层，防止雨水渗漏。",
+    },
+    {
+      name: "结合层",
+      material: "冷底子油/粘结剂",
+      thickness: 0.005,
+      color: "#8B7355",
+      modelPath: "/models/membrane-roof-01/结合层.glb",
+      description: "增强防水层与找平层的粘结强度。",
+    },
+    {
+      name: "找平层",
+      material: "1:3水泥砂浆",
+      thickness: 0.02,
+      color: "#B0A595",
+      modelPath: "/models/membrane-roof-01/找平层glb.glb",
+      description: "为防水层提供平整基层。",
+    },
+    {
+      name: "结构层",
+      material: "钢筋混凝土屋面板",
+      thickness: 0.15,
+      color: "#808080",
+      modelPath: "/models/membrane-roof-01/结构层.glb",
+      description: "承重结构层。",
+      isStructural: true,
+    },
+    {
+      name: "棚顶层",
+      material: "抹灰/吊顶",
+      thickness: 0.02,
+      color: "#E5DCCF",
+      modelPath: "/models/membrane-roof-01/顶棚层.glb",
+      description: "室内装饰层，兼有一定隔汽作用。",
+    },
+  ],
+};
+
+export default membraneRoofData;
