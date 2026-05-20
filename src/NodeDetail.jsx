@@ -5,6 +5,7 @@ import { FiInfo } from "react-icons/fi";
 import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
 import ConstructionKnowledgePanel from "./components/viewer/ConstructionKnowledgePanel";
+import LeftKnowledgePanel from "./components/viewer/LeftKnowledgePanel";
 import LayerLabel from "./components/viewer/LayerLabel";
 import ScreenshotTool from "./components/viewer/ScreenshotTool";
 import { saveNote } from "./services/noteService";
@@ -22,6 +23,7 @@ function NodeDetail() {
   const [selectedLayer, setSelectedLayer] = useState(null);
   const [activeCard, setActiveCard] = useState(null);
   const [screenshotMode, setScreenshotMode] = useState(false);
+  const [showLeftPanel, setShowLeftPanel] = useState(false);
   const viewerRef = useRef(null);
   const controlsRef = useRef(null);
 
@@ -116,8 +118,17 @@ function NodeDetail() {
               onExplodeMax={() => setExplodeValue(100)}
               autoRotate={autoRotate}
               onAutoRotateToggle={() => setAutoRotate((v) => !v)}
+              showLeftPanel={showLeftPanel}
+              onLeftPanelToggle={() => setShowLeftPanel((v) => !v)}
               screenshotActive={screenshotMode}
               onScreenshotToggle={() => setScreenshotMode((v) => !v)}
+            />
+
+            <LeftKnowledgePanel
+              layers={data.layers}
+              selectedLayerIndex={selectedLayer}
+              open={showLeftPanel}
+              onClose={() => setShowLeftPanel(false)}
             />
 
             {screenshotMode && (
@@ -162,6 +173,7 @@ function NodeDetail() {
             hoveredLayerIndex={hoveredLayer}
             selectedLayerIndex={selectedLayer}
             onSelectLayer={handlePanelSelect}
+            explodeValue={explodeValue}
           />
         </aside>
       </main>

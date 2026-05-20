@@ -60,6 +60,7 @@ function ConstructionKnowledgePanel({
   hoveredLayerIndex,
   selectedLayerIndex,
   onSelectLayer,
+  explodeValue,
 }) {
   const [expandedIndex, setExpandedIndex] = useState(-1);
   const [collapsed, setCollapsed] = useState(false);
@@ -71,7 +72,7 @@ function ConstructionKnowledgePanel({
   function handleToggle(index) {
     const next = expandedIndex === index ? -1 : index;
     setExpandedIndex(next);
-    if (onSelectLayer) {
+    if (onSelectLayer && explodeValue > 0) {
       onSelectLayer(next >= 0 ? next : null);
     }
   }

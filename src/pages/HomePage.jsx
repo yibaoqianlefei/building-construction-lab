@@ -159,25 +159,6 @@ function MenuContent({ onModalOpen }) {
             <MenuItem
               item={{ icon: StickyNote, label: "我的笔记", to: "/notes" }}
             />
-
-            <button
-              onClick={handleSwitchAccount}
-              className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
-                border-l-4 border-transparent
-                transition-all duration-300 ease-out
-                hover:bg-gold-50/70 hover:border-l-gold-500 hover:-translate-y-0.5
-                hover:shadow-[0_4px_12px_rgba(212,164,58,0.12)]
-                cursor-pointer group text-left"
-            >
-              <SwitchCamera
-                size={22}
-                strokeWidth={1.5}
-                className="text-gray-400 group-hover:text-gold-600 transition-all duration-300 ease-out flex-shrink-0"
-              />
-              <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-all duration-300 ease-out">
-                切换账号
-              </span>
-            </button>
           </div>
         ) : (
           <MenuItem
@@ -199,10 +180,29 @@ function MenuContent({ onModalOpen }) {
         />
       </motion.div>
 
-      {/* ── bottom: 退出登录 ── */}
+      {/* ── bottom: 切换账号 / 退出登录 ── */}
       {user && (
         <motion.div variants={itemVariants}>
           <div className="border-t border-gray-200/50 my-3" />
+
+          <button
+            onClick={handleSwitchAccount}
+            className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
+              border-l-4 border-transparent
+              transition-all duration-300 ease-out
+              hover:bg-gold-50/70 hover:border-l-gold-500 hover:-translate-y-0.5
+              hover:shadow-[0_4px_12px_rgba(212,164,58,0.12)]
+              cursor-pointer group text-left"
+          >
+            <SwitchCamera
+              size={22}
+              strokeWidth={1.5}
+              className="text-gray-400 group-hover:text-gold-600 transition-all duration-300 ease-out flex-shrink-0"
+            />
+            <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-all duration-300 ease-out">
+              切换账号
+            </span>
+          </button>
 
           <button
             onClick={() => signOut()}
