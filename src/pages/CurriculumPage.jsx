@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import courseModules from "../data/courseModules";
 import { nodesIndex } from "../data/nodesIndex";
@@ -190,6 +190,7 @@ function ModuleDetail({ module }) {
 
 function CurriculumPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const moduleId = searchParams.get("module");
 
   const selectedModule = moduleId
@@ -197,6 +198,10 @@ function CurriculumPage() {
     : null;
 
   function handleSelectModule(id) {
+    if (id === "roof") {
+      navigate("/curriculum/roof");
+      return;
+    }
     setSearchParams({ module: id });
   }
 

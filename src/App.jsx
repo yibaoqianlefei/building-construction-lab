@@ -12,6 +12,7 @@ import NodeDetail from "./NodeDetail";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotesPage from "./pages/NotesPage";
 import GamesPage from "./pages/GamesPage";
+import RoofSubPage from "./pages/RoofSubPage";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/curriculum" element={<CurriculumPage />} />
+            <Route path="/curriculum/roof" element={<RoofSubPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/node/:nodeId" element={<NodeDetail />} />
             <Route path="/tools" element={<PlaceholderPage />} />

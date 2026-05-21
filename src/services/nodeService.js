@@ -2,12 +2,14 @@ export function getAllNodes() {
   return [
     { id: "ext-wall-01", title: "外墙外保温系统", category: "墙体" },
     { id: "flat-roof-01", title: "平屋面构造", category: "屋顶" },
+    { id: "membrane-roof-01", title: "卷材防水屋面", category: "屋顶" },
   ];
 }
 
 const loaders = {
   "ext-wall-01": () => import("../data/externalWall"),
   "flat-roof-01": () => import("../data/flatRoof"),
+  "membrane-roof-01": () => import("../data/membraneRoof"),
 };
 
 export async function loadNodeData(nodeId) {

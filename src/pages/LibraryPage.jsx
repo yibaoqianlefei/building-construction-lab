@@ -3,31 +3,14 @@ import { motion } from "framer-motion";
 import { FiBookOpen, FiHelpCircle, FiGithub } from "react-icons/fi";
 import { nodesIndex } from "../data/nodesIndex";
 
-function WallThumbnail() {
-  return (
-    <svg
-      viewBox="0 0 64 64"
-      className="w-full h-full"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="2" y="8" width="6" height="48" rx="1" fill="#D4C5B9" />
-      <rect x="10" y="8" width="18" height="48" rx="1" fill="#9E9E9E" />
-      <rect x="30" y="8" width="14" height="48" rx="1" fill="#FF9800" />
-      <rect x="46" y="8" width="6" height="48" rx="1" fill="#81D4FA" opacity="0.6" />
-      <rect x="54" y="8" width="8" height="48" rx="1" fill="#8D6E63" />
-
-      <rect x="2" y="8" width="6" height="48" rx="1" stroke="#9CA3AF" strokeWidth="0.5" />
-      <rect x="10" y="8" width="18" height="48" rx="1" stroke="#9CA3AF" strokeWidth="0.5" />
-      <rect x="30" y="8" width="14" height="48" rx="1" stroke="#9CA3AF" strokeWidth="0.5" />
-      <rect x="46" y="8" width="6" height="48" rx="1" stroke="#9CA3AF" strokeWidth="0.5" />
-      <rect x="54" y="8" width="8" height="48" rx="1" stroke="#9CA3AF" strokeWidth="0.5" />
-
-      <line x1="2" y1="24" x2="62" y2="24" stroke="#9CA3AF" strokeWidth="0.5" />
-      <line x1="2" y1="40" x2="62" y2="40" stroke="#9CA3AF" strokeWidth="0.5" />
-    </svg>
-  );
-}
+const categoryIcons = {
+  "墙体": "🧱",
+  "屋顶": "🏠",
+  "楼梯": "📐",
+  "地基与基础": "🏛️",
+  "楼底层": "🪜",
+  "门窗": "🪟",
+};
 
 function NodeCard({ node, index }) {
   return (
@@ -48,9 +31,7 @@ function NodeCard({ node, index }) {
           cursor-pointer group"
       >
         <div className="w-full h-24 bg-gray-50 rounded-xl mb-4 flex items-center justify-center overflow-hidden group-hover:bg-gray-100/70 transition-colors">
-          <div className="w-16 h-16 text-gray-400">
-            <WallThumbnail />
-          </div>
+          <span className="text-4xl">{categoryIcons[node.category] || "📦"}</span>
         </div>
 
         <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gold-600 transition-colors tracking-tight">

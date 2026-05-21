@@ -1,6 +1,6 @@
 import { Suspense, useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Edges, useGLTF } from "@react-three/drei";
+import { Edges, useGLTF } from "@react-three/drei"; // Edges still used by procedural box path
 import * as THREE from "three";
 
 const DEFAULT_LIFT = 0.14;
@@ -12,22 +12,23 @@ const COLOR_SELECT = new THREE.Color("#F5D68A");
 const COLOR_OFF = new THREE.Color("#000000");
 
 /* ── Per-layer GLB loader ── */
-function GLBModelRenderer({ modelPath, objectName }) {
+function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, onClick }) {
   const { scene } = useGLTF(modelPath);
 
-  const model = useMemo(() => {
+  const { model, edgeLines, hitBox } = useMemo(() => {
     let source;
     if (objectName) {
       const found = scene.getObjectByName(objectName);
       if (!found) {
         console.warn(`[GLBModelRenderer] object "${objectName}" not found in "${modelPath}"`);
-        return null;
+        return { model: null, edgeLines: [], hitBox: null };
       }
       source = found;
     } else {
       source = scene;
     }
     const cloned = source.clone(true);
+    const lines = [];
     cloned.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -35,13 +36,63 @@ function GLBModelRenderer({ modelPath, objectName }) {
         if (!child.material.depthWrite) {
           child.material.depthWrite = true;
         }
+        if (child.geometry) {
+          const edgesGeo = new THREE.EdgesGeometry(child.geometry, 15);
+          const line = new THREE.LineSegments(
+            edgesGeo,
+            new THREE.LineBasicMaterial({ color: "#4B5563", transparent: true, opacity: 0.45 })
+          );
+          line.position.copy(child.position);
+          line.rotation.copy(child.rotation);
+          line.scale.copy(child.scale);
+          line.updateMatrixWorld();
+          lines.push(line);
+        }
       }
     });
-    return cloned;
+
+    /* hit zone from bounding box, expanded for thin layers */
+    const box = new THREE.Box3().setFromObject(cloned);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const minDim = 0.03;
+    const expand = 0.02;
+    const hb = {
+      center: [center.x, center.y, center.z],
+      size: [
+        Math.max(size.x + expand, minDim),
+        Math.max(size.y + expand, minDim),
+        Math.max(size.z + expand, minDim),
+      ],
+    };
+
+    return { model: cloned, edgeLines: lines, hitBox: hb };
   }, [scene, objectName, modelPath]);
 
   if (!model) return null;
-  return <primitive object={model} />;
+
+  return (
+    <group>
+      <primitive object={model} />
+      {edgeLines.map((line, i) => (
+        <primitive key={i} object={line} />
+      ))}
+      {hitBox && (
+        <mesh
+          name="hitZone"
+          position={hitBox.center}
+          onPointerOver={onPointerOver}
+          onPointerOut={onPointerOut}
+          onClick={(e) => { e.stopPropagation(); onClick(e); }}
+        >
+          <boxGeometry args={hitBox.size} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      )}
+    </group>
+  );
 }
 
 function ConstructionLayer({
@@ -127,9 +178,18 @@ function ConstructionLayer({
     currentLineOpacity.current = THREE.MathUtils.lerp(currentLineOpacity.current, lineOpacityTarget, DIM_LERP);
     currentLineColor.current.lerp(lineColorTarget, DIM_LERP);
 
+    /* update edge line materials (procedural + GLB) */
     if (lineMatRef.current) {
       lineMatRef.current.opacity = currentLineOpacity.current;
       lineMatRef.current.color.copy(currentLineColor.current);
+    }
+    if (hasGLB && modelGroupRef.current) {
+      modelGroupRef.current.traverse((child) => {
+        if (child.isLineSegments && child.material) {
+          child.material.opacity = currentLineOpacity.current;
+          child.material.color.copy(currentLineColor.current);
+        }
+      });
     }
 
     /* lerp glow values */
@@ -138,7 +198,7 @@ function ConstructionLayer({
 
     /* apply to all visible meshes */
     const targets = hasGLB
-      ? collectMeshes(modelGroupRef.current)
+      ? collectMeshes(modelGroupRef.current).filter(m => m.name !== "hitZone")
       : [meshRef.current];
     targets.forEach((m) => {
       if (m?.material && m.visible !== false) {
@@ -156,20 +216,14 @@ function ConstructionLayer({
       {hasGLB ? (
         <group ref={modelGroupRef}>
           <Suspense fallback={null}>
-            <GLBModelRenderer modelPath={layer.modelPath} objectName={layerObjectName} />
+            <GLBModelRenderer
+              modelPath={layer.modelPath}
+              objectName={layerObjectName}
+              onPointerOver={onPointerOver}
+              onPointerOut={onPointerOut}
+              onClick={onClick}
+            />
           </Suspense>
-          <mesh
-            onPointerOver={onPointerOver}
-            onPointerOut={onPointerOut}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick(e);
-            }}
-            visible={false}
-          >
-            <boxGeometry args={[2, layer.thickness || 0.1, 2]} />
-            <meshBasicMaterial transparent opacity={0} />
-          </mesh>
         </group>
       ) : (
         <mesh
