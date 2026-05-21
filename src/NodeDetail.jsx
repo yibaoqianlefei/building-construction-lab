@@ -41,6 +41,7 @@ function NodeDetail() {
   }, [screenshotMode]);
 
   function handleLayerClick(index, layer, e) {
+    if (explodeValue <= 0) return;
     if (selectedLayer === index) {
       setSelectedLayer(null);
       setActiveCard(null);
@@ -55,6 +56,7 @@ function NodeDetail() {
   }
 
   function handlePanelSelect(index) {
+    if (explodeValue <= 0) return;
     if (selectedLayer === index) {
       setSelectedLayer(null);
     } else {
@@ -102,6 +104,8 @@ function NodeDetail() {
               floatDirection={data.floatDirection || "y"}
               floatDistance={data.floatDistance}
               modelRotation={data.modelRotation || [0, 0, 0]}
+              nodeTitle={data.title}
+              layerOrderReverse={data.layerOrderReverse || false}
               cameraPosition={data.cameraPosition || [1.2, 1.6, 2.8]}
               autoRotate={autoRotate}
               hoveredLayer={hoveredLayer}

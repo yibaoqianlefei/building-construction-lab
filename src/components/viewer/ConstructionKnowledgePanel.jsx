@@ -98,10 +98,10 @@ function ConstructionKnowledgePanel({
         </div>
 
         <div className="space-y-1 p-4 pt-2">
-          {layers.map((layer, i) => (
+          {layers.map((l, i) => ({ l, i })).reverse().map(({ l, i }) => (
             <LayerCard
-              key={layer.name}
-              layer={layer}
+              key={l.name}
+              layer={l}
               index={i}
               isHovered={hoveredLayerIndex === i}
               isExpanded={expandedIndex === i}

@@ -12,12 +12,23 @@ const COLOR_SELECT = new THREE.Color("#F5D68A");
 const COLOR_OFF = new THREE.Color("#000000");
 
 /* ── Per-layer GLB loader ── */
-function GLBModelRenderer({ modelPath }) {
+function GLBModelRenderer({ modelPath, objectName }) {
   const { scene } = useGLTF(modelPath);
-  const model = useMemo(() => scene.clone(), [scene]);
 
-  useEffect(() => {
-    model.traverse((child) => {
+  const model = useMemo(() => {
+    let source;
+    if (objectName) {
+      const found = scene.getObjectByName(objectName);
+      if (!found) {
+        console.warn(`[GLBModelRenderer] object "${objectName}" not found in "${modelPath}"`);
+        return null;
+      }
+      source = found;
+    } else {
+      source = scene;
+    }
+    const cloned = source.clone(true);
+    cloned.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
@@ -26,8 +37,10 @@ function GLBModelRenderer({ modelPath }) {
         }
       }
     });
-  }, [model]);
+    return cloned;
+  }, [scene, objectName, modelPath]);
 
+  if (!model) return null;
   return <primitive object={model} />;
 }
 
@@ -54,6 +67,7 @@ function ConstructionLayer({
   const currentLineOpacity = useRef(0.45);
   const currentLineColor = useRef(new THREE.Color("#4B5563"));
   const hasGLB = !!layer.modelPath;
+  const layerObjectName = layer.layerObjectName;
 
   useFrame(() => {
     /* ---- lift ---- */
@@ -142,7 +156,7 @@ function ConstructionLayer({
       {hasGLB ? (
         <group ref={modelGroupRef}>
           <Suspense fallback={null}>
-            <GLBModelRenderer modelPath={layer.modelPath} />
+            <GLBModelRenderer modelPath={layer.modelPath} objectName={layerObjectName} />
           </Suspense>
           <mesh
             onPointerOver={onPointerOver}

@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import * as THREE from "three";
@@ -70,7 +70,11 @@ function WallAssembly({
 }) {
   const groupRefs = useRef([]);
 
+  const useModelPositions = layers[0]?.layerObjectName != null;
+
   const initialPositions = useMemo(() => {
+    if (useModelPositions) return layers.map(() => 0);
+
     let offset = 0;
     const total = layers.reduce((sum, l) => sum + l.thickness, 0);
     return layers.map((layer) => {
@@ -78,7 +82,7 @@ function WallAssembly({
       offset += layer.thickness;
       return pos;
     });
-  }, [layers]);
+  }, [layers, useModelPositions]);
 
   const explodeDir = explodeAxis.startsWith("-") ? -1 : 1;
   const cleanAxis = explodeAxis.replace("-", "");
@@ -238,6 +242,26 @@ function ShadowLight({ layers, explodeAxis, smoothExplodeRef }) {
   );
 }
 
+function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    console.log(
+      `%c[节点加载] %c${nodeTitle || "(未命名)"}`,
+      "font-weight:bold;color:#D4A43A",
+      "font-weight:bold;color:#333"
+    );
+    console.log(`  modelRotation: [${(modelRotation || [0, 0, 0]).join(", ")}]`);
+    console.log(`  layerOrderReverse: ${layerOrderReverse ?? false}`);
+
+    const timer = setTimeout(() => setVisible(false), 5000);
+    return () => clearTimeout(timer);
+  }, [nodeTitle, modelRotation, layerOrderReverse]);
+
+  if (!visible) return null;
+  return <axesHelper args={[1.5]} />;
+}
+
 function Scene({
   layers,
   explodeValue,
@@ -245,6 +269,8 @@ function Scene({
   floatDirection,
   floatDistance,
   modelRotation,
+  nodeTitle,
+  layerOrderReverse,
   hoveredLayer,
   selectedLayer,
   onHoverLayer,
@@ -278,6 +304,12 @@ function Scene({
       />
 
       <ShadowPlane />
+
+      <DebugInfo
+        nodeTitle={nodeTitle}
+        modelRotation={modelRotation}
+        layerOrderReverse={layerOrderReverse}
+      />
 
       <group rotation={modelRotation}>
         <WallAssembly
@@ -326,6 +358,8 @@ function ModelViewer({
   floatDirection = "y",
   floatDistance,
   modelRotation = [0, 0, 0],
+  nodeTitle,
+  layerOrderReverse,
   cameraPosition = [1.2, 1.6, 2.8],
   onControlsReady,
   autoRotate,
@@ -350,6 +384,8 @@ function ModelViewer({
           floatDirection={floatDirection}
           floatDistance={floatDistance}
           modelRotation={modelRotation}
+          nodeTitle={nodeTitle}
+          layerOrderReverse={layerOrderReverse}
           onControlsReady={onControlsReady}
           hoveredLayer={hoveredLayer}
           selectedLayer={selectedLayer}

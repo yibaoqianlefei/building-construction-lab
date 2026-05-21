@@ -31,9 +31,9 @@ function LeftKnowledgePanel({ layers, selectedLayerIndex, open, onClose }) {
 
           {/* card list */}
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-            {layers.map((layer, i) => (
+            {layers.map((l, i) => ({ l, i })).reverse().map(({ l, i }) => (
               <div
-                key={layer.name}
+                key={l.name}
                 className={`bg-white/85 backdrop-blur-md rounded-2xl p-4 border shadow-sm
                   transition-all duration-300
                   ${selectedLayerIndex === i
@@ -44,21 +44,21 @@ function LeftKnowledgePanel({ layers, selectedLayerIndex, open, onClose }) {
                 <div className="flex items-start gap-3">
                   <div
                     className="w-1.5 h-10 rounded-full flex-shrink-0 mt-0.5"
-                    style={{ backgroundColor: layer.color }}
+                    style={{ backgroundColor: l.color }}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-gray-800 text-sm">
-                      {layer.name}
+                      {l.name}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {layer.material}
+                      {l.material}
                     </p>
                     <p className="text-sm text-gold-600 font-mono tabular-nums">
-                      {(layer.thickness * 1000).toFixed(0)} mm
+                      {(l.thickness * 1000).toFixed(0)} mm
                     </p>
-                    {layer.description && (
+                    {l.description && (
                       <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
-                        {layer.description}
+                        {l.description}
                       </p>
                     )}
                   </div>
