@@ -33,7 +33,14 @@ function RoofSubPage() {
         {/* section cards grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {roofSections.map((section, i) => {
-            const canEnter = section.available && section.nodeIds.length > 0;
+            const hasContent = !!section.content;
+            const hasModel = section.available && section.nodeIds.length > 0;
+            const canEnter = hasContent || hasModel;
+            const linkTo = hasContent
+              ? `/textbook/${section.id}`
+              : hasModel
+                ? `/node/${section.nodeIds[0]}`
+                : null;
 
             const cardContent = (
               <div
@@ -65,12 +72,12 @@ function RoofSubPage() {
                       ? "text-gold-600 bg-gold-50 group-hover:bg-gold-100"
                       : "text-gray-400 bg-gray-100"}`}
                 >
-                  {canEnter ? "进入节点" : "即将上线"}
+                  {hasContent ? "阅读教材" : hasModel ? "进入节点" : "即将上线"}
                 </span>
 
                 {canEnter && (
                   <div className="mt-3 flex items-center gap-1 text-xs text-gold-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    开始学习
+                    {hasContent ? "开始学习" : "进入节点"}
                     <svg
                       className="w-3 h-3"
                       fill="none"
@@ -92,8 +99,8 @@ function RoofSubPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: i * 0.06, ease: "easeOut" }}
               >
-                {canEnter ? (
-                  <Link to={`/node/${section.nodeIds[0]}`} className="block">
+                {canEnter && linkTo ? (
+                  <Link to={linkTo} className="block">
                     {cardContent}
                   </Link>
                 ) : (
