@@ -198,11 +198,7 @@ function CurriculumPage() {
     : null;
 
   function handleSelectModule(id) {
-    if (id === "roof") {
-      navigate("/curriculum/roof");
-      return;
-    }
-    setSearchParams({ module: id });
+    navigate(`/curriculum/${id}`);
   }
 
   return (

@@ -12,7 +12,7 @@ import NodeDetail from "./NodeDetail";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotesPage from "./pages/NotesPage";
 import GamesPage from "./pages/GamesPage";
-import RoofSubPage from "./pages/RoofSubPage";
+import SectionSubPage from "./pages/SectionSubPage";
 import TextbookPage from "./pages/TextbookPage";
 
 function App() {
@@ -24,7 +24,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/curriculum" element={<CurriculumPage />} />
-            <Route path="/curriculum/roof" element={<RoofSubPage />} />
+            <Route path="/curriculum/:moduleId" element={<SectionSubPage />} />
             <Route path="/textbook/:sectionId" element={<TextbookPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/node/:nodeId" element={<NodeDetail />} />

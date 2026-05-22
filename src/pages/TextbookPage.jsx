@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import roofSections from "../data/roofSections";
@@ -207,12 +207,27 @@ function TextbookPage() {
     () => roofSections.find((s) => s.id === sectionId),
     [sectionId]
   );
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!section || !section.content) {
+  useEffect(() => {
+    if (!sectionId) return;
+    setLoading(true);
+    fetch(`/textbook/${sectionId}/content.md`)
+      .then((res) => {
+        if (!res.ok) throw new Error("not found");
+        return res.text();
+      })
+      .then((text) => setContent(text))
+      .catch(() => setContent(null))
+      .finally(() => setLoading(false));
+  }, [sectionId]);
+
+  if (!section) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 text-lg">内容不存在</p>
+          <p className="text-gray-500 text-lg">章节不存在</p>
           <Link to="/curriculum/roof" className="text-gold-600 hover:text-gold-700 text-sm mt-2 inline-block">
             返回屋顶章节
           </Link>
@@ -221,7 +236,28 @@ function TextbookPage() {
     );
   }
 
-  const contentParts = parseContent(section.content);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-gray-400">教材加载中...</p>
+      </div>
+    );
+  }
+
+  if (!content) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 text-lg">教材内容尚未编写</p>
+          <Link to="/curriculum/roof" className="text-gold-600 hover:text-gold-700 text-sm mt-2 inline-block">
+            返回屋顶章节
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const contentParts = parseContent(content);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

@@ -33,7 +33,7 @@ function RoofSubPage() {
         {/* section cards grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {roofSections.map((section, i) => {
-            const hasContent = !!section.content;
+            const hasContent = !!section.hasTextbook;
             const hasModel = section.available && section.nodeIds.length > 0;
             const canEnter = hasContent || hasModel;
             const linkTo = hasContent
