@@ -20,7 +20,12 @@ function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, 
     if (objectName) {
       const found = scene.getObjectByName(objectName);
       if (!found) {
-        console.warn(`[GLBModelRenderer] object "${objectName}" not found in "${modelPath}"`);
+        const names = [];
+        scene.traverse((child) => { if (child.name) names.push(child.name); });
+        console.warn(
+          `[GLBModelRenderer] object "${objectName}" not found in "${modelPath}". Available names:`,
+          names
+        );
         return { model: null, edgeLines: [], hitBox: null };
       }
       source = found;

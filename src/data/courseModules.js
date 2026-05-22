@@ -45,7 +45,7 @@ const courseModules = [
     icon: "📐",
     description: "楼梯、台阶与坡道构造",
     nodeIds: [],
-    available: false,
+    available: true,
   },
   {
     id: "door-window",
@@ -60,7 +60,7 @@ const courseModules = [
     title: "屋顶",
     icon: "🏠",
     description: "平屋面、坡屋面、种植屋面构造",
-    nodeIds: ["flat-roof-01", "membrane-roof-01"],
+    nodeIds: ["flat-roof-01", "membrane-roof-01", "roof-insulation-01"],
     available: true,
   },
 ];

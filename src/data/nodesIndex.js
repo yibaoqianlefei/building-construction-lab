@@ -1,6 +1,7 @@
 import externalWallData from "./externalWall";
 import flatRoofData from "./flatRoof";
 import membraneRoofData from "./membraneRoof";
+import roofInsulationData from "./roofInsulation";
 
 const nodesIndex = [
   {
@@ -26,6 +27,13 @@ const nodesIndex = [
     category: "屋顶",
     thumbnail: null,
   },
+  {
+    id: "roof-insulation-01",
+    title: roofInsulationData.title,
+    description: roofInsulationData.description,
+    category: "屋顶",
+    thumbnail: null,
+  },
 ];
 
 function getNodeData(id) {
@@ -36,6 +44,8 @@ function getNodeData(id) {
       return flatRoofData;
     case "membrane-roof-01":
       return membraneRoofData;
+    case "roof-insulation-01":
+      return roofInsulationData;
     default:
       return null;
   }
