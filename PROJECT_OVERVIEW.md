@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-22 | 版本: 1.0.0
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-23 重构
 
 ---
 
@@ -18,14 +18,14 @@
 
 | 类别 | 技术 | 用途 |
 |------|------|------|
-| 前端框架 | React 19 + React Router DOM v7 | 组件化 UI 与路由 |
+| 前端框架 | React 19 + React Router DOM v7 (`createBrowserRouter`) | 组件化 UI 与路由 |
 | 构建工具 | Vite 8 | 开发服务器与生产构建 |
 | 3D 渲染 | Three.js v0.184 + `@react-three/fiber` + `@react-three/drei` | 3D 模型加载、场景渲染、交互控制 |
 | 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 gold-* 色板 |
 | 字体 | Noto Serif SC (Google Fonts) | 中文字体 |
 | 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
 | 拖拽 | `@dnd-kit` v6 | 游戏拖拽排序（SortChallenge） |
-| 状态管理 | React Context (AuthContext) | 认证状态全局共享 |
+| 状态管理 | React Context (AuthContext) + Custom Hooks | 认证全局共享 + 页面状态封装 |
 | 后端/数据库 | Supabase (PostgreSQL) | 用户认证、数据库、RLS 行级安全 |
 | Markdown 渲染 | `react-markdown` + `remark-gfm` | 教材内容渲染 |
 | 图标 | Lucide React + React Icons | UI 图标 |
@@ -39,6 +39,7 @@
 02-2/
 ├── index.html                     # 入口 HTML，加载 Noto Serif SC 字体
 ├── package.json                   # 依赖与脚本
+├── PROJECT_OVERVIEW.md            # 本文件
 ├── vite.config.js                 # Vite 配置 (Tailwind CSS 插件)
 ├── public/
 │   ├── favicon.svg
@@ -51,10 +52,15 @@
 │       ├── roof-membrane/content.md
 │       └── roof-insulation/content.md
 └── src/
-    ├── main.jsx                   # React 入口
-    ├── App.jsx                    # 路由定义（所有路由集中在此）
-    ├── NodeDetail.jsx             # 核心页面：3D 模型查看 + 知识面板 + 截图
+    ├── main.jsx                   # React 入口：AuthProvider + RouterProvider
+    ├── routes.jsx                 # 路由配置（createBrowserRouter 数组）
+    ├── App.jsx                    # 向后兼容 re-export（路由已迁移至 routes.jsx）
+    ├── NodeDetail.jsx             # 核心页面：异步数据加载 + 自定义 Hooks
     ├── index.css                  # Tailwind 入口 + gold 色板定义
+    │
+    ├── hooks/                     # 自定义 Hooks（页面状态封装）
+    │   ├── useModelInteraction.js # 3D 模型交互状态（explode/hover/select/activeCard）
+    │   └── usePanelState.js       # 面板状态（左侧面板/知识面板展开/标签切换）
     │
     ├── contexts/
     │   └── AuthContext.jsx        # 认证上下文：Supabase auth + profiles 表
@@ -87,16 +93,15 @@
     │   ├── LibraryPage.jsx        # 节点库：按分类展示所有构造节点
     │   ├── CurriculumPage.jsx     # 课程目录：课程模块网格 → 章节列表
     │   ├── SectionSubPage.jsx     # 章节子页面：动态加载章节数据
-    │   ├── TextbookPage.jsx       # 教材阅读页：Markdown + @model/[side-by-side]标记
+    │   ├── TextbookPage.jsx       # 教材阅读页：Markdown + [model]/[side-by-side] 标记
     │   ├── NotesPage.jsx          # 笔记管理：截图查看/备注/对比
     │   ├── GamesPage.jsx          # 游戏页：节点选择 + 拖拽拼装
     │   ├── ClassesPage.jsx        # 班级列表：创建/加入班级
     │   ├── ClassDetailPage.jsx    # 班级详情：课程/任务/成员标签
-    │   ├── RoofSubPage.jsx        # 屋顶章节（旧版路由页）
     │   └── PlaceholderPage.jsx    # 占位页：/tools /contribute /admin
     │
     ├── data/                      # 数据层
-    │   ├── nodesIndex.js          # 节点索引：id→元数据映射 + getNodeData()
+    │   ├── nodesIndex.js          # 节点统一入口：元数据数组 + nodeLoaders 映射 + getNodeData/getAllNodes
     │   ├── courseModules.js       # 课程模块定义（绪论/墙体/屋顶/...）
     │   ├── externalWall.js        # 外墙外保温节点数据（5层，程序化Box）
     │   ├── flatRoof.js            # 平屋面节点数据（6层，每层独立GLB）
@@ -115,10 +120,24 @@
     │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/classes/class_members/assignments/student_progress）
     │
     └── services/                  # 业务逻辑层
-        ├── nodeService.js         # 节点动态加载（import() 代码分割）
         ├── classService.js        # 班级 CRUD（Supabase 操作）
         └── noteService.js         # 笔记 CRUD（localStorage 操作）
 ```
+
+### 变更说明（2026-05-23 重构）
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/routes.jsx` | 所有路由以 `createBrowserRouter` 数组集中定义 |
+| **新建** | `src/hooks/useModelInteraction.js` | 3D 模型交互状态封装（explode/hover/select/activeCard/screenshot） |
+| **新建** | `src/hooks/usePanelState.js` | 面板状态封装（leftPanel/expanded/panelMode） |
+| **重写** | `src/data/nodesIndex.js` | 移除静态 import，改为 `nodeLoaders` 动态加载 + `getNodeData` 异步 + 新增 `getAllNodes` |
+| **重写** | `src/main.jsx` | `<BrowserRouter>` + `<App />` → `<AuthProvider>` + `<RouterProvider>` |
+| **精简** | `src/App.jsx` | 路由定义移除，仅保留 re-export |
+| **修改** | `src/NodeDetail.jsx` | 异步数据加载 + 改用 `useModelInteraction` / `usePanelState` hooks |
+| **修改** | `src/pages/GamesPage.jsx` | import 从 `nodeService` 改为 `nodesIndex` |
+| **删除** | `src/services/nodeService.js` | 功能合并至 `nodesIndex.js` |
+| **删除** | `src/pages/RoofSubPage.jsx` | 无路由引用，已被 `SectionSubPage` 替代 |
 
 ---
 
@@ -128,18 +147,18 @@
 |------|------|----------|----------|
 | **首页**（3D 背景 + 菜单） | `/` | HomePage, MenuBackground | externalWall.js (3D背景) |
 | **用户认证**（登录/注册） | `/auth` | AuthPage | Supabase Auth + profiles 表 |
-| **节点库**（分类浏览） | `/library` | LibraryPage | nodesIndex.js |
+| **节点库**（分类浏览） | `/library` | LibraryPage | nodesIndex.js (元数据数组) |
 | **课程目录**（模块选择） | `/curriculum` | CurriculumPage | courseModules.js |
 | **章节浏览**（模块子章节） | `/curriculum/:moduleId` | SectionSubPage | sections/*.js (动态import) |
 | **教材阅读**（含交互模型引用） | `/textbook/:sectionId` | TextbookPage | public/textbook/*/content.md |
-| **3D 模型查看器**（核心） | `/node/:nodeId` | NodeDetail, ModelViewer, ConstructionLayer | 节点数据文件 |
-| **图层爆炸/分解** | `/node/:nodeId` | BottomControlBar (滑块 0-100) | 节点 layers[] 厚度数据 |
-| **图层高亮/选中** | `/node/:nodeId` | ConstructionLayer (hover/select) | 交互状态 |
+| **3D 模型查看器**（核心） | `/node/:nodeId` | NodeDetail, ModelViewer, ConstructionLayer | nodesIndex.getNodeData() 异步加载 |
+| **图层爆炸/分解** | `/node/:nodeId` | BottomControlBar (滑块 0-100) | useModelInteraction hook |
+| **图层高亮/选中** | `/node/:nodeId` | ConstructionLayer (hover/select) | useModelInteraction hook |
 | **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 节点 layers[] |
-| **浮层标签**（点击弹出） | `/node/:nodeId` | LayerLabel | 图层元数据 |
+| **浮层标签**（点击弹出） | `/node/:nodeId` | LayerLabel | activeCard (hook 管理) |
 | **框选截图**（保存笔记） | `/node/:nodeId` | ScreenshotTool | Canvas → dataURL |
 | **笔记管理**（查看/备注/对比/删除） | `/notes` | NotesPage | localStorage (max 30条) |
-| **构造拼装游戏** | `/games` | GamesPage, GameAssembleScene, DraggableLayer | nodeService 动态加载 |
+| **构造拼装游戏** | `/games` | GamesPage, GameAssembleScene, DraggableLayer | nodesIndex.getAllNodes/getNodeData |
 | **班级管理**（创建/加入） | `/classes` | ClassesPage | classService → Supabase |
 | **班级详情**（课程/任务/成员） | `/classes/:classId` | ClassDetailPage | classService → Supabase |
 | **教师后台**（占位） | `/admin` | PlaceholderPage | — |
@@ -154,23 +173,27 @@
 
 ```
 路由 /node/:nodeId
-  → NodeDetail.jsx: getNodeData(nodeId)
-    → nodesIndex.js: switch(id) 返回静态 import 的节点数据
-  （同时 nodeService.js 提供 loadNodeData(id) 动态 import 版本，供 GamesPage 等使用）
+  → NodeDetail.jsx: useEffect → getNodeData(nodeId)
+    → nodesIndex.js: nodeLoaders[id] → import() 动态加载节点 JS 文件
+    → module.default 返回节点数据对象 (title, layers[], explodeAxis, ...)
+  → 设置 data state（异步，含 loading 状态）
   → ModelViewer: 接收 layers[] 数组
     → WallAssembly: 计算初始位置（层厚累加偏移 / 模型层全为0）
       → ConstructionLayer × N: 每层渲染
         → 有 modelPath + layerObjectName → useGLTF(modelPath) → scene.getObjectByName(name) → clone
         → 有 modelPath 无 layerObjectName → useGLTF(modelPath) → clone 整个 scene
-        → 无 modelPath → 程序化 Box (boxGeometry + boxGeometry edges)
+        → 无 modelPath → 程序化 Box (boxGeometry + Edges)
 ```
 
-**关键**: `WallAssembly` 通过 `layers[0]?.layerObjectName != null` 判断是否使用模型位置（全部置 0，依赖 GLB 内部坐标）还是程序化位置（按 thickness 累加偏移）。
+**关键点**:
+- `getNodeData(id)` 是唯一的节点数据加载入口，所有页面（NodeDetail、GamesPage）统一使用
+- `WallAssembly` 通过 `layers[0]?.layerObjectName != null` 判断是否使用模型内建坐标（全部置 0，依赖 GLB 内部坐标）还是程序化位置（按 thickness 累加偏移）
+- `nodesIndex` 元数据数组供 LibraryPage/CurriculumPage/TextbookPage 等展示列表使用，不经过动态 import
 
 ### 5.2 用户认证流程
 
 ```
-App.jsx: <AuthProvider> 包裹所有路由
+main.jsx: <AuthProvider> 包裹 <RouterProvider>
   → AuthContext: supabase.auth.getSession() 恢复会话
   → supabase.auth.onAuthStateChange() 监听变化
   → fetchProfile(userId) → profiles 表查询 role/full_name
@@ -185,6 +208,8 @@ AuthPage: signUp() 注册 / signIn() 登录
   → role 通过 raw_user_meta_data 传递
 ```
 
+**注意**: 重构后 `AuthProvider` 已从 `App.jsx` 内部移至 `main.jsx`，包裹在 `RouterProvider` 之外，使认证状态在路由器实例外部可用。
+
 ### 5.3 班级与进度系统
 
 ```
@@ -198,10 +223,10 @@ ClassDetailPage
   → 3 个标签: 课程(复用CurriculumPage) / 任务(占位) / 成员(仅教师可见)
 
 数据库表 (Supabase, RLS 已启用):
-  profiles     — 用户资料 (role: teacher/student)
-  classes      — 班级 (join_code, teacher_id)
-  class_members — 班级成员关系
-  assignments  — 任务 (node_ids JSONB)
+  profiles        — 用户资料 (role: teacher/student)
+  classes         — 班级 (join_code, teacher_id)
+  class_members   — 班级成员关系
+  assignments     — 任务 (node_ids JSONB)
   student_progress — 学生进度 (node_id + status)
 ```
 
@@ -222,8 +247,8 @@ ClassDetailPage
 
 ```
 GamesPage
-  → getAllNodes() 展示节点选择标签
-  → loadNodeData(nodeId) 动态加载选中节点数据
+  → getAllNodes() 展示节点选择标签 (从 nodesIndex 获取列表)
+  → getNodeData(nodeId) 动态加载选中节点数据 (从 nodesIndex 异步加载)
   → GameAssembleScene:
     - 计算 targetPositions: 按 thickness + GAP 累加
     - 打乱 startPositions: shuffle(targetPositions) 随机分配初始位置
@@ -234,6 +259,24 @@ GamesPage
       - 全部锁定 → Celebration 球体 + 完成模态框
 ```
 
+### 5.6 路由架构（重构后）
+
+```
+main.jsx
+  <AuthProvider>                        ← 认证上下文（路由器外部）
+    <RouterProvider router={router} />  ← router 对象（来自 routes.jsx）
+
+routes.jsx — createBrowserRouter([
+  {
+    element: <AppLayout />,             ← 全局导航栏 + <Outlet />
+    children: [
+      public routes:    / /auth /library /curriculum /node/:nodeId ...
+      protected routes: /classes /classes/:classId (ProtectedRoute 包裹)
+    ]
+  }
+])
+```
+
 ---
 
 ## 6. 关键设计模式
@@ -242,6 +285,10 @@ GamesPage
 
 所有构造节点均为纯 JS 对象定义（`src/data/*.js`），包含 `id`, `title`, `layers[]`。ModelViewer、ConstructionKnowledgePanel、LeftKnowledgePanel 等组件完全由 `layers[]` 驱动，新增节点只需添加数据文件和索引注册即可。
 
+**新增节点流程**（2 步）:
+1. `nodesIndex.js` → `nodesIndex` 数组加一条元数据
+2. `nodesIndex.js` → `nodeLoaders` 映射加一行 `import()`
+
 ### 6.2 组件复用
 
 - **ConstructionLayer**: 自动检测是否有 modelPath，有则走 GLB 渲染路径，无则走程序化 Box 路径。同时处理 hover/select/dim 三种视觉状态（emissive glow/opacity 变化）。
@@ -249,18 +296,35 @@ GamesPage
 
 ### 6.3 动态加载（代码分割）
 
-- `nodeService.js`: `loadNodeData(id)` 通过 `import()` 动态加载节点数据文件，避免首屏加载所有大型数据。
-- `SectionSubPage.jsx`: 根据 moduleId 动态 `import()` 对应 sections 数据。
-- `TextbookPage`: `fetch()` 从 `/public/textbook/` 动态加载 Markdown 内容。
+- **节点数据**: `nodesIndex.js` 的 `nodeLoaders[id]()` 通过 `import()` 动态加载节点数据文件，避免首屏加载所有大型数据。`getNodeData` 统一入口，替代了旧的 `nodeService.js`。
+- **章节数据**: `SectionSubPage.jsx` 根据 moduleId 动态 `import()` 对应 sections 数据。
+- **教材内容**: `TextbookPage` 通过 `fetch()` 从 `/public/textbook/` 动态加载 Markdown 文件。
 
-### 6.4 状态提升 + 回调传递
+### 6.4 自定义 Hooks 模式
 
-NodeDetail 持有所有核心状态（explodeValue, hoveredLayer, selectedLayer, activeCard），通过 props 向下传递给 ModelViewer 和 ConstructionKnowledgePanel。图层点击事件通过 `onLayerClick` 回传至 NodeDetail，再由 NodeDetail 分发给 LayerLabel。
+重构后，NodeDetail 的核心状态被抽取为两个自定义 Hooks：
+
+- **`useModelInteraction`**: 管理 3D 模型交互状态
+  - `explodeValue` / `autoRotate` / `hoveredLayer` / `selectedLayer`
+  - `activeCard` + `screenshotMode`
+  - 处理函数: `handleLayerClick`, `handlePanelSelect`, `handleBlankClick`
+  - 自动清除: `explodeValue === 0` 时重置选中状态
+
+- **`usePanelState`**: 管理面板 UI 状态
+  - `showLeftPanel` / `knowledgePanelExpanded` / `panelMode`
+  - 处理函数: `toggleLeftPanel`, `closeLeftPanel`
+  - `panelMode` 预留 "knowledge" / "practice" / "textbook" 三态切换
+
+NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记保存等顶层逻辑。
 
 ### 6.5 两种模型加载模式
 
 1. **独立 GLB 模式** (flat-roof-01): 每层一个独立 GLB 文件，`modelPath` 直接指向文件，不需要 `layerObjectName`。
 2. **共享 GLB 模式** (membrane-roof-01, roof-insulation-01): 所有层共用一个 GLB 文件，每层通过 `layerObjectName` (如 "01"~"09") 从场景中提取子物体并克隆渲染。`useGLTF` 内置缓存保证同一文件只加载一次。
+
+### 6.6 路由集中管理
+
+所有路由在 `src/routes.jsx` 中以 `createBrowserRouter` 数组形式集中定义。AuthProvider 提升至 `main.jsx` 包裹 RouterProvider，确保认证状态在路由匹配前可用。`<AppLayout>` 作为根路由元素，通过 `<Outlet>` 渲染子路由。
 
 ---
 
@@ -272,6 +336,7 @@ NodeDetail 持有所有核心状态（explodeValue, hoveredLayer, selectedLayer,
 | `flatRoof.js` | flat-roof-01 | 平屋面构造 | 6 层 | 每层独立 GLB |
 | `membraneRoof.js` | membrane-roof-01 | 卷材防水屋面 | 6 层 | 共享 GLB + layerObjectName |
 | `roofInsulation.js` | roof-insulation-01 | 卷材平面屋顶保温构造 | 9 层 | 共享 GLB + layerObjectName |
+| `nodesIndex.js` | — | **节点统一入口** | — | `nodeLoaders` 映射 + 元数据数组 |
 | `roofSections.js` | — | 屋顶章节索引 | — | — |
 | `courseModules.js` | — | 课程模块定义 | — | 8 个模块 (2 个 available) |
 | `sections/wallSections.js` | — | 墙体章节 | — | 5 个章节 (1 个 available) |
@@ -325,6 +390,21 @@ NodeDetail 持有所有核心状态（explodeValue, hoveredLayer, selectedLayer,
 - 最大 30 条，超量自动删除最旧记录
 - 每条笔记: `{ id, nodeId, nodeTitle, image (dataURL), text, createdAt }`
 
+### 8.7 Hooks 拆分约定
+
+- NodeDetail 的状态逻辑封装在 `src/hooks/` 目录下的独立文件中
+- `useModelInteraction` 管理所有 3D 模型交互状态，不涉及 UI 面板
+- `usePanelState` 管理所有面板/标签 UI 状态
+- Hooks 返回原始值和方法，由页面组件自行传递给子组件
+
+### 8.8 新增节点流程
+
+在 `src/data/nodesIndex.js` 中：
+1. `nodesIndex` 数组加一条元数据 `{ id, title, description, category, thumbnail }`
+2. `nodeLoaders` 映射加一行 `"my-node": () => import("./myNode.js")`
+
+无需修改其他任何文件。
+
 ---
 
 ## 9. 未来规划
@@ -338,6 +418,7 @@ NodeDetail 持有所有核心状态（explodeValue, hoveredLayer, selectedLayer,
 | 贡献节点 | /contribute (PlaceholderPage) | 占位 |
 | 构造工具 | /tools (PlaceholderPage) | 占位 |
 | 任务布置功能 | ClassDetailPage.jsx:96 | "即将上线" |
+| panelMode 练习/教材标签 | usePanelState.js | 状态已预留，UI 未接入 |
 | 绪论模块 | courseModules.js | available: false |
 | 构筑物模块 | courseModules.js | available: false |
 | 地基与基础模块 | courseModules.js | available: false |
@@ -347,4 +428,3 @@ NodeDetail 持有所有核心状态（explodeValue, hoveredLayer, selectedLayer,
 | 墙体子章节 4/5 | wallSections.js | available: false |
 | 学生进度追踪 | student_progress 表已建 | 前端未接入 |
 | 任务分配与提交 | assignments 表已建 | 前端未接入 |
-| 屋顶子章节（旧路由） | RoofSubPage.jsx | 可能废弃，已被 SectionSubPage 替代 |

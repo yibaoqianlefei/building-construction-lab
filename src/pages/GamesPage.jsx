@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Trophy } from "lucide-react";
-import { getAllNodes, loadNodeData } from "../services/nodeService";
+import { getAllNodes, getNodeData } from "../data/nodesIndex";
 import GameAssembleScene from "../components/game/GameAssembleScene";
 
 function GamesPage() {
@@ -16,7 +16,7 @@ function GamesPage() {
     if (!nodeId) return;
     setLoading(true);
     setDone(false);
-    loadNodeData(nodeId).then((data) => {
+    getNodeData(nodeId).then((data) => {
       setNodeData(data);
       setLoading(false);
     });

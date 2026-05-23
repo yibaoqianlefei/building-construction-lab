@@ -10,29 +10,44 @@ import LayerLabel from "./components/viewer/LayerLabel";
 import ScreenshotTool from "./components/viewer/ScreenshotTool";
 import { saveNote } from "./services/noteService";
 import { getNodeData } from "./data/nodesIndex";
+import { useModelInteraction } from "./hooks/useModelInteraction";
+import { usePanelState } from "./hooks/usePanelState";
 
 const ACCENT = "#B8891F";
 
 function NodeDetail() {
   const { nodeId } = useParams();
-  const data = getNodeData(nodeId);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [explodeValue, setExplodeValue] = useState(0);
-  const [autoRotate, setAutoRotate] = useState(true);
-  const [hoveredLayer, setHoveredLayer] = useState(null);
-  const [selectedLayer, setSelectedLayer] = useState(null);
-  const [activeCard, setActiveCard] = useState(null);
-  const [screenshotMode, setScreenshotMode] = useState(false);
-  const [showLeftPanel, setShowLeftPanel] = useState(false);
+  const {
+    explodeValue,
+    setExplodeValue,
+    autoRotate,
+    setAutoRotate,
+    hoveredLayer,
+    setHoveredLayer,
+    selectedLayer,
+    activeCard,
+    setActiveCard,
+    screenshotMode,
+    setScreenshotMode,
+    handleLayerClick,
+    handlePanelSelect,
+    handleBlankClick,
+  } = useModelInteraction();
+
+  const { showLeftPanel, toggleLeftPanel, closeLeftPanel } = usePanelState();
+
   const viewerRef = useRef(null);
   const controlsRef = useRef(null);
 
   useEffect(() => {
-    if (explodeValue === 0) {
-      setSelectedLayer(null);
-      setActiveCard(null);
-    }
-  }, [explodeValue]);
+    if (!nodeId) return;
+    setLoading(true);
+    setData(null);
+    getNodeData(nodeId).then(setData).finally(() => setLoading(false));
+  }, [nodeId]);
 
   useEffect(() => {
     if (controlsRef.current) {
@@ -40,32 +55,12 @@ function NodeDetail() {
     }
   }, [screenshotMode]);
 
-  function handleLayerClick(index, layer, e) {
-    if (explodeValue <= 0) return;
-    if (selectedLayer === index) {
-      setSelectedLayer(null);
-      setActiveCard(null);
-    } else {
-      setSelectedLayer(index);
-      setActiveCard({
-        layer,
-        x: e.clientX,
-        y: e.clientY,
-      });
-    }
-  }
-
-  function handlePanelSelect(index) {
-    if (explodeValue <= 0) return;
-    if (selectedLayer === index) {
-      setSelectedLayer(null);
-    } else {
-      setSelectedLayer(index);
-    }
-  }
-
-  function handleBlankClick() {
-    setActiveCard(null);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-gold-300 border-t-gold-600 rounded-full animate-spin" />
+      </div>
+    );
   }
 
   if (!data) {
@@ -124,7 +119,7 @@ function NodeDetail() {
               autoRotate={autoRotate}
               onAutoRotateToggle={() => setAutoRotate((v) => !v)}
               showLeftPanel={showLeftPanel}
-              onLeftPanelToggle={() => setShowLeftPanel((v) => !v)}
+              onLeftPanelToggle={toggleLeftPanel}
               screenshotActive={screenshotMode}
               onScreenshotToggle={() => setScreenshotMode((v) => !v)}
             />
@@ -133,7 +128,7 @@ function NodeDetail() {
               layers={data.layers}
               selectedLayerIndex={selectedLayer}
               open={showLeftPanel}
-              onClose={() => setShowLeftPanel(false)}
+              onClose={closeLeftPanel}
             />
 
             {screenshotMode && (
