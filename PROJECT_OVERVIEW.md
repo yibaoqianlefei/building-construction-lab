@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-23 重构
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-24 2D射线拼装游戏
 
 ---
 
@@ -8,7 +8,7 @@
 
 **项目名称**: 建筑构造交互系统 (Building Construction Interactive Textbook)
 
-**目的**: 面向建筑学教育的开源数字交互教材。通过三维可视化、分解视图和拖拽拼装游戏，帮助学生和从业者直观理解建筑构造层次的空间逻辑。
+**目的**: 面向建筑学教育的开源数字交互教材。通过三维可视化、分解视图和交互式探索，帮助学生和从业者直观理解建筑构造层次的空间逻辑。
 
 **目标用户**: 建筑学专业学生、建筑行业从业者、高校教师（可通过班级系统管理学生）。
 
@@ -24,7 +24,6 @@
 | 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 gold-* 色板 |
 | 字体 | Noto Serif SC (Google Fonts) | 中文字体 |
 | 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
-| 拖拽 | `@dnd-kit` v6 | 游戏拖拽排序（SortChallenge） |
 | 状态管理 | React Context (AuthContext) + Custom Hooks | 认证全局共享 + 页面状态封装 |
 | 后端/数据库 | Supabase (PostgreSQL) | 用户认证、数据库、RLS 行级安全 |
 | Markdown 渲染 | `react-markdown` + `remark-gfm` | 教材内容渲染 |
@@ -82,11 +81,8 @@
     │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
     │   │   └── MenuBackground.jsx # 首页 3D 背景动效
     │   └── game/                  # 游戏组件
-    │       ├── GameAssembleScene.jsx  # 拼装游戏场景：Canvas + 拖拽层
-    │       ├── DraggableLayer.jsx     # 可拖拽图层：snap 判定
-    │       ├── GameModelPreview.jsx   # 游戏模型预览
-    │       └── SortChallenge.jsx      # 排序挑战（@dnd-kit 实现）
-    │
+    │       ├── AssemblyLine.jsx   # 2D 射线拼装目标区（金色引导线 + 可放置标记点）
+    │       └── LayerCard.jsx      # 可拖拽构件卡片（颜色条 + 名称 + 厚度）
     ├── pages/                     # 页面组件
     │   ├── HomePage.jsx           # 首页：侧边菜单 + 3D 背景
     │   ├── AuthPage.jsx           # 登录/注册页
@@ -95,13 +91,13 @@
     │   ├── SectionSubPage.jsx     # 章节子页面：动态加载章节数据
     │   ├── TextbookPage.jsx       # 教材阅读页：Markdown + [model]/[side-by-side] 标记
     │   ├── NotesPage.jsx          # 笔记管理：截图查看/备注/对比
-    │   ├── GamesPage.jsx          # 游戏页：节点选择 + 拖拽拼装
+    │   ├── GamesPage.jsx          # 游戏页：点击搭建构件
     │   ├── ClassesPage.jsx        # 班级列表：创建/加入班级
     │   ├── ClassDetailPage.jsx    # 班级详情：课程/任务/成员标签
     │   └── PlaceholderPage.jsx    # 占位页：/tools /contribute /admin
     │
     ├── data/                      # 数据层
-    │   ├── nodesIndex.js          # 节点统一入口：元数据数组 + nodeLoaders 映射 + getNodeData/getAllNodes
+    │   ├── nodesIndex.js          # 节点统一入口：元数据数组 + nodeLoaders 映射 + getNodeData 异步加载
     │   ├── courseModules.js       # 课程模块定义（绪论/墙体/屋顶/...）
     │   ├── externalWall.js        # 外墙外保温节点数据（5层，程序化Box）
     │   ├── flatRoof.js            # 平屋面节点数据（6层，每层独立GLB）
@@ -124,20 +120,24 @@
         └── noteService.js         # 笔记 CRUD（localStorage 操作）
 ```
 
-### 变更说明（2026-05-23 重构）
+### 变更说明（2026-05 系列重构）
 
 | 变更类型 | 文件 | 说明 |
 |----------|------|------|
 | **新建** | `src/routes.jsx` | 所有路由以 `createBrowserRouter` 数组集中定义 |
 | **新建** | `src/hooks/useModelInteraction.js` | 3D 模型交互状态封装（explode/hover/select/activeCard/screenshot） |
 | **新建** | `src/hooks/usePanelState.js` | 面板状态封装（leftPanel/expanded/panelMode） |
-| **重写** | `src/data/nodesIndex.js` | 移除静态 import，改为 `nodeLoaders` 动态加载 + `getNodeData` 异步 + 新增 `getAllNodes` |
+| **新建** | `src/components/game/GameBuildScene.jsx` | 点击搭建游戏：源构件散落 → 点击选中 → 点击槽位放置（lerp 动画） |
+| **新建** | `src/components/game/GameInfoPanel.jsx` | 游戏信息面板（进度条/错误计数/选中提示/层列表） |
+| **新建** | `src/pages/GamesPage.jsx` | 游戏页面：顶部节点选择器 + 左右分栏（3D 场景 + 信息面板） |
+| **重写** | `src/data/nodesIndex.js` | 移除静态 import，改为 `nodeLoaders` 动态加载 + `getNodeData` 异步 |
 | **重写** | `src/main.jsx` | `<BrowserRouter>` + `<App />` → `<AuthProvider>` + `<RouterProvider>` |
-| **精简** | `src/App.jsx` | 路由定义移除，仅保留 re-export |
-| **修改** | `src/NodeDetail.jsx` | 异步数据加载 + 改用 `useModelInteraction` / `usePanelState` hooks |
-| **修改** | `src/pages/GamesPage.jsx` | import 从 `nodeService` 改为 `nodesIndex` |
+| **改写** | `src/App.jsx` | 路由定义移除，仅保留 re-export |
+| **改写** | `src/NodeDetail.jsx` | 异步数据加载 + 改用 `useModelInteraction` / `usePanelState` hooks |
+| **删除** | `src/components/game/` (旧) | 拖拽拼装游戏组件已移除（GameAssembleScene/DraggableLayer/StepGuidePanel 等） |
 | **删除** | `src/services/nodeService.js` | 功能合并至 `nodesIndex.js` |
 | **删除** | `src/pages/RoofSubPage.jsx` | 无路由引用，已被 `SectionSubPage` 替代 |
+| **移除** | `@dnd-kit/*` 依赖 | 拖拽库已不需要 |
 
 ---
 
@@ -158,8 +158,8 @@
 | **浮层标签**（点击弹出） | `/node/:nodeId` | LayerLabel | activeCard (hook 管理) |
 | **框选截图**（保存笔记） | `/node/:nodeId` | ScreenshotTool | Canvas → dataURL |
 | **笔记管理**（查看/备注/对比/删除） | `/notes` | NotesPage | localStorage (max 30条) |
-| **构造拼装游戏** | `/games` | GamesPage, GameAssembleScene, DraggableLayer | nodesIndex.getAllNodes/getNodeData |
 | **班级管理**（创建/加入） | `/classes` | ClassesPage | classService → Supabase |
+| **2D 射线拼装游戏**（拖拽构件卡片至标记点） | `/games` | GamesPage, AssemblyLine, LayerCard | nodesIndex.getNodeData() |
 | **班级详情**（课程/任务/成员） | `/classes/:classId` | ClassDetailPage | classService → Supabase |
 | **教师后台**（占位） | `/admin` | PlaceholderPage | — |
 | **贡献节点**（占位） | `/contribute` | PlaceholderPage | — |
@@ -186,7 +186,7 @@
 ```
 
 **关键点**:
-- `getNodeData(id)` 是唯一的节点数据加载入口，所有页面（NodeDetail、GamesPage）统一使用
+- `getNodeData(id)` 是唯一的节点数据加载入口，NodeDetail 等页面统一使用
 - `WallAssembly` 通过 `layers[0]?.layerObjectName != null` 判断是否使用模型内建坐标（全部置 0，依赖 GLB 内部坐标）还是程序化位置（按 thickness 累加偏移）
 - `nodesIndex` 元数据数组供 LibraryPage/CurriculumPage/TextbookPage 等展示列表使用，不经过动态 import
 
@@ -243,26 +243,30 @@ ClassDetailPage
   → 自定义组件: img/table/thead/th/td 样式增强
 ```
 
-### 5.5 构造游戏逻辑
+### 5.5 2D 射线拼装游戏（拖拽卡片 + 匹配验证）
 
 ```
 GamesPage
-  → getAllNodes() 展示节点选择标签 (从 nodesIndex 获取列表)
-  → getNodeData(nodeId) 动态加载选中节点数据 (从 nodesIndex 异步加载)
-  → GameAssembleScene:
-    - 计算 targetPositions: 按 thickness + GAP 累加
-    - 打乱 startPositions: shuffle(targetPositions) 随机分配初始位置
-    - lockedSlots (Set): 跟踪已正确放置的槽位
-    - DraggableLayer × N:
-      - DragControls (drei): 沿爆炸轴拖拉
-      - handleDragEnd: 找最近的未锁定 slot，距离 < SNAP_DIST=0.2 且 slotIdx===layerIdx → 锁定
-      - 全部锁定 → Celebration 球体 + 完成模态框
+  → 页面布局: 顶部节点选择器 + 主体上下分栏
+    - 上方目标区: AssemblyLine 组件
+      - Golden ray (CSS div): 水平 (explodeAxis="x") 或 竖直 (explodeAxis="y")
+      - 标记点 (useDroppable): 圆环，拖拽悬停时高亮，正确放置后变绿带对钩
+    - 下方构件区: LayerCard 组件 (useDraggable)
+      - Fisher-Yates 打乱顺序的卡片列表
+      - 每张卡片显示: 颜色条 + 层名称 + 厚度
+      - 毛玻璃白底，拖拽时显示 DragOverlay
+  → @dnd-kit/core 拖拽逻辑:
+    - DndContext 包裹整个游戏区
+    - onDragEnd: 比较 layerIndex === slotIndex
+      - 正确: 卡片消失，标记点变绿，filledSlots 计数 +1
+      - 错误: 卡片弹回下方（无操作）
+    - 全部正确 (filledSlots.size === layers.length) → 完成模态框
+  → 重置: 重新 Fisher-Yates 打乱卡片顺序，清空 filledSlots
+  → 移动端: PointerSensor + TouchSensor，拖拽流畅
 ```
-
 ### 5.6 路由架构（重构后）
 
 ```
-main.jsx
   <AuthProvider>                        ← 认证上下文（路由器外部）
     <RouterProvider router={router} />  ← router 对象（来自 routes.jsx）
 

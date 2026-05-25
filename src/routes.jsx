@@ -10,10 +10,9 @@ import ClassDetailPage from "./pages/ClassDetailPage";
 import NodeDetail from "./NodeDetail";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotesPage from "./pages/NotesPage";
-import GamesPage from "./pages/GamesPage";
 import SectionSubPage from "./pages/SectionSubPage";
 import TextbookPage from "./pages/TextbookPage";
-
+import GamesPage from "./pages/GamesPage";
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
@@ -25,9 +24,9 @@ export const router = createBrowserRouter([
       { path: "/textbook/:sectionId", element: <TextbookPage /> },
       { path: "/auth", element: <AuthPage /> },
       { path: "/node/:nodeId", element: <NodeDetail /> },
+      { path: "/games", element: <GamesPage /> },
       { path: "/tools", element: <PlaceholderPage /> },
       { path: "/notes", element: <NotesPage /> },
-      { path: "/games", element: <GamesPage /> },
       { path: "/contribute", element: <PlaceholderPage /> },
       { path: "/admin", element: <PlaceholderPage /> },
       {

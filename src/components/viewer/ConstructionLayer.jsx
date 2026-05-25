@@ -1,11 +1,11 @@
-import { Suspense, useRef, useMemo, useEffect } from "react";
+import { Suspense, useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Edges, useGLTF } from "@react-three/drei"; // Edges still used by procedural box path
 import * as THREE from "three";
 
 const DEFAULT_LIFT = 0.14;
 const LIFT_LERP = 0.06;
-const GLOW_LERP = 0.2;
+const GLOW_LERP = 0.25;
 
 const COLOR_HOVER = new THREE.Color("#FFE8C0");
 const COLOR_SELECT = new THREE.Color("#F5D68A");
@@ -90,7 +90,7 @@ function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, 
           position={hitBox.center}
           onPointerOver={onPointerOver}
           onPointerOut={onPointerOut}
-          onClick={(e) => { e.stopPropagation(); onClick(e); }}
+          onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
         >
           <boxGeometry args={hitBox.size} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -105,6 +105,10 @@ function ConstructionLayer({
   isHovered,
   isSelected,
   isDimmed,
+  isPlaced = false,
+  isFlashing = false,
+  isCorrect = false,
+  isWrong = false,
   explodeValue,
   floatDirection = "y",
   floatDistance = DEFAULT_LIFT,
@@ -122,10 +126,14 @@ function ConstructionLayer({
   const currentOpacity = useRef(layer.name.includes("空气") ? 0.3 : 1);
   const currentLineOpacity = useRef(0.45);
   const currentLineColor = useRef(new THREE.Color("#4B5563"));
+  const pulseTime = useRef(0);
   const hasGLB = !!layer.modelPath;
   const layerObjectName = layer.layerObjectName;
 
-  useFrame(() => {
+  const isLocked = isPlaced || isCorrect || isWrong;
+
+  useFrame((_, delta) => {
+    pulseTime.current += delta;
     /* ---- lift ---- */
     const canLift = explodeValue > 0;
     const liftTarget = isSelected && canLift ? 1 : 0;
@@ -141,13 +149,34 @@ function ConstructionLayer({
       else groupRef.current.position.y = lift;
     }
 
-    /* ---- glow targets (hover always wins so it works on selected/dimmed layers too) ---- */
+    /* ---- glow targets (wrong > correct > flashing > placed > hover > selected > off) ---- */
     let targetIntensity, targetRoughness, targetEmissive;
 
-    if (isHovered) {
+    if (isWrong) {
+      const pulse = Math.sin(pulseTime.current * 3) * 0.5 + 0.5;
+      targetIntensity = 0.3 + pulse * 0.5;
+      targetRoughness = 0.3;
+      targetEmissive = new THREE.Color("#EF4444");
+    } else if (isCorrect) {
+      targetIntensity = 0.4;
+      targetRoughness = 0.35;
+      targetEmissive = new THREE.Color("#22C55E");
+    } else if (isFlashing) {
+      targetIntensity = 0.8;
+      targetRoughness = 0.3;
+      targetEmissive = new THREE.Color("#EF4444");
+    } else if (isPlaced) {
+      targetIntensity = 0;
+      targetRoughness = 0.45;
+      targetEmissive = COLOR_OFF;
+    } else if (isHovered) {
       targetIntensity = 0.6;
       targetRoughness = 0.3;
       targetEmissive = COLOR_HOVER;
+    } else if (isSelected) {
+      targetIntensity = 0.5;
+      targetRoughness = 0.35;
+      targetEmissive = COLOR_SELECT;
     } else {
       targetIntensity = 0;
       targetRoughness = 0.45;
@@ -159,7 +188,23 @@ function ConstructionLayer({
     let opacityTarget, lineOpacityTarget;
     const lineColorTarget = new THREE.Color();
 
-    if (isSelected) {
+    if (isWrong) {
+      opacityTarget = 1;
+      lineOpacityTarget = 0.9;
+      lineColorTarget.set("#EF4444");
+    } else if (isCorrect) {
+      opacityTarget = 1;
+      lineOpacityTarget = 0.9;
+      lineColorTarget.set("#22C55E");
+    } else if (isFlashing) {
+      opacityTarget = 1;
+      lineOpacityTarget = 0.9;
+      lineColorTarget.set("#EF4444");
+    } else if (isPlaced) {
+      opacityTarget = layer.name.includes("空气") ? 0.3 : 1;
+      lineOpacityTarget = 0.45;
+      lineColorTarget.set("#4B5563");
+    } else if (isSelected) {
       opacityTarget = 1;
       lineOpacityTarget = 0.9;
       lineColorTarget.set("#D4A43A");
@@ -224,20 +269,20 @@ function ConstructionLayer({
             <GLBModelRenderer
               modelPath={layer.modelPath}
               objectName={layerObjectName}
-              onPointerOver={onPointerOver}
-              onPointerOut={onPointerOut}
-              onClick={onClick}
+              onPointerOver={isLocked ? undefined : onPointerOver}
+              onPointerOut={isLocked ? undefined : onPointerOut}
+              onClick={isLocked ? undefined : onClick}
             />
           </Suspense>
         </group>
       ) : (
         <mesh
           ref={meshRef}
-          onPointerOver={onPointerOver}
-          onPointerOut={onPointerOut}
-          onClick={(e) => {
+          onPointerOver={isLocked ? undefined : onPointerOver}
+          onPointerOut={isLocked ? undefined : onPointerOut}
+          onClick={isLocked ? undefined : (e) => {
             e.stopPropagation();
-            onClick(e);
+            onClick?.(e);
           }}
           castShadow
           receiveShadow

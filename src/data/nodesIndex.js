@@ -51,8 +51,4 @@ export async function getNodeData(id) {
   }
 }
 
-export function getAllNodes() {
-  return nodesIndex.map(({ id, title, category }) => ({ id, title, category }));
-}
-
 export { nodesIndex };

@@ -4,6 +4,7 @@ const externalWallData = {
   description:
     "适用于寒冷地区的外墙保温构造，由五层材料组成，从室内到室外依次为内饰面抹灰、钢筋混凝土结构层、挤塑聚苯板保温层、空气间层以及外饰面纤维水泥板。该系统能有效阻止热量流失，防止冷凝水形成。",
   directionLabel: "室内 → 室外",
+  explodeAxis: "x",
   floatDirection: "y",
   floatDistance: 0.14,
   layers: [
