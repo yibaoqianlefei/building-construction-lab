@@ -1,62 +1,77 @@
 import { memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
+import LayerCard from "./LayerCard";
 
-/* ── single droppable marker (memoised) ── */
-const SlotMarker = memo(function SlotMarker({ index, isFilled }) {
+const Slot = memo(function Slot({ index, occupant, layer, verified }) {
   const { setNodeRef, isOver } = useDroppable({ id: `slot-${index}` });
 
-  const ringClass = isFilled
-    ? "border-green-500 bg-green-500"
-    : isOver
-      ? "border-gold-400 bg-gold-100 shadow-[0_0_12px_rgba(212,164,58,0.4)]"
-      : "border-gray-300";
+  const base =
+    "w-5 h-5 rounded-full border transition-all duration-300";
+  const ring =
+    verified === true
+      ? "border-gold-400 bg-gold-400"
+      : verified === false
+        ? "border-red-400 bg-red-400"
+        : isOver
+          ? "border-gold-400 bg-gold-100/50"
+          : "border-gold-300/40 bg-transparent";
 
   return (
-    <div
-      ref={setNodeRef}
-      className={`flex-shrink-0 w-8 h-8 rounded-full border-2 transition-all duration-200 ${ringClass}`}
-    >
-      {isFilled && (
-        <svg viewBox="0 0 24 24" className="w-full h-full text-white" fill="none" stroke="currentColor" strokeWidth="3">
-          <path d="M5 13l4 4L19 7" />
-        </svg>
+    <div ref={setNodeRef} className="flex-shrink-0 flex flex-col items-center">
+      {occupant != null && layer ? (
+        <LayerCard layer={layer} layerIndex={occupant} variant="slot" verified={verified} />
+      ) : (
+        <div className={`${base} ${ring}`}>
+          {verified === true && (
+            <svg viewBox="0 0 24 24" className="w-full h-full text-white p-0.5" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+          {verified === false && (
+            <svg viewBox="0 0 24 24" className="w-full h-full text-white p-0.5" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          )}
+        </div>
       )}
     </div>
   );
-}, (prev, next) => prev.index === next.index && prev.isFilled === next.isFilled);
+}, (prev, next) =>
+  prev.index === next.index &&
+  prev.occupant === next.occupant &&
+  prev.verified === next.verified &&
+  prev.layer?.name === next.layer?.name
+);
 
-SlotMarker.displayName = "SlotMarker";
+Slot.displayName = "Slot";
 
-/* ── Assembly line (memoised) ── */
-const AssemblyLine = memo(function AssemblyLine({ explodeAxis, layers, filledSlots }) {
+const AssemblyLine = memo(function AssemblyLine({
+  explodeAxis, layers, slotOccupants, verifiedSlots,
+}) {
   const isX = explodeAxis === "x";
-  const layerCount = layers.length;
+  const n = layers.length;
 
   return (
-    <div className={`flex items-center gap-4 ${isX ? "flex-row" : "flex-col"}`}>
-      {/* golden line with markers */}
-      <div className={`relative flex ${isX ? "flex-row w-full items-center" : "flex-col items-center h-64"}`}>
-        {/* the ray */}
-        <div
-          className={`absolute rounded-full bg-gold-400/60 ${
-            isX ? "w-full h-1 top-1/2 -translate-y-1/2" : "w-1 h-full left-1/2 -translate-x-1/2"
-          }`}
-        />
+    <div className={`flex ${isX ? "flex-row items-center" : "flex-col items-center"} gap-6`}>
+      <div className={`relative flex ${isX ? "flex-row w-full items-center" : "flex-col items-center"} ${isX ? "" : "h-72"}`}>
+        {/* gradient ray */}
+        {isX ? (
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-gold-400/40 to-transparent" />
+        ) : (
+          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-gold-400/40 to-transparent" />
+        )}
         {/* slot markers */}
         <div className={`relative z-10 flex ${isX ? "flex-row justify-around w-full" : "flex-col justify-around h-full"}`}>
-          {Array.from({ length: layerCount }).map((_, i) => (
-            <SlotMarker key={i} index={i} isFilled={filledSlots.has(i)} />
+          {Array.from({ length: n }).map((_, i) => (
+            <Slot
+              key={i}
+              index={i}
+              occupant={slotOccupants.get(i)}
+              layer={slotOccupants.get(i) != null ? layers[slotOccupants.get(i)] : null}
+              verified={verifiedSlots.get(i) ?? null}
+            />
           ))}
         </div>
-      </div>
-
-      {/* labels */}
-      <div className={`flex ${isX ? "flex-row justify-around w-full" : "flex-col justify-around h-full"}`}>
-        {layers.map((layer, i) => (
-          <span key={i} className={`text-xs text-gray-500 whitespace-nowrap text-center ${isX ? "w-20" : ""}`}>
-            {layer.name}
-          </span>
-        ))}
       </div>
     </div>
   );

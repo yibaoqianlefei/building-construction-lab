@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { RefreshCw, Trophy } from "lucide-react";
+import { useDroppable } from "@dnd-kit/core";
+import { RefreshCw, CheckCircle2 } from "lucide-react";
 import { nodesIndex, getNodeData } from "../data/nodesIndex";
 import AssemblyLine from "../components/game/AssemblyLine";
 import LayerCard from "../components/game/LayerCard";
 
-/* Fisher-Yates shuffle */
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -16,16 +16,32 @@ function shuffle(arr) {
   return a;
 }
 
+function ReturnZone({ children }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "return-zone" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 min-h-0 rounded-2xl transition-colors duration-300 p-6 ${
+        isOver ? "bg-gold-50/40" : "bg-transparent"
+      }`}
+      style={{ touchAction: "none" }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function GamesPage() {
   const nodes = nodesIndex;
   const [nodeId, setNodeId] = useState(nodes[0]?.id);
   const [nodeData, setNodeData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* 2D game state */
-  const [filledSlots, setFilledSlots] = useState(new Set());
+  const slotOccupantsRef = useRef(new Map());
+  const verifiedSlotsRef = useRef(new Map());
+  const [renderTick, setRenderTick] = useState(0);
   const [cardOrder, setCardOrder] = useState([]);
-  const [activeLayerIdx, setActiveLayerIdx] = useState(-1); // -1 = none
+  const [activeLayerIdx, setActiveLayerIdx] = useState(-1);
   const [done, setDone] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
@@ -34,14 +50,16 @@ function GamesPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
   );
 
-  /* reset everything for a fresh game */
+  const bump = useCallback(() => setRenderTick((t) => t + 1), []);
+
   const resetGame = useCallback(() => {
     setDone(false);
-    setFilledSlots(new Set());
+    slotOccupantsRef.current = new Map();
+    verifiedSlotsRef.current = new Map();
     setActiveLayerIdx(-1);
-  }, []);
+    bump();
+  }, [bump]);
 
-  /* load node data */
   useEffect(() => {
     if (!nodeId) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -53,17 +71,14 @@ function GamesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeId, resetKey]);
 
-  /* shuffle cards when node data loads */
   useEffect(() => {
-    if (nodeData?.layers) {
-      setCardOrder(shuffle(nodeData.layers.map((_, i) => i)));
-    }
+    if (nodeData?.layers) setCardOrder(shuffle(nodeData.layers.map((_, i) => i)));
   }, [nodeData]);
 
-  /* ── dnd handlers ── */
   const layerCountRef = useRef(0);
   useEffect(() => { layerCountRef.current = nodeData?.layers?.length || 0; }, [nodeData]);
 
+  /* ── dnd ── */
   const handleDragStart = useCallback((event) => {
     const idx = event.active.data.current?.layerIndex;
     if (idx != null) setActiveLayerIdx(idx);
@@ -74,76 +89,84 @@ function GamesPage() {
     const { active, over } = event;
     if (!over) return;
     const layerIndex = active.data.current?.layerIndex;
-    const slotId = over?.id;
-    if (layerIndex == null || !slotId || !slotId.startsWith("slot-")) return;
-    const slotIndex = parseInt(slotId.replace("slot-", ""), 10);
-    if (layerIndex === slotIndex) {
-      setFilledSlots((prev) => {
-        if (prev.has(slotIndex)) return prev;
-        const next = new Set(prev);
-        next.add(slotIndex);
-        if (next.size >= layerCountRef.current) {
-          setTimeout(() => setDone(true), 500);
-        }
-        return next;
-      });
+    if (layerIndex == null) return;
+    const overId = over?.id;
+    const map = slotOccupantsRef.current;
+
+    if (overId === "return-zone") {
+      for (const [s, l] of map) { if (l === layerIndex) { map.delete(s); break; } }
+      verifiedSlotsRef.current = new Map();
+      bump();
+      return;
     }
-  }, []);
 
-  const handleDragCancel = useCallback(() => {
-    setActiveLayerIdx(-1);
-  }, []);
+    if (typeof overId === "string" && overId.startsWith("slot-")) {
+      const ts = parseInt(overId.replace("slot-", ""), 10);
+      for (const [s, l] of map) { if (l === layerIndex) { map.delete(s); break; } }
+      const old = map.get(ts);
+      if (old != null) map.delete(ts);
+      if (old !== layerIndex) map.set(ts, layerIndex);
+      verifiedSlotsRef.current = new Map();
+      bump();
+    }
+  }, [bump]);
 
-  /* ── full reset ── */
+  const handleDragCancel = useCallback(() => setActiveLayerIdx(-1), []);
+
+  /* ── validation ── */
+  const handleValidate = useCallback(() => {
+    const map = slotOccupantsRef.current;
+    if (map.size < layerCountRef.current) return;
+    const results = new Map();
+    let allOk = true;
+    for (const [s, l] of map) { const ok = s === l; results.set(s, ok); if (!ok) allOk = false; }
+    verifiedSlotsRef.current = results;
+    bump();
+    if (allOk) setTimeout(() => setDone(true), 600);
+  }, [bump]);
+
   const handleReset = useCallback(() => {
     resetGame();
-    if (nodeData?.layers) {
-      setCardOrder(shuffle(nodeData.layers.map((_, i) => i)));
-    }
+    if (nodeData?.layers) setCardOrder(shuffle(nodeData.layers.map((_, i) => i)));
   }, [resetGame, nodeData?.layers]);
 
-  /* switch node */
-  const handleNodeChange = useCallback((id) => {
-    setResetKey((k) => k + 1);
-    setNodeId(id);
-  }, []);
+  const handleNodeChange = useCallback((id) => { setResetKey((k) => k + 1); setNodeId(id); }, []);
 
-  /* which card is being dragged (for DragOverlay) */
   const draggedLayer = useMemo(() => {
     if (activeLayerIdx < 0 || !nodeData?.layers) return null;
     return nodeData.layers[activeLayerIdx] ?? null;
   }, [activeLayerIdx, nodeData?.layers]);
 
+  const slotOccupants = slotOccupantsRef.current;
+  const verifiedSlots = verifiedSlotsRef.current;
+  const placedIndices = useMemo(() => new Set(slotOccupants.values()), [renderTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const wrongCount = useMemo(() => [...verifiedSlots.values()].filter((v) => v === false).length, [renderTick]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (loading) {
     return (
-      <div className="h-screen bg-white flex items-center justify-center">
+      <div className="h-screen bg-[#FAFAFA] flex items-center justify-center">
         <div className="w-5 h-5 border-2 border-gold-300 border-t-gold-600 rounded-full animate-spin" />
       </div>
     );
   }
 
   const layerCount = nodeData?.layers?.length || 0;
-  const progress = filledSlots.size;
+  const allFilled = slotOccupants.size >= layerCount;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-    >
-      <div className="h-screen bg-white flex flex-col relative overflow-hidden">
-        {/* top bar */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-gray-100/50 z-30">
-          <div className="flex items-center gap-3">
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
+      <div className="h-screen bg-[#FAFAFA] flex flex-col relative overflow-hidden">
+        {/* ── top bar ── */}
+        <div className="flex-shrink-0 flex items-center justify-between px-8 py-4 z-20">
+          <div className="flex items-center gap-2">
             {nodes.map((n) => (
               <button
                 key={n.id}
                 onClick={() => handleNodeChange(n.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer ${
                   nodeId === n.id
-                    ? "bg-gold-500 text-white shadow-md"
-                    : "bg-white/80 text-gray-600 border border-gray-200/50 hover:border-gold-300"
+                    ? "bg-gold-500 text-white shadow-[0_2px_8px_rgba(212,164,58,0.25)]"
+                    : "bg-white/70 backdrop-blur-sm text-gray-500 border border-gray-200/60 hover:border-gold-300 hover:text-gray-700"
                 }`}
               >
                 {n.title}
@@ -151,112 +174,109 @@ function GamesPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500 tabular-nums">
-              {progress} / {layerCount}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 tabular-nums tracking-wide mr-2">
+              {slotOccupants.size} / {layerCount}
             </span>
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/80 border border-gray-200/50 text-sm text-gray-600 hover:text-gold-600 transition-colors cursor-pointer"
-            >
-              <RefreshCw size={14} /> 重新挑战
-            </button>
           </div>
         </div>
 
-        {/* main: ray (top) + cards (bottom) */}
-        <div className="flex-1 flex flex-col gap-6 p-6 min-h-0 overflow-auto">
-          {/* target area */}
-          <div className="flex-shrink-0 bg-gold-50/30 rounded-2xl border border-dashed border-gold-200 p-6">
-            <p className="text-xs text-gray-500 mb-4 text-center">
-              将下方构件拖拽到对应的标记位置
-            </p>
+        {/* ── main ── */}
+        <div className="flex-1 flex flex-col gap-8 px-10 pb-10 min-h-0 overflow-auto">
+          {/* ray area */}
+          <div className="flex-shrink-0 bg-white rounded-3xl border border-gray-100/60 shadow-[0_1px_3px_rgba(0,0,0,0.03)] p-8">
             {nodeData && (
               <AssemblyLine
                 explodeAxis={nodeData.explodeAxis || "x"}
                 layers={nodeData.layers}
-                filledSlots={filledSlots}
+                slotOccupants={slotOccupants}
+                verifiedSlots={verifiedSlots}
               />
             )}
           </div>
 
-          {/* card area */}
-          <div className="flex-1 min-h-0">
-            <p className="text-xs text-gray-400 mb-3 text-center">
-              拖拽构件至上方标记点
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center content-start" style={{ touchAction: "none" }}>
+          {/* cards area */}
+          <ReturnZone>
+            <div className="flex flex-wrap gap-4 justify-center">
               {nodeData &&
-                cardOrder.map((layerIndex) => (
-                  <div key={layerIndex} className="w-52">
-                    <LayerCard
-                      layer={nodeData.layers[layerIndex]}
-                      layerIndex={layerIndex}
-                      isPlaced={filledSlots.has(layerIndex)}
-                    />
-                  </div>
-                ))}
+                cardOrder.map((layerIndex) => {
+                  if (placedIndices.has(layerIndex)) return null;
+                  return (
+                    <div key={layerIndex} className="w-52">
+                      <LayerCard layer={nodeData.layers[layerIndex]} layerIndex={layerIndex} variant="bottom" />
+                    </div>
+                  );
+                })}
             </div>
+            {allFilled && (
+              <p className="text-center text-gray-300 text-sm mt-8 select-none">&mdash;</p>
+            )}
+          </ReturnZone>
+
+          {/* ── action buttons ── */}
+          <div className="flex-shrink-0 flex items-center justify-center gap-4 pb-2">
+            <button
+              onClick={handleValidate}
+              disabled={done}
+              className={`rounded-full px-10 py-3 text-base font-medium transition-all duration-300 cursor-pointer ${
+                done
+                  ? "bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.2)]"
+                  : !allFilled
+                    ? "bg-gray-200 text-gray-400 shadow-none cursor-not-allowed"
+                    : "bg-gold-500 text-white shadow-[0_2px_8px_rgba(212,164,58,0.2)] hover:bg-gold-600 hover:shadow-[0_4px_16px_rgba(212,164,58,0.3)]"
+              }`}
+            >
+              {done ? (
+                <span className="flex items-center gap-2"><CheckCircle2 size={18} /> 全部正确</span>
+              ) : (
+                "验证"
+              )}
+            </button>
+            <button
+              onClick={handleReset}
+              className="rounded-full px-8 py-3 text-sm font-medium border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-all duration-300 cursor-pointer"
+            >
+              <span className="flex items-center gap-2"><RefreshCw size={15} /> 全部重来</span>
+            </button>
           </div>
+
+          {verifiedSlots.size > 0 && wrongCount > 0 && (
+            <p className="text-xs text-gray-400 text-center -mt-6">{wrongCount} 个位置不正确</p>
+          )}
         </div>
 
-        {/* DragOverlay */}
+        {/* ── DragOverlay ── */}
         <DragOverlay dropAnimation={null}>
-          {draggedLayer && (
-            <div className="w-52 flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-xl p-3 border border-gold-400 shadow-xl">
-              <div
-                className="w-2.5 h-8 rounded-full flex-shrink-0"
-                style={{ backgroundColor: draggedLayer.color || "#D4A43A" }}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-800 truncate">
-                  {draggedLayer.name}
-                </p>
-                <p className="text-xs text-gold-600 tabular-nums">
-                  {(draggedLayer.thickness * 1000).toFixed(0)} mm
-                </p>
-              </div>
+          {draggedLayer && activeLayerIdx >= 0 && (
+            <div className="w-52 flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border border-gold-400/50 shadow-[0_8px_24px_rgba(0,0,0,0.10)]">
+              <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: draggedLayer.color || "#D4A43A" }} />
+              <p className="text-sm font-normal text-gray-700 tracking-wide truncate">{draggedLayer.name}</p>
             </div>
           )}
         </DragOverlay>
 
-        {/* completion modal */}
+        {/* ── completion modal ── */}
         <AnimatePresence>
           {done && (
-            <motion.div
-              className="absolute inset-0 z-50 flex items-center justify-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <div
-                className="absolute inset-0 bg-black/10 backdrop-blur-sm"
-                onClick={handleReset}
-              />
+            <motion.div className="absolute inset-0 z-50 flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="absolute inset-0 bg-black/5 backdrop-blur-[2px]" onClick={handleReset} />
               <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                initial={{ opacity: 0, scale: 0.92, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                transition={{ type: "spring", stiffness: 200, damping: 22 }}
-                className="relative bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-gray-200/50 p-10 text-center max-w-sm w-full mx-4"
+                exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                transition={{ type: "spring", stiffness: 160, damping: 20 }}
+                className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-10 text-center max-w-sm w-full mx-4"
               >
-                <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-green-50 flex items-center justify-center">
-                  <Trophy size={32} className="text-green-500" />
+                <div className="mb-6 flex justify-center">
+                  <CheckCircle2 size={56} className="text-gold-500" strokeWidth={1.5} />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  完美拼装！
-                </h2>
-                <p className="text-gray-500 text-sm mb-2">
-                  你已经掌握了 {nodeData?.title} 的构造层次
-                </p>
-                <p className="text-gray-400 text-xs mb-6">
-                  共 {layerCount} 层，全部正确
-                </p>
+                <h2 className="text-2xl font-light text-gray-800 tracking-wide mb-2">拼装完成</h2>
+                <p className="text-sm text-gray-400 font-light mb-8">{nodeData?.title}</p>
                 <button
                   onClick={handleReset}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-500 text-white text-sm font-medium hover:bg-gold-600 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-full px-8 py-2.5 border border-gray-200 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-all duration-300 cursor-pointer"
                 >
-                  <RefreshCw size={16} /> 再来一次
+                  <RefreshCw size={15} /> 再来一局
                 </button>
               </motion.div>
             </motion.div>

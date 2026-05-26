@@ -15,8 +15,11 @@ import {
   Users,
   SwitchCamera,
   StickyNote,
+  Pause,
+  Play,
 } from "lucide-react";
 import MenuBackground from "../components/viewer/MenuBackground";
+import backgroundScenes from "../data/backgroundScenes";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -307,6 +310,9 @@ function AboutModal({ open, onClose }) {
 
 function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [sceneIndex, setSceneIndex] = useState(0);
+  const currentScene = backgroundScenes[sceneIndex];
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f5f5f7]">
@@ -318,14 +324,42 @@ function HomePage() {
         <MenuContent onModalOpen={() => setModalOpen(true)} />
       </aside>
 
-      <div className="hidden md:block flex-1 h-full">
+      <div className="hidden md:block flex-1 h-full relative">
         <Canvas
           camera={{ near: 1, far: 100, position: [1.6, 1.8, 3.6], fov: 36 }}
           shadows
           gl={{ antialias: true, alpha: false }}
         >
-          <MenuBackground />
+          <MenuBackground
+            key={sceneIndex}
+            autoRotate={autoRotate}
+            modelPath={currentScene.modelPath}
+            position={currentScene.position}
+          />
         </Canvas>
+        {/* bottom-right control buttons */}
+        <div className="absolute bottom-4 right-4 z-20 flex gap-2">
+          {/* scene switcher */}
+          <button
+            onClick={() => setSceneIndex((prev) => (prev + 1) % backgroundScenes.length)}
+            className="w-11 h-11 rounded-full bg-white/70 backdrop-blur-md border border-white/30 shadow-lg shadow-black/5 flex items-center justify-center cursor-pointer transition-all duration-300 hover:bg-white/90"
+            title={`场景: ${currentScene.name} (点击切换)`}
+          >
+            <SwitchCamera size={17} className="text-gray-400 hover:text-gold-500" />
+          </button>
+          {/* auto-rotate toggle */}
+          <button
+            onClick={() => setAutoRotate((v) => !v)}
+            className="w-11 h-11 rounded-full bg-white/70 backdrop-blur-md border border-white/30 shadow-lg shadow-black/5 flex items-center justify-center cursor-pointer transition-all duration-300 hover:bg-white/90"
+            title={autoRotate ? "暂停旋转" : "恢复旋转"}
+          >
+            {autoRotate ? (
+              <Pause size={17} className="text-gold-500" />
+            ) : (
+              <Play size={17} className="text-gray-400 hover:text-gold-500" />
+            )}
+          </button>
+        </div>
       </div>
 
       <div

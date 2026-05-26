@@ -1,143 +1,143 @@
-import { useRef, useEffect } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import { Grid, Edges } from "@react-three/drei";
+// 未来扩展：
+// - 当模型替换为多个独立层时，可启用 explode 功能（需传入 layers 数组）
+// - 可添加 onLayerClick 回调实现点击高亮
+// - 可集成 ConstructionLayer 组件支持逐层交互
+
+import { useRef, useEffect, Suspense, useMemo } from "react";
+import { useThree } from "@react-three/fiber";
+import { useGLTF, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import externalWallData from "../../data/externalWall";
 
-function ShadowLight({ targetRef }) {
-  const lightRef = useRef();
+/* ── model loader ── */
+function SceneModel({ modelPath }) {
+  const { scene } = useGLTF(modelPath);
 
+  const fixed = useMemo(() => {
+    if (!scene) return null;
+    const cloned = scene.clone(true);
+    const bbox = new THREE.Box3().setFromObject(cloned);
+    const center = new THREE.Vector3();
+    bbox.getCenter(center);
+
+    cloned.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        child.renderOrder = 0;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((mat) => {
+          mat.depthWrite = true;
+          mat.depthTest = true;
+          mat.transparent = false;
+          mat.polygonOffset = true;
+          mat.polygonOffsetFactor = 1;
+          mat.polygonOffsetUnits = 1;
+          mat.needsUpdate = true;
+        });
+      }
+    });
+    cloned.position.set(-center.x, -center.y, -center.z);
+    return cloned;
+  }, [scene]);
+
+  if (!fixed) return <PlaceholderCube />;
+  return <primitive object={fixed} />;
+}
+
+/* ── placeholder for missing models ── */
+function PlaceholderCube() {
+  return (
+    <mesh>
+      <boxGeometry args={[1.2, 1.2, 0.6]} />
+      <meshStandardMaterial color="#9CA3AF" roughness={0.6} metalness={0.1} />
+    </mesh>
+  );
+}
+
+/* ── shadow light ── */
+function ShadowLight() {
   return (
     <directionalLight
-      ref={lightRef}
-      position={[8, 12, 6]}
-      intensity={2.5}
+      position={[6, 10, 4]}
+      intensity={2.4}
       color="#fffdf7"
       castShadow
       shadow-mapSize-width={4096}
       shadow-mapSize-height={4096}
       shadow-camera-near={0.5}
-      shadow-camera-far={30}
-      shadow-camera-left={-8}
-      shadow-camera-right={8}
-      shadow-camera-top={8}
-      shadow-camera-bottom={-8}
-      shadow-bias={-0.00015}
+      shadow-camera-far={20}
+      shadow-camera-left={-3}
+      shadow-camera-right={3}
+      shadow-camera-top={3}
+      shadow-camera-bottom={-3}
+      shadow-bias={-0.0002}
     />
   );
 }
 
+/* ── renderer config ── */
 function RendererSetup() {
   const { gl } = useThree();
-
   useEffect(() => {
     gl.shadowMap.enabled = true;
     gl.shadowMap.type = THREE.PCFSoftShadowMap;
-    gl.toneMapping = THREE.CineonToneMapping;
-    gl.toneMappingExposure = 0.9;
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = 1.0;
   }, [gl]);
-
   return null;
 }
 
+/* ── shadow catcher ── */
 function ShadowPlane() {
   return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -0.78, 0]}
-      receiveShadow
-    >
-      <planeGeometry args={[8, 8]} />
-      <shadowMaterial opacity={0.3} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.8, 0]} receiveShadow renderOrder={1}>
+      <planeGeometry args={[12, 12]} />
+      <shadowMaterial opacity={0.2} transparent depthWrite={false} />
     </mesh>
   );
 }
 
-function MenuBackground() {
+/* ── loading fallback ── */
+function LoadingFallback() {
+  return (
+    <mesh>
+      <boxGeometry args={[1.2, 1.2, 0.6]} />
+      <meshStandardMaterial color="#D4A43A" wireframe transparent opacity={0.3} depthWrite={false} />
+    </mesh>
+  );
+}
+
+/* ── main ── */
+function MenuBackground({ interactive = false, autoRotate = true, modelPath = "/models/wall-model.glb", position = [0, 0, 0] }) {
   const groupRef = useRef();
-  const { layers } = externalWallData;
-  const totalWidth = layers.reduce((sum, l) => sum + l.thickness, 0);
-
-  const layerPositions = (() => {
-    let offset = 0;
-    return layers.map((layer) => {
-      const x = offset + layer.thickness / 2 - totalWidth / 2;
-      offset += layer.thickness;
-      return x;
-    });
-  })();
-
-  useFrame(({ clock }) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = clock.elapsedTime * 0.2;
-      groupRef.current.position.y = Math.sin(clock.elapsedTime * 0.5) * 0.08;
-    }
-  });
 
   return (
     <>
       <RendererSetup />
-
       <color attach="background" args={["#f5f5f7"]} />
 
       <ambientLight intensity={1.2} color="#ffffff" />
-
-      <ShadowLight targetRef={groupRef} />
-
-      <directionalLight
-        position={[-6, 3, -4]}
-        intensity={0.8}
-        color="#d4e3f0"
-      />
-
-      <directionalLight
-        position={[0, 10, 2]}
-        intensity={0.6}
-        color="#ffffff"
-      />
+      <ShadowLight />
+      <directionalLight position={[-5, 3, -3]} intensity={0.6} color="#d4e3f0" />
 
       <ShadowPlane />
 
-      <group ref={groupRef}>
-        {layers.map((layer, i) => (
-          <mesh
-            key={layer.name}
-            position={[layerPositions[i], 0, 0]}
-            castShadow
-            receiveShadow
-          >
-            <boxGeometry args={[layer.thickness, 1.4, 0.7]} />
-            <meshStandardMaterial
-              color={layer.color}
-              transparent={layer.name.includes("空气")}
-              opacity={layer.name.includes("空气") ? 0.3 : 1}
-              roughness={0.5}
-              metalness={0.05}
-              depthWrite={layer.name.includes("空气") ? false : true}
-            />
-            <Edges scale={1}>
-              <lineBasicMaterial
-                color="#9CA3AF"
-                transparent
-                opacity={0.4}
-              />
-            </Edges>
-          </mesh>
-        ))}
-      </group>
-
-      <Grid
-        position={[0, -1.2, 0]}
-        args={[10, 10]}
-        cellSize={0.2}
-        cellThickness={0.5}
-        cellColor="#e5e7eb"
-        sectionSize={1}
-        sectionThickness={1}
-        sectionColor="#d1d5db"
-        fadeDistance={8}
-        infinite
+      <OrbitControls
+        enableDamping
+        dampingFactor={0.08}
+        autoRotate={autoRotate}
+        autoRotateSpeed={0.5}
+        minDistance={3}
+        maxDistance={10}
+        maxPolarAngle={Math.PI / 2}
+        target={[0, 0.5, 0]}
       />
+
+      <group ref={groupRef} position={position}>
+        <Suspense fallback={<LoadingFallback />}>
+          <SceneModel modelPath={modelPath} />
+        </Suspense>
+      </group>
     </>
   );
 }

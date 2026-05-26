@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-24 2D射线拼装游戏
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-26 主菜单背景GLB+场景切换
 
 ---
 
@@ -73,13 +73,13 @@
     │   ├── viewer/                # 3D 查看器组件
     │   │   ├── ModelViewer.jsx    # Three.js Canvas 包装，含 WallAssembly/CameraAdjuster/ShadowLight
     │   │   ├── ConstructionLayer.jsx  # 单层渲染：GLB 模型 / 程序化 Box
+    │   │   ├── MenuBackground.jsx # 主菜单 3D 背景（GLB 模型 + OrbitControls + autoRotate + 场景切换）
     │   │   ├── BottomControlBar.jsx   # 底部控制栏：爆炸滑块/旋转/截图/面板
     │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
     │   │   ├── LeftKnowledgePanel.jsx  # 左滑出全部构件面板
     │   │   ├── LayerLabel.jsx     # 浮层标签卡片（点击图层弹出）
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
-    │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
-    │   │   └── MenuBackground.jsx # 首页 3D 背景动效
+    │   │   └── ExplodeControls.jsx    # 爆炸控制（独立组件）
     │   └── game/                  # 游戏组件
     │       ├── AssemblyLine.jsx   # 2D 射线拼装目标区（金色引导线 + 可放置标记点）
     │       └── LayerCard.jsx      # 可拖拽构件卡片（颜色条 + 名称 + 厚度）
@@ -97,6 +97,7 @@
     │   └── PlaceholderPage.jsx    # 占位页：/tools /contribute /admin
     │
     ├── data/                      # 数据层
+    │   ├── backgroundScenes.js    # 主菜单背景场景列表（GLB路径 + position配置）
     │   ├── nodesIndex.js          # 节点统一入口：元数据数组 + nodeLoaders 映射 + getNodeData 异步加载
     │   ├── courseModules.js       # 课程模块定义（绪论/墙体/屋顶/...）
     │   ├── externalWall.js        # 外墙外保温节点数据（5层，程序化Box）
@@ -145,7 +146,7 @@
 
 | 功能 | 路由 | 核心组件 | 数据来源 |
 |------|------|----------|----------|
-| **首页**（3D 背景 + 菜单） | `/` | HomePage, MenuBackground | externalWall.js (3D背景) |
+| **首页**（3D 背景 + 菜单 + 场景切换） | `/` | HomePage, MenuBackground | backgroundScenes.js (GLB模型列表) |
 | **用户认证**（登录/注册） | `/auth` | AuthPage | Supabase Auth + profiles 表 |
 | **节点库**（分类浏览） | `/library` | LibraryPage | nodesIndex.js (元数据数组) |
 | **课程目录**（模块选择） | `/curriculum` | CurriculumPage | courseModules.js |
@@ -243,26 +244,23 @@ ClassDetailPage
   → 自定义组件: img/table/thead/th/td 样式增强
 ```
 
-### 5.5 2D 射线拼装游戏（拖拽卡片 + 匹配验证）
+### 5.5 2D 射线拼装游戏（自由摆放 + 手动验证 + 槽位互换）
 
 ```
-GamesPage
-  → 页面布局: 顶部节点选择器 + 主体上下分栏
-    - 上方目标区: AssemblyLine 组件
-      - Golden ray (CSS div): 水平 (explodeAxis="x") 或 竖直 (explodeAxis="y")
-      - 标记点 (useDroppable): 圆环，拖拽悬停时高亮，正确放置后变绿带对钩
-    - 下方构件区: LayerCard 组件 (useDraggable)
-      - Fisher-Yates 打乱顺序的卡片列表
-      - 每张卡片显示: 颜色条 + 层名称 + 厚度
-      - 毛玻璃白底，拖拽时显示 DragOverlay
-  → @dnd-kit/core 拖拽逻辑:
-    - DndContext 包裹整个游戏区
-    - onDragEnd: 比较 layerIndex === slotIndex
-      - 正确: 卡片消失，标记点变绿，filledSlots 计数 +1
-      - 错误: 卡片弹回下方（无操作）
-    - 全部正确 (filledSlots.size === layers.length) → 完成模态框
-  → 重置: 重新 Fisher-Yates 打乱卡片顺序，清空 filledSlots
-  → 移动端: PointerSensor + TouchSensor，拖拽流畅
+GamesPage (DndContext)
+  → 状态: slotOccupants (Map<slotIndex,layerIndex>) + verifiedSlots (Map<slotIndex,boolean>)
+  → 上方 AssemblyLine: 每个槽位 — 空标记 (useDroppable) 或 已放置卡片 (useDraggable variant="slot")
+  → 下方 ReturnZone (useDroppable id="return-zone"): 未放置卡片的拖拽回退区
+  → 拖拽规则:
+    - 下方卡片 → 空槽位: 放入，卡片从下方消失
+    - 下方卡片 → 已占槽位: 新卡片放入，旧卡片自动回下方
+    - 槽位卡片 → 空槽位: 移动卡片
+    - 槽位卡片 → 已占槽位: 交换，原槽位卡片回下方
+    - 槽位卡片 → ReturnZone: 卡片回下方，槽位清空
+  → 验证按钮: 所有槽位填满后可点击
+    - 检查 slotOccupants.get(i) === i → 正确(绿) / 错误(红)
+    - 全部正确 → 庆祝弹窗；有误 → 可调整后重新验证
+  → 全部重来: 清空所有槽位，重新打乱卡片顺序
 ```
 ### 5.6 路由架构（重构后）
 
@@ -340,6 +338,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | `flatRoof.js` | flat-roof-01 | 平屋面构造 | 6 层 | 每层独立 GLB |
 | `membraneRoof.js` | membrane-roof-01 | 卷材防水屋面 | 6 层 | 共享 GLB + layerObjectName |
 | `roofInsulation.js` | roof-insulation-01 | 卷材平面屋顶保温构造 | 9 层 | 共享 GLB + layerObjectName |
+| `backgroundScenes.js` | — | **背景场景列表** | — | GLB路径 + position 配置 |
 | `nodesIndex.js` | — | **节点统一入口** | — | `nodeLoaders` 映射 + 元数据数组 |
 | `roofSections.js` | — | 屋顶章节索引 | — | — |
 | `courseModules.js` | — | 课程模块定义 | — | 8 个模块 (2 个 available) |
