@@ -28,7 +28,7 @@ function SectionSubPage() {
   }, [moduleId]);
 
   if (loading) {
-    return <div className="min-h-screen bg-white flex items-center justify-center"><div className="w-5 h-5 border-2 border-gold-300 border-t-gold-600 rounded-full animate-spin" /></div>;
+    return <div className="min-h-screen bg-white flex items-center justify-center"><div className="w-5 h-5 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" /></div>;
   }
 
   return (
@@ -36,7 +36,7 @@ function SectionSubPage() {
       <main className="flex-1 px-6 md:px-10 py-10 max-w-5xl mx-auto w-full">
         <div className="mb-2">
           <span className="text-sm text-gray-400">
-            <Link to="/curriculum" className="text-gold-600 hover:text-gold-700 transition-colors">课程目录</Link>
+            <Link to="/curriculum" className="text-rose-600 hover:text-rose-700 transition-colors">课程目录</Link>
             <span className="mx-1.5 text-gray-300">›</span>
             <span className="text-gray-500">{moduleInfo?.title || moduleId}</span>
           </span>
@@ -63,15 +63,15 @@ function SectionSubPage() {
                     <Link to={linkTarget}
                       className="block bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-8
                         shadow-[0_2px_8px_rgba(0,0,0,0.04)]
-                        hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.05),0_8px_20px_rgba(212,164,58,0.1)]
+                        hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.05),0_8px_20px_rgba(255,61,88,0.1)]
                         hover:-translate-y-2 hover:scale-[1.02]
-                        hover:bg-white hover:border-gold-200
+                        hover:bg-white hover:border-rose-200
                         transition-all duration-300 ease-out cursor-pointer group text-left"
                     >
                       <span className="text-4xl transition-transform duration-300 ease-out group-hover:scale-110 inline-block">{sec.icon || "📄"}</span>
-                      <h3 className="text-xl font-bold text-gray-900 mt-5 group-hover:text-gold-600 transition-colors tracking-tight">{sec.title}</h3>
+                      <h3 className="text-xl font-bold text-gray-900 mt-5 group-hover:text-rose-600 transition-colors tracking-tight">{sec.title}</h3>
                       <p className="text-sm text-gray-500 mt-2 leading-relaxed">{sec.description}</p>
-                      {nodeCount > 0 && <span className="inline-block mt-4 text-xs font-medium text-gold-600 bg-gold-50 px-3 py-1 rounded-full">{nodeCount} 个节点</span>}
+                      {nodeCount > 0 && <span className="inline-block mt-4 text-xs font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">{nodeCount} 个节点</span>}
                     </Link>
                   </motion.div>
                 );

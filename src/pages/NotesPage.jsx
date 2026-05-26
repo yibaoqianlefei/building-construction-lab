@@ -85,7 +85,7 @@ function NotesPage() {
                 placeholder="按节点标题筛选..."
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gold-400 transition-colors bg-white/80"
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-rose-400 transition-colors bg-white/80"
               />
             </div>
 
@@ -98,7 +98,7 @@ function NotesPage() {
                   transition={{ duration: 0.3, delay: i * 0.04 }}
                   className={`bg-white/70 backdrop-blur-sm rounded-2xl border shadow-sm overflow-hidden transition-all ${
                     compareIds.includes(note.id)
-                      ? "border-gold-500 shadow-md shadow-gold-500/10"
+                      ? "border-rose-500 shadow-md shadow-rose-500/10"
                       : "border-gray-200/50"
                   }`}
                 >
@@ -120,7 +120,7 @@ function NotesPage() {
                         <button
                           onClick={() => toggleCompare(note.id)}
                           className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer ${
-                            compareIds.includes(note.id) ? "bg-gold-100 text-gold-600" : "text-gray-400 hover:text-gold-600"
+                            compareIds.includes(note.id) ? "bg-rose-100 text-rose-600" : "text-gray-400 hover:text-rose-600"
                           }`}
                           title="对比"
                         >
@@ -140,7 +140,7 @@ function NotesPage() {
                         <textarea
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-700 resize-none focus:outline-none focus:border-gold-400 bg-white/80"
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-700 resize-none focus:outline-none focus:border-rose-400 bg-white/80"
                           rows={3}
                           placeholder="添加备注..."
                           autoFocus
@@ -148,7 +148,7 @@ function NotesPage() {
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={() => handleSaveText(note.id)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gold-500 text-white text-xs font-medium hover:bg-gold-600 transition-colors cursor-pointer"
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-medium hover:bg-rose-600 transition-colors cursor-pointer"
                           >
                             <Check size={12} /> 保存
                           </button>
@@ -171,7 +171,7 @@ function NotesPage() {
                         {note.text ? (
                           <p className="text-xs text-gray-500 line-clamp-2">{note.text}</p>
                         ) : (
-                          <p className="text-xs text-gray-300 italic cursor-pointer hover:text-gold-600 transition-colors">添加备注...</p>
+                          <p className="text-xs text-gray-300 italic cursor-pointer hover:text-rose-600 transition-colors">添加备注...</p>
                         )}
                       </div>
                     )}

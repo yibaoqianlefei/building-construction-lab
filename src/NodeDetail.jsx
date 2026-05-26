@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
@@ -13,7 +13,7 @@ import { getNodeData } from "./data/nodesIndex";
 import { useModelInteraction } from "./hooks/useModelInteraction";
 import { usePanelState } from "./hooks/usePanelState";
 
-const ACCENT = "#B8891F";
+const ACCENT = "#e6354f";
 
 function NodeDetail() {
   const { nodeId } = useParams();
@@ -38,6 +38,21 @@ function NodeDetail() {
   } = useModelInteraction();
 
   const { showLeftPanel, toggleLeftPanel, closeLeftPanel } = usePanelState();
+  const [showLabels, setShowLabels] = useState(true);
+  const [labelCard, setLabelCard] = useState(null); // { index, layer, position }
+
+  /* label click → toggle detail card at anchor position */
+  const handleLabelClick = useCallback((index, anchorPos) => {
+    if (!data?.layers) return;
+    if (labelCard?.index === index) {
+      setLabelCard(null); // toggle off
+    } else {
+      setActiveCard(null);
+      setLabelCard({ index, layer: data.layers[index], position: anchorPos });
+    }
+  }, [data, labelCard, setActiveCard]);
+
+  const handleCloseLabelCard = useCallback(() => setLabelCard(null), []);
 
   const viewerRef = useRef(null);
   const controlsRef = useRef(null);
@@ -58,7 +73,7 @@ function NodeDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-5 h-5 border-2 border-gold-300 border-t-gold-600 rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -77,7 +92,7 @@ function NodeDetail() {
     <div className="min-h-screen bg-white text-gray-600 flex flex-col h-screen">
       <div className="px-6 md:px-10 py-2.5 bg-white border-b border-gray-100/50 flex-shrink-0">
         <span className="text-sm text-gray-400">
-          <Link to="/library" className="text-gold-600 hover:text-gold-700 transition-colors">节点库</Link>
+          <Link to="/library" className="text-rose-600 hover:text-rose-700 transition-colors">节点库</Link>
           <span className="mx-1.5 text-gray-300">›</span>
           <span className="text-gray-500">{data.title}</span>
         </span>
@@ -105,6 +120,10 @@ function NodeDetail() {
               autoRotate={autoRotate}
               hoveredLayer={hoveredLayer}
               selectedLayer={selectedLayer}
+              showLabels={showLabels}
+              onLabelClick={handleLabelClick}
+              labelCard={labelCard}
+              onCloseLabelCard={handleCloseLabelCard}
               onHoverLayer={setHoveredLayer}
               onLayerClick={handleLayerClick}
               onBlankClick={handleBlankClick}
@@ -122,6 +141,8 @@ function NodeDetail() {
               onLeftPanelToggle={toggleLeftPanel}
               screenshotActive={screenshotMode}
               onScreenshotToggle={() => setScreenshotMode((v) => !v)}
+              showLabels={showLabels}
+              onLabelsToggle={() => setShowLabels((v) => !v)}
             />
 
             <LeftKnowledgePanel

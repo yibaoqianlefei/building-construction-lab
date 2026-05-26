@@ -207,7 +207,7 @@ function ConstructionLayer({
     } else if (isSelected) {
       opacityTarget = 1;
       lineOpacityTarget = 0.9;
-      lineColorTarget.set("#D4A43A");
+      lineColorTarget.set("#ff3d58");
     } else if (isDimmed) {
       if (isHovered) {
         opacityTarget = 0.7;

@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-26 主菜单背景GLB+场景切换
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-26 爆炸标注+详情卡片
 
 ---
 
@@ -21,7 +21,7 @@
 | 前端框架 | React 19 + React Router DOM v7 (`createBrowserRouter`) | 组件化 UI 与路由 |
 | 构建工具 | Vite 8 | 开发服务器与生产构建 |
 | 3D 渲染 | Three.js v0.184 + `@react-three/fiber` + `@react-three/drei` | 3D 模型加载、场景渲染、交互控制 |
-| 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 gold-* 色板 |
+| 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 rose-* 色板 |
 | 字体 | Noto Serif SC (Google Fonts) | 中文字体 |
 | 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
 | 状态管理 | React Context (AuthContext) + Custom Hooks | 认证全局共享 + 页面状态封装 |
@@ -55,7 +55,7 @@
     ├── routes.jsx                 # 路由配置（createBrowserRouter 数组）
     ├── App.jsx                    # 向后兼容 re-export（路由已迁移至 routes.jsx）
     ├── NodeDetail.jsx             # 核心页面：异步数据加载 + 自定义 Hooks
-    ├── index.css                  # Tailwind 入口 + gold 色板定义
+    ├── index.css                  # Tailwind 入口 + rose 色板定义
     │
     ├── hooks/                     # 自定义 Hooks（页面状态封装）
     │   ├── useModelInteraction.js # 3D 模型交互状态（explode/hover/select/activeCard）
@@ -73,12 +73,15 @@
     │   ├── viewer/                # 3D 查看器组件
     │   │   ├── ModelViewer.jsx    # Three.js Canvas 包装，含 WallAssembly/CameraAdjuster/ShadowLight
     │   │   ├── ConstructionLayer.jsx  # 单层渲染：GLB 模型 / 程序化 Box
-    │   │   ├── MenuBackground.jsx # 主菜单 3D 背景（GLB 模型 + OrbitControls + autoRotate + 场景切换）
+    │   │   ├── MenuBackground.jsx # 主菜单 3D 背景（GLB + OrbitControls + autoRotate + 场景切换 + 加载回调）
+    │   │   ├── LoadingOverlay.jsx # 加载动画覆盖层（Framer Motion 构造层堆叠动画）
     │   │   ├── BottomControlBar.jsx   # 底部控制栏：爆炸滑块/旋转/截图/面板
     │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
     │   │   ├── LeftKnowledgePanel.jsx  # 左滑出全部构件面板
     │   │   ├── LayerLabel.jsx     # 浮层标签卡片（点击图层弹出）
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
+    │   │   ├── ExplosionLabels.jsx # 爆炸标注组件（Html标签 + 锚点定位）
+    │   │   ├── LabelDetailCard.jsx # 标注详情卡片（弹簧动画展开）
     │   │   └── ExplodeControls.jsx    # 爆炸控制（独立组件）
     │   └── game/                  # 游戏组件
     │       ├── AssemblyLine.jsx   # 2D 射线拼装目标区（金色引导线 + 可放置标记点）
@@ -154,6 +157,7 @@
 | **教材阅读**（含交互模型引用） | `/textbook/:sectionId` | TextbookPage | public/textbook/*/content.md |
 | **3D 模型查看器**（核心） | `/node/:nodeId` | NodeDetail, ModelViewer, ConstructionLayer | nodesIndex.getNodeData() 异步加载 |
 | **图层爆炸/分解** | `/node/:nodeId` | BottomControlBar (滑块 0-100) | useModelInteraction hook |
+| **爆炸标注**（自动标签 + 点击详情） | `/node/:nodeId` | ExplosionLabels, LabelDetailCard, BottomControlBar | 锚点定位 (墙顶/屋顶右) |
 | **图层高亮/选中** | `/node/:nodeId` | ConstructionLayer (hover/select) | useModelInteraction hook |
 | **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 节点 layers[] |
 | **浮层标签**（点击弹出） | `/node/:nodeId` | LayerLabel | activeCard (hook 管理) |
@@ -382,7 +386,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 
 ### 8.5 样式约定
 
-- gold-500 (`#D4A43A`) 为主强调色
+- rose-500 (`#ff3d58`) 为主强调色
 - 毛玻璃效果: `bg-white/70 backdrop-blur-md`
 - 圆角: `rounded-2xl` (卡片), `rounded-full` (按钮)
 - 字体: `Inter` + `Noto Sans SC` + 系统回退

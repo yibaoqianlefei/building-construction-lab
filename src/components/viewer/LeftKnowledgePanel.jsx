@@ -37,7 +37,7 @@ function LeftKnowledgePanel({ layers, selectedLayerIndex, open, onClose }) {
                 className={`bg-white/85 backdrop-blur-md rounded-2xl p-4 border shadow-sm
                   transition-all duration-300
                   ${selectedLayerIndex === i
-                    ? "border-gold-400 shadow-md"
+                    ? "border-rose-400 shadow-md"
                     : "border-gray-200/50"
                   }`}
               >
@@ -53,7 +53,7 @@ function LeftKnowledgePanel({ layers, selectedLayerIndex, open, onClose }) {
                     <p className="text-sm text-gray-500">
                       {l.material}
                     </p>
-                    <p className="text-sm text-gold-600 font-mono tabular-nums">
+                    <p className="text-sm text-rose-600 font-mono tabular-nums">
                       {(l.thickness * 1000).toFixed(0)} mm
                     </p>
                     {l.description && (

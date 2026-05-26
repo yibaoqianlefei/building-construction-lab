@@ -113,8 +113,8 @@ function ScreenshotTool({ containerRef, onScreenshot, onClose }) {
 
       {sel && (
         <div
-          className="absolute border-2 border-dashed border-gold-500 bg-gold-50/10
-            shadow-[0_0_0_4px_rgba(212,164,58,0.2)] pointer-events-none"
+          className="absolute border-2 border-dashed border-rose-500 bg-rose-50/10
+            shadow-[0_0_0_4px_rgba(255,61,88,0.2)] pointer-events-none"
           style={{
             left: sel.x,
             top: sel.y,

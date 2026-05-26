@@ -3,6 +3,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
+import ExplosionLabels from "./ExplosionLabels";
+import LabelDetailCard from "./LabelDetailCard";
 
 const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
@@ -248,7 +250,7 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
   useEffect(() => {
     console.log(
       `%c[节点加载] %c${nodeTitle || "(未命名)"}`,
-      "font-weight:bold;color:#D4A43A",
+      "font-weight:bold;color:#ff3d58",
       "font-weight:bold;color:#333"
     );
     console.log(`  modelRotation: [${(modelRotation || [0, 0, 0]).join(", ")}]`);
@@ -277,6 +279,10 @@ function Scene({
   onLayerClick,
   autoRotate,
   onControlsReady,
+  showLabels,
+  onLabelClick,
+  labelCard,
+  onCloseLabelCard,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -325,6 +331,22 @@ function Scene({
           wallRef={wallRef}
           smoothExplodeRef={smoothExplodeRef}
         />
+        {showLabels && explodeValue > 0 && (
+          <ExplosionLabels
+            layers={layers}
+            explodeValue={explodeValue}
+            explodeAxis={explodeAxis}
+            onLabelClick={onLabelClick}
+            activeCardIndex={labelCard?.index ?? -1}
+          />
+        )}
+        {labelCard && (
+          <LabelDetailCard
+            layer={labelCard.layer}
+            position={labelCard.position}
+            onClose={onCloseLabelCard}
+          />
+        )}
       </group>
 
       <Grid
@@ -368,6 +390,10 @@ function ModelViewer({
   onHoverLayer,
   onLayerClick,
   onBlankClick,
+  showLabels,
+  onLabelClick,
+  labelCard,
+  onCloseLabelCard,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -392,6 +418,10 @@ function ModelViewer({
           onHoverLayer={onHoverLayer}
           onLayerClick={onLayerClick}
           autoRotate={autoRotate}
+          showLabels={showLabels}
+          onLabelClick={onLabelClick}
+          labelCard={labelCard}
+          onCloseLabelCard={onCloseLabelCard}
         />
       </Canvas>
     </div>

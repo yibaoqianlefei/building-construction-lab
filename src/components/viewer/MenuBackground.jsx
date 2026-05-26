@@ -44,7 +44,6 @@ function SceneModel({ modelPath }) {
   return <primitive object={fixed} />;
 }
 
-/* ── placeholder for missing models ── */
 function PlaceholderCube() {
   return (
     <mesh>
@@ -87,7 +86,6 @@ function RendererSetup() {
   return null;
 }
 
-/* ── shadow catcher ── */
 function ShadowPlane() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.8, 0]} receiveShadow renderOrder={1}>
@@ -97,19 +95,22 @@ function ShadowPlane() {
   );
 }
 
-/* ── loading fallback ── */
 function LoadingFallback() {
   return (
     <mesh>
       <boxGeometry args={[1.2, 1.2, 0.6]} />
-      <meshStandardMaterial color="#D4A43A" wireframe transparent opacity={0.3} depthWrite={false} />
+      <meshStandardMaterial color="#ff3d58" wireframe transparent opacity={0.3} depthWrite={false} />
     </mesh>
   );
 }
 
-/* ── main ── */
-function MenuBackground({ interactive = false, autoRotate = true, modelPath = "/models/wall-model.glb", position = [0, 0, 0] }) {
+function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb", position = [0, 0, 0], onLoaded }) {
   const groupRef = useRef();
+
+  useEffect(() => {
+    const t = setTimeout(() => onLoaded?.(), 1800);
+    return () => clearTimeout(t);
+  }, [modelPath, onLoaded]);
 
   return (
     <>

@@ -26,7 +26,7 @@ function ClassDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-5 h-5 border-2 border-gold-300 border-t-gold-600 rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -50,7 +50,7 @@ function ClassDetailPage() {
         transition={{ duration: 0.4 }}
       >
         <div className="mb-2">
-          <Link to="/classes" className="text-sm text-gold-600 hover:text-gold-700 transition-colors">
+          <Link to="/classes" className="text-sm text-rose-600 hover:text-rose-700 transition-colors">
             ← 返回班级列表
           </Link>
         </div>
@@ -59,7 +59,7 @@ function ClassDetailPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{cls.name}</h1>
             <p className="text-gray-500 text-sm mt-1">
-              {cls.teacher_name} · {cls.members?.length || 0} 位成员 · 加入码 <span className="font-mono text-gold-600">{cls.join_code}</span>
+              {cls.teacher_name} · {cls.members?.length || 0} 位成员 · 加入码 <span className="font-mono text-rose-600">{cls.join_code}</span>
             </p>
           </div>
         </div>
@@ -109,7 +109,7 @@ function ClassDetailPage() {
                   transition={{ delay: i * 0.04 }}
                   className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl px-4 py-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gold-100 flex items-center justify-center text-gold-600 text-xs font-semibold">
+                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 text-xs font-semibold">
                     {(m.profiles?.full_name || "?")[0]}
                   </div>
                   <div>

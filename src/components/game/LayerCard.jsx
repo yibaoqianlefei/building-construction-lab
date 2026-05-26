@@ -18,7 +18,7 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
   /* verified border — thin line, no bg change */
   const verifiedRing =
     verified === true
-      ? "border-gold-400"
+      ? "border-rose-400"
       : verified === false
         ? "border-red-300"
         : "border-transparent";
@@ -39,7 +39,7 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
       >
         <div
           className="w-1.5 h-4 rounded-full flex-shrink-0"
-          style={{ backgroundColor: layer.color || "#D4A43A" }}
+          style={{ backgroundColor: layer.color || "#ff3d58" }}
         />
         <span className="text-xs font-normal text-gray-600 tracking-wide truncate max-w-16">
           {layer.name}
@@ -63,14 +63,14 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
     >
       <div
         className="w-1.5 h-8 rounded-full flex-shrink-0"
-        style={{ backgroundColor: layer.color || "#D4A43A" }}
+        style={{ backgroundColor: layer.color || "#ff3d58" }}
       />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-normal text-gray-700 tracking-wide truncate">
           {layer.name}
         </p>
         {!isDragging && (
-          <p className="text-xs text-gold-600/70 font-light tabular-nums mt-0.5">
+          <p className="text-xs text-rose-600/70 font-light tabular-nums mt-0.5">
             {(layer.thickness * 1000).toFixed(0)} mm
           </p>
         )}

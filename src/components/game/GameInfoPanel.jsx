@@ -58,7 +58,7 @@ function GameInfoPanel({
                   ? allCorrect
                     ? "#22C55E"
                     : `linear-gradient(90deg, #22C55E ${(correctCount / totalCount) * 100}%, #EF4444 ${(correctCount / totalCount) * 100}%)`
-                  : "#D4A43A",
+                  : "#ff3d58",
               }}
             />
           </div>
@@ -71,7 +71,7 @@ function GameInfoPanel({
               ? "bg-green-50/60 text-green-700"
               : validationDone && wrongCount > 0
                 ? "bg-red-50/60 text-red-600"
-                : "bg-gold-50/60 text-gray-700"
+                : "bg-rose-50/60 text-gray-700"
           }`}
         >
           <div className="flex items-start gap-1.5">
@@ -80,7 +80,7 @@ function GameInfoPanel({
             ) : validationDone && wrongCount > 0 ? (
               <AlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
             ) : !firstPieceLocked ? (
-              <GripHorizontal size={14} className="text-gold-500 flex-shrink-0 mt-0.5 animate-pulse" />
+              <GripHorizontal size={14} className="text-rose-500 flex-shrink-0 mt-0.5 animate-pulse" />
             ) : null}
             <span className="leading-relaxed">{statusMessage}</span>
           </div>
@@ -91,7 +91,7 @@ function GameInfoPanel({
           <div className="flex gap-2 mb-4">
             <button
               onClick={onRetryWrong}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gold-500 text-white text-xs font-medium hover:bg-gold-600 transition-colors cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-500 text-white text-xs font-medium hover:bg-rose-600 transition-colors cursor-pointer"
             >
               <RotateCcw size={13} />
               调整
@@ -145,7 +145,7 @@ function GameInfoPanel({
                     <span className="block truncate text-gray-700">
                       {layer.name}
                     </span>
-                    <span className="text-gold-600 tabular-nums">
+                    <span className="text-rose-600 tabular-nums">
                       {(layer.thickness * 1000).toFixed(0)} mm
                     </span>
                   </div>

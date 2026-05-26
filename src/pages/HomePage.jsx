@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +19,7 @@ import {
   Play,
 } from "lucide-react";
 import MenuBackground from "../components/viewer/MenuBackground";
+import LoadingOverlay from "../components/viewer/LoadingOverlay";
 import backgroundScenes from "../data/backgroundScenes";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -69,7 +70,7 @@ function MenuItem({ item, onClick }) {
       <item.icon
         size={22}
         strokeWidth={1.5}
-        className="text-gray-400 group-hover:text-gold-600 transition-all duration-300 ease-out flex-shrink-0"
+        className="text-gray-400 group-hover:text-rose-600 transition-all duration-300 ease-out flex-shrink-0"
       />
       <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-all duration-300 ease-out">
         {item.label}
@@ -79,11 +80,11 @@ function MenuItem({ item, onClick }) {
 
   const baseClass =
     "w-full flex items-center gap-3.5 px-5 py-3 rounded-xl" +
-    " border-l-4 border-transparent hover:border-l-gold-500" +
+    " border-l-4 border-transparent hover:border-l-rose-500" +
     " transition-all duration-300 ease-out" +
-    " hover:bg-gold-50/70 hover:backdrop-blur-sm" +
+    " hover:bg-rose-50/70 hover:backdrop-blur-sm" +
     " hover:-translate-y-0.5" +
-    " hover:shadow-[0_4px_12px_rgba(212,164,58,0.12)]" +
+    " hover:shadow-[0_4px_12px_rgba(255,61,88,0.12)]" +
     " cursor-pointer group text-left";
 
   if (onClick) {
@@ -124,8 +125,8 @@ function MenuContent({ onModalOpen }) {
         ))}
       </motion.h1>
       <motion.div
-        className="w-12 h-0.5 bg-gold-500 rounded-full my-5
-          hover:w-20 hover:bg-gold-400 transition-all duration-300 origin-left"
+        className="w-12 h-0.5 bg-rose-500 rounded-full my-5
+          hover:w-20 hover:bg-rose-400 transition-all duration-300 origin-left"
         variants={lineVariants}
       />
 
@@ -143,7 +144,7 @@ function MenuContent({ onModalOpen }) {
         {user ? (
           <div className="space-y-0.5">
             <div className="flex items-center gap-3 px-5 py-2">
-              <div className="w-9 h-9 rounded-full bg-gold-100 flex items-center justify-center text-gold-600 text-sm font-semibold flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 text-sm font-semibold flex-shrink-0">
                 {(profile?.full_name || user.email || "?")[0]}
               </div>
               <div className="min-w-0">
@@ -193,14 +194,14 @@ function MenuContent({ onModalOpen }) {
             className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
               border-l-4 border-transparent
               transition-all duration-300 ease-out
-              hover:bg-gold-50/70 hover:border-l-gold-500 hover:-translate-y-0.5
-              hover:shadow-[0_4px_12px_rgba(212,164,58,0.12)]
+              hover:bg-rose-50/70 hover:border-l-rose-500 hover:-translate-y-0.5
+              hover:shadow-[0_4px_12px_rgba(255,61,88,0.12)]
               cursor-pointer group text-left"
           >
             <SwitchCamera
               size={22}
               strokeWidth={1.5}
-              className="text-gray-400 group-hover:text-gold-600 transition-all duration-300 ease-out flex-shrink-0"
+              className="text-gray-400 group-hover:text-rose-600 transition-all duration-300 ease-out flex-shrink-0"
             />
             <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-all duration-300 ease-out">
               切换账号
@@ -291,7 +292,7 @@ function AboutModal({ open, onClose }) {
                 <span className="text-gray-400">GitHub</span>
                 <a
                   href="#"
-                  className="text-gold-600 hover:text-gold-700 underline underline-offset-2 transition-colors"
+                  className="text-rose-600 hover:text-rose-700 underline underline-offset-2 transition-colors"
                 >
                   项目地址（待添加）
                 </a>
@@ -312,7 +313,14 @@ function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
   const [sceneIndex, setSceneIndex] = useState(0);
+  const [bgLoading, setBgLoading] = useState(true);
   const currentScene = backgroundScenes[sceneIndex];
+
+  useEffect(() => {
+    setBgLoading(true);
+  }, [sceneIndex]);
+
+  const handleBgLoaded = useCallback(() => setBgLoading(false), []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f5f5f7]">
@@ -335,8 +343,11 @@ function HomePage() {
             autoRotate={autoRotate}
             modelPath={currentScene.modelPath}
             position={currentScene.position}
+            onLoaded={handleBgLoaded}
           />
         </Canvas>
+        {/* loading overlay */}
+        <LoadingOverlay isLoading={bgLoading} />
         {/* bottom-right control buttons */}
         <div className="absolute bottom-4 right-4 z-20 flex gap-2">
           {/* scene switcher */}
@@ -345,7 +356,7 @@ function HomePage() {
             className="w-11 h-11 rounded-full bg-white/70 backdrop-blur-md border border-white/30 shadow-lg shadow-black/5 flex items-center justify-center cursor-pointer transition-all duration-300 hover:bg-white/90"
             title={`场景: ${currentScene.name} (点击切换)`}
           >
-            <SwitchCamera size={17} className="text-gray-400 hover:text-gold-500" />
+            <SwitchCamera size={17} className="text-gray-400 hover:text-rose-500" />
           </button>
           {/* auto-rotate toggle */}
           <button
@@ -354,9 +365,9 @@ function HomePage() {
             title={autoRotate ? "暂停旋转" : "恢复旋转"}
           >
             {autoRotate ? (
-              <Pause size={17} className="text-gold-500" />
+              <Pause size={17} className="text-rose-500" />
             ) : (
-              <Play size={17} className="text-gray-400 hover:text-gold-500" />
+              <Play size={17} className="text-gray-400 hover:text-rose-500" />
             )}
           </button>
         </div>

@@ -8,9 +8,9 @@ function LayerCard({ layer, index, isHovered, isExpanded, onToggle }) {
       layout
       className={`rounded-xl border transition-all duration-300
         ${isExpanded
-          ? "bg-white border-gold-400 shadow-md"
+          ? "bg-white border-rose-400 shadow-md"
           : isHovered
-            ? "bg-gold-50/50 border-gold-200"
+            ? "bg-rose-50/50 border-rose-200"
             : "bg-white/60 backdrop-blur-sm border-gray-200/50"
         }`}
     >
@@ -25,7 +25,7 @@ function LayerCard({ layer, index, isHovered, isExpanded, onToggle }) {
         <span className="text-sm font-semibold text-gray-800 flex-1">
           {layer.name}
         </span>
-        <span className="text-xs text-gold-600 font-mono tabular-nums">
+        <span className="text-xs text-rose-600 font-mono tabular-nums">
           {(layer.thickness * 1000).toFixed(0)} mm
         </span>
       </button>

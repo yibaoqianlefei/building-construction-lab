@@ -22,7 +22,7 @@ function ReturnZone({ children }) {
     <div
       ref={setNodeRef}
       className={`flex-1 min-h-0 rounded-2xl transition-colors duration-300 p-6 ${
-        isOver ? "bg-gold-50/40" : "bg-transparent"
+        isOver ? "bg-rose-50/40" : "bg-transparent"
       }`}
       style={{ touchAction: "none" }}
     >
@@ -145,7 +145,7 @@ function GamesPage() {
   if (loading) {
     return (
       <div className="h-screen bg-[#FAFAFA] flex items-center justify-center">
-        <div className="w-5 h-5 border-2 border-gold-300 border-t-gold-600 rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -165,8 +165,8 @@ function GamesPage() {
                 onClick={() => handleNodeChange(n.id)}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer ${
                   nodeId === n.id
-                    ? "bg-gold-500 text-white shadow-[0_2px_8px_rgba(212,164,58,0.25)]"
-                    : "bg-white/70 backdrop-blur-sm text-gray-500 border border-gray-200/60 hover:border-gold-300 hover:text-gray-700"
+                    ? "bg-rose-500 text-white shadow-[0_2px_8px_rgba(255,61,88,0.25)]"
+                    : "bg-white/70 backdrop-blur-sm text-gray-500 border border-gray-200/60 hover:border-rose-300 hover:text-gray-700"
                 }`}
               >
                 {n.title}
@@ -223,7 +223,7 @@ function GamesPage() {
                   ? "bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.2)]"
                   : !allFilled
                     ? "bg-gray-200 text-gray-400 shadow-none cursor-not-allowed"
-                    : "bg-gold-500 text-white shadow-[0_2px_8px_rgba(212,164,58,0.2)] hover:bg-gold-600 hover:shadow-[0_4px_16px_rgba(212,164,58,0.3)]"
+                    : "bg-rose-500 text-white shadow-[0_2px_8px_rgba(255,61,88,0.2)] hover:bg-rose-600 hover:shadow-[0_4px_16px_rgba(255,61,88,0.3)]"
               }`}
             >
               {done ? (
@@ -248,8 +248,8 @@ function GamesPage() {
         {/* ── DragOverlay ── */}
         <DragOverlay dropAnimation={null}>
           {draggedLayer && activeLayerIdx >= 0 && (
-            <div className="w-52 flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border border-gold-400/50 shadow-[0_8px_24px_rgba(0,0,0,0.10)]">
-              <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: draggedLayer.color || "#D4A43A" }} />
+            <div className="w-52 flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border border-rose-400/50 shadow-[0_8px_24px_rgba(0,0,0,0.10)]">
+              <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: draggedLayer.color || "#ff3d58" }} />
               <p className="text-sm font-normal text-gray-700 tracking-wide truncate">{draggedLayer.name}</p>
             </div>
           )}
@@ -268,7 +268,7 @@ function GamesPage() {
                 className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-10 text-center max-w-sm w-full mx-4"
               >
                 <div className="mb-6 flex justify-center">
-                  <CheckCircle2 size={56} className="text-gold-500" strokeWidth={1.5} />
+                  <CheckCircle2 size={56} className="text-rose-500" strokeWidth={1.5} />
                 </div>
                 <h2 className="text-2xl font-light text-gray-800 tracking-wide mb-2">拼装完成</h2>
                 <p className="text-sm text-gray-400 font-light mb-8">{nodeData?.title}</p>

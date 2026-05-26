@@ -24,9 +24,9 @@ function NodeCard({ node, index }) {
         className="block bg-white/80 backdrop-blur-sm border border-gray-200/60
           rounded-2xl p-6
           shadow-[0_2px_8px_rgba(0,0,0,0.04)]
-          hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_8px_20px_rgba(212,164,58,0.08)]
+          hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_8px_20px_rgba(255,61,88,0.08)]
           hover:-translate-y-1.5 hover:scale-[1.01]
-          hover:bg-white hover:border-gold-200
+          hover:bg-white hover:border-rose-200
           transition-all duration-300 ease-out
           cursor-pointer group"
       >
@@ -34,14 +34,14 @@ function NodeCard({ node, index }) {
           <span className="text-4xl">{categoryIcons[node.category] || "📦"}</span>
         </div>
 
-        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gold-600 transition-colors tracking-tight">
+        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-rose-600 transition-colors tracking-tight">
           {node.title}
         </h3>
         <p className="text-sm text-gray-500 mt-1.5 leading-relaxed line-clamp-2">
           {node.description}
         </p>
 
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-gold-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-rose-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
           进入节点
           <svg
             className="w-3 h-3"
@@ -88,7 +88,7 @@ function LibraryPage() {
           return (
             <section key={category} className="mb-14">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 bg-gold-500 rounded-full flex-shrink-0" />
+                <div className="w-1 h-6 bg-rose-500 rounded-full flex-shrink-0" />
                 <h2 className="text-xl text-gray-600 font-medium tracking-tight">
                   {category}
                 </h2>
@@ -112,21 +112,21 @@ function LibraryPage() {
           <nav className="flex items-center gap-8">
             <a
               href="#"
-              className="text-sm text-gray-400 hover:text-gold-600 transition-colors flex items-center gap-1.5"
+              className="text-sm text-gray-400 hover:text-rose-600 transition-colors flex items-center gap-1.5"
             >
               <FiBookOpen size={14} />
               关于项目
             </a>
             <a
               href="#"
-              className="text-sm text-gray-400 hover:text-gold-600 transition-colors flex items-center gap-1.5"
+              className="text-sm text-gray-400 hover:text-rose-600 transition-colors flex items-center gap-1.5"
             >
               <FiHelpCircle size={14} />
               使用说明
             </a>
             <a
               href="#"
-              className="text-sm text-gray-400 hover:text-gold-600 transition-colors flex items-center gap-1.5"
+              className="text-sm text-gray-400 hover:text-rose-600 transition-colors flex items-center gap-1.5"
             >
               <FiGithub size={14} />
               GitHub

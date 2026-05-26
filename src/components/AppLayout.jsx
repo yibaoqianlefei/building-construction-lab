@@ -50,7 +50,7 @@ function AppLayout() {
                 <button
                   onClick={handleBack}
                   className="flex items-center gap-1.5 cursor-pointer
-                    text-gray-500 hover:text-gold-600
+                    text-gray-500 hover:text-rose-600
                     transition-colors duration-200
                     hover:bg-gray-100 rounded-lg px-2 py-1 -ml-2"
                   title="返回上一页"
@@ -63,7 +63,7 @@ function AppLayout() {
             )}
             <Link
               to="/"
-              className="text-sm font-medium text-gray-500 tracking-tight hover:text-gold-600 transition-colors"
+              className="text-sm font-medium text-gray-500 tracking-tight hover:text-rose-600 transition-colors"
             >
               建筑构造交互系统
             </Link>
@@ -77,13 +77,13 @@ function AppLayout() {
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full
                     text-sm text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
                 >
-                  <div className="w-6 h-6 rounded-full bg-gold-100 flex items-center justify-center">
-                    <User size={13} className="text-gold-600" />
+                  <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
+                    <User size={13} className="text-rose-600" />
                   </div>
                   <span className="hidden sm:inline font-medium">
                     {profile?.full_name || user.email}
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gold-50 text-gold-600 font-medium">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 font-medium">
                     {profile?.role === "teacher" ? "教师" : "学生"}
                   </span>
                 </button>
@@ -127,7 +127,7 @@ function AppLayout() {
               <Link
                 to="/auth"
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
-                  bg-gold-500 text-white hover:bg-gold-600 transition-colors cursor-pointer"
+                  bg-rose-500 text-white hover:bg-rose-600 transition-colors cursor-pointer"
               >
                 登录
               </Link>

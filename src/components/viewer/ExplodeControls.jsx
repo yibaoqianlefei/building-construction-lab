@@ -24,7 +24,7 @@ function ExplodeControls({ value, onChange }) {
       onPointerMove={handlePointerDown}
     >
       <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2 tracking-tight">
-        <FiLayers style={{ color: "#D4A43A" }} />
+        <FiLayers style={{ color: "#ff3d58" }} />
         分解视图
       </h3>
 
@@ -48,12 +48,12 @@ function ExplodeControls({ value, onChange }) {
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer
-            accent-[#D4A43A]
+            accent-[#ff3d58]
             [&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-4
             [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
-            [&::-webkit-slider-thumb]:bg-[#D4A43A]
+            [&::-webkit-slider-thumb]:bg-[#ff3d58]
             [&::-webkit-slider-thumb]:cursor-pointer
             [&::-webkit-slider-thumb]:shadow-sm
             [&::-webkit-slider-thumb]:transition-transform
@@ -66,10 +66,10 @@ function ExplodeControls({ value, onChange }) {
           className="flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs
             transition-all duration-200 ease-out
             hover:brightness-110 hover:scale-105
-            hover:shadow-md hover:shadow-gold-500/20 active:scale-95"
-          style={{ backgroundColor: "#D4A43A" }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#B8891F")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#D4A43A")}
+            hover:shadow-md hover:shadow-rose-500/20 active:scale-95"
+          style={{ backgroundColor: "#ff3d58" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e6354f")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ff3d58")}
           title="分解"
         >
           <FiLayers size={13} />

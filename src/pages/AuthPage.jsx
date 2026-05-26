@@ -110,7 +110,7 @@ function AuthPage() {
                     required={!isLogin}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
                       text-sm text-gray-700 placeholder-gray-400
-                      focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-200
+                      focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
                       transition-colors bg-white/80"
                   />
                 </div>
@@ -122,7 +122,7 @@ function AuthPage() {
                     onChange={(e) => setRole(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
                       text-sm text-gray-700 bg-white/80
-                      focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-200
+                      focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
                       transition-colors appearance-none cursor-pointer"
                   >
                     <option value="student">学生</option>
@@ -142,7 +142,7 @@ function AuthPage() {
                 required
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
                   text-sm text-gray-700 placeholder-gray-400
-                  focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-200
+                  focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
                   transition-colors bg-white/80"
               />
             </div>
@@ -158,7 +158,7 @@ function AuthPage() {
                 minLength={6}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
                   text-sm text-gray-700 placeholder-gray-400
-                  focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-200
+                  focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
                   transition-colors bg-white/80"
               />
             </div>
@@ -170,8 +170,8 @@ function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-gold-500 text-white text-sm font-medium
-                hover:bg-gold-600 transition-colors disabled:opacity-50 cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-rose-500 text-white text-sm font-medium
+                hover:bg-rose-600 transition-colors disabled:opacity-50 cursor-pointer"
             >
               {loading ? "请稍候..." : isLogin ? "登录" : "注册"}
             </button>

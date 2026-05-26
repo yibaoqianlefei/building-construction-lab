@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { ChevronsLeft, ChevronsRight, RotateCw, PanelLeftOpen } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, RotateCw, PanelLeftOpen, Tags } from "lucide-react";
 
 function BottomControlBar({
   explodeValue,
@@ -12,6 +12,8 @@ function BottomControlBar({
   onLeftPanelToggle,
   screenshotActive,
   onScreenshotToggle,
+  showLabels,
+  onLabelsToggle,
 }) {
   const sliderRef = useRef();
 
@@ -33,7 +35,7 @@ function BottomControlBar({
       <button
         onClick={onExplodeReset}
         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
-          text-gray-400 hover:text-gold-500 hover:bg-gold-50
+          text-gray-400 hover:text-rose-500 hover:bg-rose-50
           transition-all duration-200"
         title="复原"
       >
@@ -48,7 +50,7 @@ function BottomControlBar({
         value={explodeValue}
         onChange={(e) => onExplodeChange(Number(e.target.value))}
         className="w-16 sm:w-24 md:w-32 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer
-          accent-gold-500
+          accent-rose-500
           [&::-webkit-slider-thumb]:appearance-none
           [&::-webkit-slider-thumb]:w-3.5
           [&::-webkit-slider-thumb]:h-3.5
@@ -57,16 +59,16 @@ function BottomControlBar({
           [&::-webkit-slider-thumb]:rounded-full
           [&::-webkit-slider-thumb]:bg-white
           [&::-webkit-slider-thumb]:border-2
-          [&::-webkit-slider-thumb]:border-gold-400
+          [&::-webkit-slider-thumb]:border-rose-400
           [&::-webkit-slider-thumb]:shadow-sm
-          [&::-webkit-slider-thumb]:hover:border-gold-500
+          [&::-webkit-slider-thumb]:hover:border-rose-500
           [&::-webkit-slider-thumb]:transition-colors"
       />
 
       <button
         onClick={onExplodeMax}
         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
-          text-gray-400 hover:text-gold-500 hover:bg-gold-50
+          text-gray-400 hover:text-rose-500 hover:bg-rose-50
           transition-all duration-200"
         title="分解"
       >
@@ -79,13 +81,13 @@ function BottomControlBar({
         onClick={onAutoRotateToggle}
         className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
           transition-all duration-300
-          ${autoRotate ? "bg-gold-50" : ""}`}
+          ${autoRotate ? "bg-rose-50" : ""}`}
         title={autoRotate ? "暂停旋转" : "自动旋转"}
       >
         <RotateCw
           size={16}
           className={`sm:size-[18px] transition-colors duration-300 ${
-            autoRotate ? "text-gold-500" : "text-gray-400"
+            autoRotate ? "text-rose-500" : "text-gray-400"
           }`}
           strokeWidth={1.5}
           style={{
@@ -101,13 +103,34 @@ function BottomControlBar({
             onClick={onLeftPanelToggle}
             className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
               transition-all duration-300
-              ${showLeftPanel ? "bg-gold-50" : ""}`}
+              ${showLeftPanel ? "bg-rose-50" : ""}`}
             title="全部构件"
           >
             <PanelLeftOpen
               size={16}
               className={`sm:size-[18px] transition-colors duration-300 ${
-                showLeftPanel ? "text-gold-500" : "text-gray-400"
+                showLeftPanel ? "text-rose-500" : "text-gray-400"
+              }`}
+              strokeWidth={1.5}
+            />
+          </button>
+        </>
+      )}
+
+      {onLabelsToggle && (
+        <>
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+          <button
+            onClick={onLabelsToggle}
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
+              transition-all duration-300
+              ${showLabels ? "bg-rose-50" : ""}`}
+            title="标注"
+          >
+            <Tags
+              size={16}
+              className={`sm:size-[18px] transition-colors duration-300 ${
+                showLabels ? "text-rose-500" : "text-gray-400"
               }`}
               strokeWidth={1.5}
             />
@@ -122,7 +145,7 @@ function BottomControlBar({
             onClick={onScreenshotToggle}
             className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
               transition-all duration-300
-              ${screenshotActive ? "bg-gold-50" : ""}`}
+              ${screenshotActive ? "bg-rose-50" : ""}`}
             title="截图"
           >
             <svg
@@ -135,7 +158,7 @@ function BottomControlBar({
               strokeLinecap="round"
               strokeLinejoin="round"
               className={`sm:size-[18px] transition-colors duration-300 ${
-                screenshotActive ? "text-gold-500" : "text-gray-400"
+                screenshotActive ? "text-rose-500" : "text-gray-400"
               }`}
             >
               <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />

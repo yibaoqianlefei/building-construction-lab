@@ -15,16 +15,16 @@ function ModelCard({ nodeId }) {
       className="block bg-white/80 backdrop-blur-sm border border-gray-200/60
         rounded-2xl p-5
         shadow-[0_2px_8px_rgba(0,0,0,0.04)]
-        hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_8px_20px_rgba(212,164,58,0.08)]
+        hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_8px_20px_rgba(255,61,88,0.08)]
         hover:-translate-y-1 hover:scale-[1.01]
-        hover:bg-white hover:border-gold-200
+        hover:bg-white hover:border-rose-200
         transition-all duration-300 ease-out
         cursor-pointer group max-w-md"
     >
       <div className="flex items-center gap-3">
         <span className="text-2xl">🏠</span>
         <div className="min-w-0">
-          <h4 className="text-base font-semibold text-gray-900 group-hover:text-gold-600 transition-colors">
+          <h4 className="text-base font-semibold text-gray-900 group-hover:text-rose-600 transition-colors">
             {node.title}
           </h4>
           <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
@@ -32,7 +32,7 @@ function ModelCard({ nodeId }) {
           </p>
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-1 text-xs text-gold-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="mt-3 flex items-center gap-1 text-xs text-rose-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
         打开交互模型
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -52,19 +52,19 @@ function ModelCardSmall({ nodeId }) {
       className="flex-1 min-w-0 max-w-[45%] bg-white/80 backdrop-blur-sm border border-gray-200/60
         rounded-xl p-4
         shadow-[0_2px_6px_rgba(0,0,0,0.04)]
-        hover:shadow-[0_8px_16px_rgba(0,0,0,0.05),0_4px_12px_rgba(212,164,58,0.08)]
-        hover:-translate-y-0.5 hover:border-gold-200
+        hover:shadow-[0_8px_16px_rgba(0,0,0,0.05),0_4px_12px_rgba(255,61,88,0.08)]
+        hover:-translate-y-0.5 hover:border-rose-200
         transition-all duration-300 ease-out
         cursor-pointer group"
     >
       <div className="text-2xl mb-2">🏠</div>
-      <h4 className="text-sm font-semibold text-gray-900 group-hover:text-gold-600 transition-colors">
+      <h4 className="text-sm font-semibold text-gray-900 group-hover:text-rose-600 transition-colors">
         {node.title}
       </h4>
       <p className="text-xs text-gray-500 mt-1 line-clamp-2">
         {node.description}
       </p>
-      <div className="mt-2 text-xs text-gold-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="mt-2 text-xs text-rose-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
         打开模型 →
       </div>
     </Link>
@@ -228,7 +228,7 @@ function TextbookPage() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 text-lg">章节不存在</p>
-          <Link to="/curriculum/roof" className="text-gold-600 hover:text-gold-700 text-sm mt-2 inline-block">
+          <Link to="/curriculum/roof" className="text-rose-600 hover:text-rose-700 text-sm mt-2 inline-block">
             返回屋顶章节
           </Link>
         </div>
@@ -249,7 +249,7 @@ function TextbookPage() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 text-lg">教材内容尚未编写</p>
-          <Link to="/curriculum/roof" className="text-gold-600 hover:text-gold-700 text-sm mt-2 inline-block">
+          <Link to="/curriculum/roof" className="text-rose-600 hover:text-rose-700 text-sm mt-2 inline-block">
             返回屋顶章节
           </Link>
         </div>
@@ -265,11 +265,11 @@ function TextbookPage() {
         {/* breadcrumb */}
         <div className="mb-2">
           <span className="text-sm text-gray-400">
-            <Link to="/curriculum" className="text-gold-600 hover:text-gold-700 transition-colors">
+            <Link to="/curriculum" className="text-rose-600 hover:text-rose-700 transition-colors">
               课程目录
             </Link>
             <span className="mx-1.5 text-gray-300">›</span>
-            <Link to="/curriculum/roof" className="text-gold-600 hover:text-gold-700 transition-colors">
+            <Link to="/curriculum/roof" className="text-rose-600 hover:text-rose-700 transition-colors">
               屋顶
             </Link>
             <span className="mx-1.5 text-gray-300">›</span>
@@ -286,7 +286,7 @@ function TextbookPage() {
           prose-li:text-gray-600
           prose-th:text-gray-700 prose-td:text-gray-600
           prose-table:border-collapse
-          prose-blockquote:border-l-gold-400 prose-blockquote:text-gray-500
+          prose-blockquote:border-l-rose-400 prose-blockquote:text-gray-500
           prose-strong:text-gray-800">
           {contentParts.map((part, i) => {
             if (part.type === "side-by-side") {
@@ -311,7 +311,7 @@ function TextbookPage() {
         <div className="mt-12 pt-6 border-t border-gray-100">
           <Link
             to="/curriculum/roof"
-            className="text-sm text-gold-600 hover:text-gold-700 transition-colors"
+            className="text-sm text-rose-600 hover:text-rose-700 transition-colors"
           >
             ← 返回屋顶章节
           </Link>
