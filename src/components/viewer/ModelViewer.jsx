@@ -198,12 +198,16 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRe
 
 function ShadowLight({ layers, explodeAxis, smoothExplodeRef }) {
   const lightRef = useRef();
+  const lastTRef = useRef(-1);
 
   useFrame(() => {
     const light = lightRef.current;
     if (!light || !layers?.length) return;
 
     const t = smoothExplodeRef.current / 100;
+    if (Math.abs(t - lastTRef.current) < 0.005) return;
+    lastTRef.current = t;
+
     const { center, span, isX } = getExplodedBounds(layers, explodeAxis, t);
 
     const pad = Math.max(span * 0.3, 2);

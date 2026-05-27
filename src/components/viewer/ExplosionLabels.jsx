@@ -1,10 +1,11 @@
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useMemo, useRef, useEffect, useState, memo } from "react";
 import { Html, Line } from "@react-three/drei";
 import { motion } from "framer-motion";
 
 const EXPLODE_STEP = 0.003;
 const OPACITY_LERP = 0.2;
 const LABEL_DISTANCE = 0.7;
+const STATE_SKIP = 3; // update React state every N frames
 
 /* ── piece centre positions ── */
 function usePiecePositions(layers, explodeValue, explodeAxis) {
@@ -48,79 +49,90 @@ function usePieceBounds(layers, explodeValue, explodeAxis) {
   }, [layers, positions]);
 }
 
-/* ── anchors: alternate above/below (wall) or left/right (roof) ── */
+/* ── anchors ── */
 function computeAnchors(layers, bounds, isX, extraOffset) {
   const n = layers.length;
   const pts = [];
   const cz = (bounds.minZ + bounds.maxZ) / 2;
-  const span = isX
-    ? bounds.maxX - bounds.minX || 1
-    : bounds.maxY - bounds.minY || 1;
+  const span = isX ? bounds.maxX - bounds.minX || 1 : bounds.maxY - bounds.minY || 1;
   const step = n > 1 ? span / (n - 1) : 0;
-
   for (let i = 0; i < n; i++) {
     if (isX) {
-      const y = i % 2 === 0
-        ? bounds.maxY + LABEL_DISTANCE + extraOffset
-        : bounds.minY - LABEL_DISTANCE - extraOffset;
+      const y = i % 2 === 0 ? 0.5 + LABEL_DISTANCE + extraOffset :-0.5 - LABEL_DISTANCE - extraOffset;
       pts.push([bounds.minX + i * step, y, cz]);
     } else {
-      const x = i % 2 === 0
-        ? bounds.maxX + LABEL_DISTANCE + extraOffset
-        : bounds.minX - LABEL_DISTANCE - extraOffset;
+      const x = i % 2 === 0 ? 1 + extraOffset : -0.5 - LABEL_DISTANCE - extraOffset;
       pts.push([x, bounds.minY + i * step, cz]);
     }
   }
   return pts;
 }
 
-/* ── get edge point of a layer (top/bottom or right/left) ── */
 function getEdgePoint(center, layer, isX, isAboveOrRight) {
   const halfH = layer.modelPath ? 0.25 : 0.75;
-  if (isX) {
-    return [center[0], center[1] + (isAboveOrRight ? halfH : -halfH), center[2]];
-  } else {
-    return [center[0] + (isAboveOrRight ? halfH : -halfH), center[1], center[2]];
-  }
+  if (isX) return [center[0], center[1] + (isAboveOrRight ? halfH : -halfH), center[2]];
+  return [center[0] + (isAboveOrRight ? halfH : -halfH), center[1], center[2]];
 }
+
+/* ── memoized label button ── */
+const LabelButton = memo(function LabelButton({ layer, i, isActive, visible, onLabelClick }) {
+  return (
+    <motion.button
+      layout
+      type="button"
+      onClick={(e) => { if (visible) { e.stopPropagation(); onLabelClick?.(i); } }}
+      onPointerDown={(e) => e.stopPropagation()}
+      className={`flex items-center gap-1.5 backdrop-blur-md rounded-full border select-none whitespace-nowrap transition-colors duration-200 min-w-[6rem] ${
+        isActive
+          ? "bg-rose-50/95 border-rose-300/80 shadow-md text-rose-600"
+          : "bg-white/80 border-white/40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:bg-white/95 text-gray-700"
+      }`}
+      style={{ height: 28, padding: "0 10px", fontSize: 10, fontWeight: 500, cursor: visible ? "pointer" : "default" }}
+    >
+      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: layer.color || "#ff3d58" }} />
+      <span>{layer.name}</span>
+      <span className="text-rose-500/60 font-normal tabular-nums" style={{ fontSize: 10 }}>
+        {(layer.thickness * 1000).toFixed(0)}mm
+      </span>
+    </motion.button>
+  );
+});
 
 /* ═══════════════════════════════════════
    ExplosionLabels
    ═══════════════════════════════════════ */
-function ExplosionLabels({
-  layers,
-  explodeValue,
-  explodeAxis = "x",
-  activeLayer,
-  showLabels,
-  onLabelClick,
-}) {
+function ExplosionLabels({ layers, explodeValue, explodeAxis = "x", activeLayer, showLabels, onLabelClick }) {
   const isX = explodeAxis.replace("-", "") === "x";
 
   const [smoothedExplode, setSmoothedExplode] = useState(0);
   const positions = usePiecePositions(layers, smoothedExplode, explodeAxis);
   const bounds = usePieceBounds(layers, smoothedExplode, explodeAxis);
 
+  /* lerp explodeValue → smoothedExplode, throttle state updates */
+  const smoothRef = useRef(0);
+  const frameRef = useRef(0);
   useEffect(() => {
     let running = true;
     const LERP = 1.0;
     let prevTime = performance.now();
-    let value = smoothedExplode;
     function step(now) {
       if (!running) return;
       const delta = Math.min((now - prevTime) / 1000, 0.1);
       prevTime = now;
       const alpha = 1 - Math.exp(-LERP * delta);
-      value += (explodeValue - value) * alpha;
-      setSmoothedExplode(value);
+      smoothRef.current += (explodeValue - smoothRef.current) * alpha;
+      frameRef.current++;
+      if (frameRef.current % STATE_SKIP === 0) {
+        setSmoothedExplode(smoothRef.current);
+      }
       requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
     return () => { running = false; };
   }, [explodeValue]);
 
-  const visible = showLabels && smoothedExplode > 0.01;
-  const targetFade = visible ? Math.min(Math.max(0, smoothedExplode - 5) / 15, 1) : 0;
+  const visible = showLabels && smoothRef.current > 0.01;
+  const targetFade = visible ? Math.min(Math.max(0, smoothRef.current - 5) / 15, 1) : 0;
 
   const fadeRef = useRef(0);
   useEffect(() => {
@@ -136,11 +148,7 @@ function ExplosionLabels({
 
   const fade = fadeRef.current;
   const extraOffset = explodeValue * 0.002;
-
-  const anchors = useMemo(
-    () => computeAnchors(layers, bounds, isX, extraOffset),
-    [layers, bounds, isX, extraOffset]
-  );
+  const anchors = useMemo(() => computeAnchors(layers, bounds, isX, extraOffset), [layers, bounds, isX, extraOffset]);
 
   if (!visible && fade < 0.01) return null;
 
@@ -154,65 +162,15 @@ function ExplosionLabels({
         if (!center || !anchor) return null;
         const isActive = activeLayer === i;
         const isAboveOrRight = i % 2 === 0;
-
         const edge = getEdgePoint(center, layer, isX, isAboveOrRight);
-
-        /* L-shaped line: edge → turning point → anchor */
-        const turning = isX
-          ? [edge[0], anchor[1], edge[2]]
-          : [anchor[0], edge[1], edge[2]];
-
-        const linePoints = [
-          [edge[0], edge[1], edge[2]],
-          [turning[0], turning[1], turning[2]],
-          [anchor[0], anchor[1], anchor[2]],
-        ];
+        const turning = isX ? [edge[0], anchor[1], edge[2]] : [anchor[0], edge[1], edge[2]];
+        const linePoints = [[edge[0], edge[1], edge[2]], [turning[0], turning[1], turning[2]], [anchor[0], anchor[1], anchor[2]]];
 
         return (
           <group key={layer.name}>
-            <Line
-              points={linePoints}
-              color="#ff9cab"
-              lineWidth={isActive ? 1.2 : 0.8}
-              transparent
-              opacity={isActive ? 0.6 * fade : lineBaseOpacity}
-              depthWrite={false}
-            />
-
-            <Html
-              center
-              position={[anchor[0], anchor[1], anchor[2]]}
-              distanceFactor={8}
-              occlude={false}
-              style={{ pointerEvents: visible ? "auto" : "none", opacity: fade }}
-            >
-              <motion.button
-                layout
-                type="button"
-                onClick={(e) => { if (visible) { e.stopPropagation(); onLabelClick?.(i); } }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className={`flex items-center gap-1.5 backdrop-blur-md rounded-full border select-none whitespace-nowrap transition-colors duration-200 min-w-[6rem] ${
-                  isActive
-                    ? "bg-rose-50/95 border-rose-300/80 shadow-md text-rose-600"
-                    : "bg-white/80 border-white/40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:bg-white/95 text-gray-700"
-                }`}
-                style={{
-                  height: 28,
-                  padding: "0 10px",
-                  fontSize: 10,
-                  fontWeight: 500,
-                  cursor: visible ? "pointer" : "default",
-                }}
-              >
-                <div
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: layer.color || "#ff3d58" }}
-                />
-                <span>{layer.name}</span>
-                <span className="text-rose-500/60 font-normal tabular-nums" style={{ fontSize: 10 }}>
-                  {(layer.thickness * 1000).toFixed(0)}mm
-                </span>
-              </motion.button>
+            <Line points={linePoints} color="#ff9cab" lineWidth={isActive ? 1.2 : 0.8} transparent opacity={isActive ? 0.6 * fade : lineBaseOpacity} depthWrite={false} />
+            <Html center position={[anchor[0], anchor[1], anchor[2]]} distanceFactor={8} occlude={false} style={{ pointerEvents: visible ? "auto" : "none", opacity: fade }}>
+              <LabelButton layer={layer} i={i} isActive={isActive} visible={visible} onLabelClick={onLabelClick} />
             </Html>
           </group>
         );

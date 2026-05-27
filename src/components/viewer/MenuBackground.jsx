@@ -128,13 +128,13 @@ function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb
         dampingFactor={0.08}
         autoRotate={autoRotate}
         autoRotateSpeed={0.5}
-        minDistance={3}
-        maxDistance={10}
+        minDistance={0.5}
+        maxDistance={15}
         maxPolarAngle={Math.PI / 2}
         target={[0, 0.5, 0]}
       />
 
-      <group ref={groupRef} position={position}>
+      <group ref={groupRef} position={position} scale={1.5}>
         <Suspense fallback={<LoadingFallback />}>
           <SceneModel modelPath={modelPath} />
         </Suspense>
