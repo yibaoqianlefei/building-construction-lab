@@ -4,7 +4,6 @@ import { OrbitControls, Grid } from "@react-three/drei";
 import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 import ExplosionLabels from "./ExplosionLabels";
-import LabelDetailCard from "./LabelDetailCard";
 
 const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
@@ -280,9 +279,6 @@ function Scene({
   autoRotate,
   onControlsReady,
   showLabels,
-  onLabelClick,
-  labelCard,
-  onCloseLabelCard,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -336,15 +332,7 @@ function Scene({
             layers={layers}
             explodeValue={explodeValue}
             explodeAxis={explodeAxis}
-            onLabelClick={onLabelClick}
-            activeCardIndex={labelCard?.index ?? -1}
-          />
-        )}
-        {labelCard && (
-          <LabelDetailCard
-            layer={labelCard.layer}
-            position={labelCard.position}
-            onClose={onCloseLabelCard}
+            selectedLayerIndex={selectedLayer}
           />
         )}
       </group>
@@ -391,9 +379,6 @@ function ModelViewer({
   onLayerClick,
   onBlankClick,
   showLabels,
-  onLabelClick,
-  labelCard,
-  onCloseLabelCard,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -419,9 +404,6 @@ function ModelViewer({
           onLayerClick={onLayerClick}
           autoRotate={autoRotate}
           showLabels={showLabels}
-          onLabelClick={onLabelClick}
-          labelCard={labelCard}
-          onCloseLabelCard={onCloseLabelCard}
         />
       </Canvas>
     </div>

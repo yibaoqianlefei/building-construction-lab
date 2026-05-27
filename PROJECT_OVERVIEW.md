@@ -80,9 +80,9 @@
     │   │   ├── LeftKnowledgePanel.jsx  # 左滑出全部构件面板
     │   │   ├── LayerLabel.jsx     # 浮层标签卡片（点击图层弹出）
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
-    │   │   ├── ExplosionLabels.jsx # 爆炸标注组件（Html标签 + 锚点定位）
-    │   │   ├── LabelDetailCard.jsx # 标注详情卡片（弹簧动画展开）
-    │   │   └── ExplodeControls.jsx    # 爆炸控制（独立组件）
+    │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
+    │   │   ├── ExplosionLabels.jsx # 爆炸标注标签（锚点定位+可点击弹出详情）
+    │   │   ├── LabelDetailCard.jsx # 标注详情卡片（Html+framer-motion弹簧动画）
     │   └── game/                  # 游戏组件
     │       ├── AssemblyLine.jsx   # 2D 射线拼装目标区（金色引导线 + 可放置标记点）
     │       └── LayerCard.jsx      # 可拖拽构件卡片（颜色条 + 名称 + 厚度）
@@ -157,7 +157,7 @@
 | **教材阅读**（含交互模型引用） | `/textbook/:sectionId` | TextbookPage | public/textbook/*/content.md |
 | **3D 模型查看器**（核心） | `/node/:nodeId` | NodeDetail, ModelViewer, ConstructionLayer | nodesIndex.getNodeData() 异步加载 |
 | **图层爆炸/分解** | `/node/:nodeId` | BottomControlBar (滑块 0-100) | useModelInteraction hook |
-| **爆炸标注**（自动标签 + 点击详情） | `/node/:nodeId` | ExplosionLabels, LabelDetailCard, BottomControlBar | 锚点定位 (墙顶/屋顶右) |
+| **爆炸标注**（标签+详情卡片） | `/node/:nodeId` | ExplosionLabels + LabelDetailCard | 爆炸时自动在模型上方/右侧显示标签，点击弹簧展开完整知识卡片 |
 | **图层高亮/选中** | `/node/:nodeId` | ConstructionLayer (hover/select) | useModelInteraction hook |
 | **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 节点 layers[] |
 | **浮层标签**（点击弹出） | `/node/:nodeId` | LayerLabel | activeCard (hook 管理) |

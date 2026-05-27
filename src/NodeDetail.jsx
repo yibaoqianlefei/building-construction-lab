@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
@@ -39,20 +39,6 @@ function NodeDetail() {
 
   const { showLeftPanel, toggleLeftPanel, closeLeftPanel } = usePanelState();
   const [showLabels, setShowLabels] = useState(true);
-  const [labelCard, setLabelCard] = useState(null); // { index, layer, position }
-
-  /* label click → toggle detail card at anchor position */
-  const handleLabelClick = useCallback((index, anchorPos) => {
-    if (!data?.layers) return;
-    if (labelCard?.index === index) {
-      setLabelCard(null); // toggle off
-    } else {
-      setActiveCard(null);
-      setLabelCard({ index, layer: data.layers[index], position: anchorPos });
-    }
-  }, [data, labelCard, setActiveCard]);
-
-  const handleCloseLabelCard = useCallback(() => setLabelCard(null), []);
 
   const viewerRef = useRef(null);
   const controlsRef = useRef(null);
@@ -121,9 +107,6 @@ function NodeDetail() {
               hoveredLayer={hoveredLayer}
               selectedLayer={selectedLayer}
               showLabels={showLabels}
-              onLabelClick={handleLabelClick}
-              labelCard={labelCard}
-              onCloseLabelCard={handleCloseLabelCard}
               onHoverLayer={setHoveredLayer}
               onLayerClick={handleLayerClick}
               onBlankClick={handleBlankClick}
