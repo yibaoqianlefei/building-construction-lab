@@ -1,4 +1,6 @@
-const externalWallData = {
+import type { NodeData } from "../types";
+
+const externalWallData: NodeData = {
   id: "ext-wall-01",
   title: "外墙外保温系统",
   description:
@@ -27,24 +29,21 @@ const externalWallData = {
       material: "挤塑聚苯板 (XPS)",
       thickness: 0.10,
       color: "#FF9800",
-      description:
-        "核心保温材料，具有低导热系数，有效阻隔室内外热量传递。",
+      description: "核心保温材料，具有低导热系数，有效阻隔室内外热量传递。",
     },
     {
       name: "空气间层",
       material: "空气间层",
       thickness: 0.05,
       color: "#81D4FA",
-      description:
-        "空气间层提供额外的隔热和隔湿缓冲，防止冷凝水积聚。",
+      description: "空气间层提供额外的隔热和隔湿缓冲，防止冷凝水积聚。",
     },
     {
       name: "外饰面",
       material: "纤维水泥板",
       thickness: 0.03,
       color: "#8D6E63",
-      description:
-        "外饰面板，提供耐候保护，抵抗风雨侵蚀，同时赋予建筑外观。",
+      description: "外饰面板，提供耐候保护，抵抗风雨侵蚀，同时赋予建筑外观。",
     },
   ],
 };

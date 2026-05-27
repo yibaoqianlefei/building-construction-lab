@@ -1,4 +1,12 @@
-const nodesIndex = [
+interface NodeIndexEntry {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  thumbnail: string | null;
+}
+
+const nodesIndex: NodeIndexEntry[] = [
   {
     id: "ext-wall-01",
     title: "外墙外保温系统",
@@ -33,14 +41,16 @@ const nodesIndex = [
   },
 ];
 
-const nodeLoaders = {
-  "ext-wall-01": () => import("./externalWall.js"),
+type NodeLoader = () => Promise<{ default: any }>;
+
+const nodeLoaders: Record<string, NodeLoader> = {
+  "ext-wall-01": () => import("./externalWall"),
   "flat-roof-01": () => import("./flatRoof.js"),
   "membrane-roof-01": () => import("./membraneRoof.js"),
   "roof-insulation-01": () => import("./roofInsulation.js"),
 };
 
-export async function getNodeData(id) {
+export async function getNodeData(id: string): Promise<any> {
   const loader = nodeLoaders[id];
   if (!loader) return null;
   try {

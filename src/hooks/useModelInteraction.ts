@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import type { ActiveCard } from "../types";
 
 export function useModelInteraction() {
   const [explodeValue, setExplodeValue] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
-  const [hoveredLayer, setHoveredLayer] = useState(null);
-  const [selectedLayer, setSelectedLayer] = useState(null);
-  const [activeCard, setActiveCard] = useState(null);
+  const [hoveredLayer, setHoveredLayer] = useState<number | null>(null);
+  const [selectedLayer, setSelectedLayer] = useState<number | null>(null);
+  const [activeCard, setActiveCard] = useState<ActiveCard | null>(null);
   const [screenshotMode, setScreenshotMode] = useState(false);
 
   useEffect(() => {
@@ -16,7 +17,7 @@ export function useModelInteraction() {
   }, [explodeValue]);
 
   const handleLayerClick = useCallback(
-    (index, layer, e) => {
+    (index: number, layer: any, e: { clientX: number; clientY: number }) => {
       if (explodeValue <= 0) return;
       if (selectedLayer === index) {
         setSelectedLayer(null);
@@ -30,7 +31,7 @@ export function useModelInteraction() {
   );
 
   const handlePanelSelect = useCallback(
-    (index) => {
+    (index: number) => {
       if (explodeValue <= 0) return;
       setSelectedLayer((prev) => (prev === index ? null : index));
     },
