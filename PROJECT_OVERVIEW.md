@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-27 TypeScript 迁移 + 爆炸标注重构
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-27 知识卡片系统重构
 
 ---
 
@@ -63,8 +63,8 @@
     │   └── index.ts               # 核心类型：NodeData, LayerData, UserProfile, Note 等
     │
     ├── hooks/                     # 自定义 Hooks（页面状态封装）
-    │   ├── useModelInteraction.ts # 3D 模型交互状态（explode/hover/select/activeCard）
-    │   └── usePanelState.ts       # 面板状态（左侧面板/知识面板展开/标签切换）
+    │   ├── useModelInteraction.ts # 3D 模型交互状态（explode/hover/select/screenshot）
+    │   └── usePanelState.ts       # 面板模式（knowledge/practice/textbook）
     │
     ├── contexts/
     │   └── AuthContext.jsx        # 认证上下文：Supabase auth + profiles 表
@@ -83,10 +83,9 @@
     │   │   ├── BottomControlBar.jsx   # 底部控制栏：爆炸滑块/旋转/截图/面板
     │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
     │   │   ├── LeftKnowledgePanel.jsx  # 左滑出全部构件面板
-    │   │   ├── LayerLabel.jsx     # 浮层标签卡片（点击图层弹出）
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
     │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
-    │   │   └── ExplosionLabels.jsx # 爆炸标注标签 + 详情卡片（锚点定位+点击弹簧展开）
+    │   │   └── ExplosionLabels.jsx # 爆炸标注（引导线+极简 pill 标签）
     │   └── game/                  # 游戏组件
     │       ├── AssemblyLine.jsx   # 2D 拼装目标区（useDroppable 槽位）
     │       ├── LayerCard.jsx      # 可拖拽构件卡片（useDraggable + 颜色条 + 名称）
@@ -129,19 +128,33 @@
         └── noteService.js         # 笔记 CRUD（localStorage 操作）
 ```
 
-### 变更说明
+### 2026-05-27 知识卡片系统重构
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **重写** | `ConstructionKnowledgePanel.jsx` | 确立为唯一知识展示区，手风琴卡片，双向联动 activeLayer |
+| **简化** | `ExplosionLabels.jsx` | 仅保留引导线+极简 pill 标签，点击仅更新 activeLayer，不弹出详情 |
+| **删除** | `LayerLabel.jsx` | 浮层卡片被右侧面板替代 |
+| **删除** | `LeftKnowledgePanel.jsx` | 左侧滑出面板被右侧面板替代 |
+| **清理** | `useModelInteraction.ts` | 移除 activeCard 相关状态和逻辑 |
+| **清理** | `usePanelState.ts` | 移除 showLeftPanel 相关状态 |
+| **简化** | `BottomControlBar.jsx` | 移除 PanelLeftOpen 和 Tags 按钮 |
+| **重构** | `NodeDetail.jsx` | 移除 LayerLabel/LeftKnowledgePanel 渲染，统一 activeLayer 状态 |
+| **清理** | `types/index.ts` | 移除 ActiveCard、ModelInteractionState 类型 |
+
+### TypeScript 迁移（早期变更）
 
 | 变更类型 | 文件 | 说明 |
 |----------|------|------|
 | **TypeScript 迁移** | `src/data/externalWall.ts` | JS → TS，添加 `NodeData` 类型标注 |
 | **TypeScript 迁移** | `src/data/nodesIndex.ts` | JS → TS，添加 `NodeIndexEntry`/`NodeLoader` 类型 |
-| **TypeScript 迁移** | `src/hooks/useModelInteraction.ts` | JS → TS，添加返回值类型和 `ActiveCard` 类型 |
+| **TypeScript 迁移** | `src/hooks/useModelInteraction.ts` | JS → TS，添加返回值类型 |
 | **TypeScript 迁移** | `src/hooks/usePanelState.ts` | JS → TS，添加返回值类型 |
 | **新建** | `src/types/index.ts` | 集中类型定义：NodeData, LayerData, Note, UserProfile, GameState 等 |
 | **新建** | `tsconfig.json` | TypeScript 配置：strict, ES2020, bundler module resolution |
 | **新建** | `npm run typecheck` | `tsc --noEmit` 类型检查脚本 |
-| **重构** | `src/components/viewer/ExplosionLabels.jsx` | 合并 LabelDetailCard 功能（+142/-102 行），标签和详情卡片统一管理 |
-| **删除** | `src/components/viewer/LabelDetailCard.jsx` | 功能合并至 ExplosionLabels |
+| **重构** | `ExplosionLabels.jsx` | 合并 LabelDetailCard 功能，标签和详情卡片统一管理 |
+| **删除** | `LabelDetailCard.jsx` | 功能合并至 ExplosionLabels |
 | **重新引入** | `@dnd-kit/core` | 拖拽库恢复使用，2D 拼装游戏改为拖拽式交互 |
 
 ### 历史变更（2026-05 系列重构）
@@ -172,10 +185,9 @@
 | **教材阅读**（含交互模型引用） | `/textbook/:sectionId` | TextbookPage | public/textbook/*/content.md |
 | **3D 模型查看器**（核心） | `/node/:nodeId` | NodeDetail, ModelViewer, ConstructionLayer | nodesIndex.getNodeData() 异步加载 |
 | **图层爆炸/分解** | `/node/:nodeId` | BottomControlBar (滑块 0-100) | useModelInteraction hook |
-| **爆炸标注**（标签+详情卡片） | `/node/:nodeId` | ExplosionLabels（合并原 LabelDetailCard） | 爆炸时自动在模型上方/右侧显示标签，点击弹簧展开完整知识卡片 |
+| **爆炸标注**（引导线+pill 标签） | `/node/:nodeId` | ExplosionLabels | 爆炸时显示引导线和极简 pill 标签，点击更新 activeLayer |
 | **图层高亮/选中** | `/node/:nodeId` | ConstructionLayer (hover/select) | useModelInteraction hook |
-| **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 节点 layers[] |
-| **浮层标签**（点击弹出） | `/node/:nodeId` | LayerLabel | activeCard (hook 管理) |
+| **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 唯一知识展示区，手风琴卡片双向联动 activeLayer |
 | **框选截图**（保存笔记） | `/node/:nodeId` | ScreenshotTool | Canvas → dataURL |
 | **笔记管理**（查看/备注/对比/删除） | `/notes` | NotesPage | localStorage (max 30条) |
 | **班级管理**（创建/加入） | `/classes` | ClassesPage | classService → Supabase |
@@ -330,13 +342,12 @@ routes.jsx — createBrowserRouter([
 
 - **`useModelInteraction.ts`**: 管理 3D 模型交互状态
   - `explodeValue` / `autoRotate` / `hoveredLayer` / `selectedLayer`
-  - `activeCard` (`ActiveCard | null`) + `screenshotMode`
+  - `screenshotMode`
   - 处理函数: `handleLayerClick`, `handlePanelSelect`, `handleBlankClick`
   - 自动清除: `explodeValue === 0` 时重置选中状态
 
-- **`usePanelState.ts`**: 管理面板 UI 状态
-  - `showLeftPanel` / `knowledgePanelExpanded` / `panelMode`
-  - 处理函数: `toggleLeftPanel`, `closeLeftPanel`
+- **`usePanelState.ts`**: 管理面板模式
+  - `knowledgePanelExpanded` / `panelMode`
   - `panelMode` 预留 "knowledge" / "practice" / "textbook" 三态切换
 
 NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记保存等顶层逻辑。

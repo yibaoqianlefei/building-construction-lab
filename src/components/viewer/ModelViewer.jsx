@@ -327,14 +327,14 @@ function Scene({
           wallRef={wallRef}
           smoothExplodeRef={smoothExplodeRef}
         />
-        {showLabels && explodeValue > 0 && (
-          <ExplosionLabels
-            layers={layers}
-            explodeValue={explodeValue}
-            explodeAxis={explodeAxis}
-            selectedLayerIndex={selectedLayer}
-          />
-        )}
+        <ExplosionLabels
+          layers={layers}
+          explodeValue={explodeValue}
+          explodeAxis={explodeAxis}
+          activeLayer={selectedLayer}
+          showLabels={showLabels}
+          onLabelClick={onLayerClick}
+        />
       </group>
 
       <Grid

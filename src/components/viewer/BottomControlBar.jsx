@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { ChevronsLeft, ChevronsRight, RotateCw, PanelLeftOpen, Tags } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, RotateCw, Tags } from "lucide-react";
 
 function BottomControlBar({
   explodeValue,
@@ -8,8 +8,6 @@ function BottomControlBar({
   onExplodeMax,
   autoRotate,
   onAutoRotateToggle,
-  showLeftPanel,
-  onLeftPanelToggle,
   screenshotActive,
   onScreenshotToggle,
   showLabels,
@@ -96,27 +94,6 @@ function BottomControlBar({
         />
       </button>
 
-      {onLeftPanelToggle && (
-        <>
-          <div className="w-px h-5 bg-gray-200 mx-1" />
-          <button
-            onClick={onLeftPanelToggle}
-            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
-              transition-all duration-300
-              ${showLeftPanel ? "bg-rose-50" : ""}`}
-            title="全部构件"
-          >
-            <PanelLeftOpen
-              size={16}
-              className={`sm:size-[18px] transition-colors duration-300 ${
-                showLeftPanel ? "text-rose-500" : "text-gray-400"
-              }`}
-              strokeWidth={1.5}
-            />
-          </button>
-        </>
-      )}
-
       {onLabelsToggle && (
         <>
           <div className="w-px h-5 bg-gray-200 mx-1" />
@@ -125,7 +102,7 @@ function BottomControlBar({
             className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
               transition-all duration-300
               ${showLabels ? "bg-rose-50" : ""}`}
-            title="标注"
+            title="标签"
           >
             <Tags
               size={16}

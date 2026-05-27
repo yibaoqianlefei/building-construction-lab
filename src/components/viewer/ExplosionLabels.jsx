@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { Html, Line } from "@react-three/drei";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const EXPLODE_STEP = 0.003;
+const OPACITY_LERP = 0.2;
+const LABEL_DISTANCE = 0.7;
 
 /* ── piece centre positions ── */
 function usePiecePositions(layers, explodeValue, explodeAxis) {
@@ -46,137 +48,176 @@ function usePieceBounds(layers, explodeValue, explodeAxis) {
   }, [layers, positions]);
 }
 
-/* ── main ── */
-function ExplosionLabels({ layers, explodeValue, explodeAxis = "x", selectedLayerIndex }) {
-  const isX = explodeAxis.replace("-", "") === "x";
-  const [expandedIndex, setExpandedIndex] = useState(-1);
-  const positions = usePiecePositions(layers, explodeValue, explodeAxis);
-  const bounds = usePieceBounds(layers, explodeValue, explodeAxis);
+/* ── anchors: alternate above/below (wall) or left/right (roof) ── */
+function computeAnchors(layers, bounds, isX, extraOffset) {
   const n = layers.length;
+  const pts = [];
+  const cz = (bounds.minZ + bounds.maxZ) / 2;
+  const span = isX
+    ? bounds.maxX - bounds.minX || 1
+    : bounds.maxY - bounds.minY || 1;
+  const step = n > 1 ? span / (n - 1) : 0;
+
+  for (let i = 0; i < n; i++) {
+    if (isX) {
+      const y = i % 2 === 0
+        ? bounds.maxY + LABEL_DISTANCE + extraOffset
+        : bounds.minY - LABEL_DISTANCE - extraOffset;
+      pts.push([bounds.minX + i * step, y, cz]);
+    } else {
+      const x = i % 2 === 0
+        ? bounds.maxX + LABEL_DISTANCE + extraOffset
+        : bounds.minX - LABEL_DISTANCE - extraOffset;
+      pts.push([x, bounds.minY + i * step, cz]);
+    }
+  }
+  return pts;
+}
+
+/* ── get edge point of a layer (top/bottom or right/left) ── */
+function getEdgePoint(center, layer, isX, isAboveOrRight) {
+  const halfH = layer.modelPath ? 0.25 : 0.75;
+  if (isX) {
+    return [center[0], center[1] + (isAboveOrRight ? halfH : -halfH), center[2]];
+  } else {
+    return [center[0] + (isAboveOrRight ? halfH : -halfH), center[1], center[2]];
+  }
+}
+
+/* ═══════════════════════════════════════
+   ExplosionLabels
+   ═══════════════════════════════════════ */
+function ExplosionLabels({
+  layers,
+  explodeValue,
+  explodeAxis = "x",
+  activeLayer,
+  showLabels,
+  onLabelClick,
+}) {
+  const isX = explodeAxis.replace("-", "") === "x";
+
+  const [smoothedExplode, setSmoothedExplode] = useState(0);
+  const positions = usePiecePositions(layers, smoothedExplode, explodeAxis);
+  const bounds = usePieceBounds(layers, smoothedExplode, explodeAxis);
 
   useEffect(() => {
-    if (selectedLayerIndex != null && selectedLayerIndex >= 0) setExpandedIndex(selectedLayerIndex);
-  }, [selectedLayerIndex]);
-
-  /* anchor points: staggered above (wall) or right of (roof) */
-  const anchors = useMemo(() => {
-    const pts = [];
-    const cz = (bounds.minZ + bounds.maxZ) / 2;
-    if (isX) {
-      const spanX = bounds.maxX - bounds.minX || 1;
-      const step = n > 1 ? spanX / (n - 1) : 0;
-      for (let i = 0; i < n; i++) {
-        const y = bounds.maxY + (i % 2 === 0 ?-2 :0.3);
-        pts.push([bounds.minX + i * step, y, cz]);
-      }
-    } else {
-      const spanY = bounds.maxY - bounds.minY || 1;
-      const step = n > 1 ? spanY / (n - 1) : 0;
-      for (let i = 0; i < n; i++) {
-        const x = bounds.maxX + (i % 2 === 0 ? 1.5 : 1.5);
-        pts.push([x, bounds.minY + i * step, cz]);
-      }
+    let running = true;
+    const LERP = 1.0;
+    let prevTime = performance.now();
+    let value = smoothedExplode;
+    function step(now) {
+      if (!running) return;
+      const delta = Math.min((now - prevTime) / 1000, 0.1);
+      prevTime = now;
+      const alpha = 1 - Math.exp(-LERP * delta);
+      value += (explodeValue - value) * alpha;
+      setSmoothedExplode(value);
+      requestAnimationFrame(step);
     }
-    return pts;
-  }, [isX, bounds, n]);
+    requestAnimationFrame(step);
+    return () => { running = false; };
+  }, [explodeValue]);
+
+  const visible = showLabels && smoothedExplode > 0.01;
+  const targetFade = visible ? Math.min(Math.max(0, smoothedExplode - 5) / 15, 1) : 0;
+
+  const fadeRef = useRef(0);
+  useEffect(() => {
+    let running = true;
+    function step() {
+      if (!running) return;
+      fadeRef.current += (targetFade - fadeRef.current) * OPACITY_LERP;
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    return () => { running = false; };
+  }, [targetFade]);
+
+  const fade = fadeRef.current;
+  const extraOffset = explodeValue * 0.002;
+
+  const anchors = useMemo(
+    () => computeAnchors(layers, bounds, isX, extraOffset),
+    [layers, bounds, isX, extraOffset]
+  );
+
+  if (!visible && fade < 0.01) return null;
+
+  const lineBaseOpacity = 0.5 * fade;
 
   return (
     <group>
-      {/* guide lines from piece centres to anchor points */}
-      {layers.map((_, i) => {
-        const start = positions[i];
-        const end = anchors[i];
-        if (!start || !end) return null;
+      {layers.map((layer, i) => {
+        const center = positions[i];
+        const anchor = anchors[i];
+        if (!center || !anchor) return null;
+        const isActive = activeLayer === i;
+        const isAboveOrRight = i % 2 === 0;
+
+        const edge = getEdgePoint(center, layer, isX, isAboveOrRight);
+
+        /* L-shaped line: edge → turning point → anchor */
+        const turning = isX
+          ? [edge[0], anchor[1], edge[2]]
+          : [anchor[0], edge[1], edge[2]];
+
+        const linePoints = [
+          [edge[0], edge[1], edge[2]],
+          [turning[0], turning[1], turning[2]],
+          [anchor[0], anchor[1], anchor[2]],
+        ];
+
         return (
-          <Line
-            key={`line-${i}`}
-            points={[
-              [start[0], start[1], start[2]],
-              [end[0], end[1], end[2]],
-            ]}
-            color="#ff9cab"
-            lineWidth={1}
-            transparent
-            opacity={0.5}
-            depthWrite={false}
-          />
+          <group key={layer.name}>
+            <Line
+              points={linePoints}
+              color="#ff9cab"
+              lineWidth={isActive ? 1.2 : 0.8}
+              transparent
+              opacity={isActive ? 0.6 * fade : lineBaseOpacity}
+              depthWrite={false}
+            />
+
+            <Html
+              center
+              position={[anchor[0], anchor[1], anchor[2]]}
+              distanceFactor={8}
+              occlude={false}
+              style={{ pointerEvents: visible ? "auto" : "none", opacity: fade }}
+            >
+              <motion.button
+                layout
+                type="button"
+                onClick={(e) => { if (visible) { e.stopPropagation(); onLabelClick?.(i); } }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={`flex items-center gap-1.5 backdrop-blur-md rounded-full border select-none whitespace-nowrap transition-colors duration-200 min-w-[6rem] ${
+                  isActive
+                    ? "bg-rose-50/95 border-rose-300/80 shadow-md text-rose-600"
+                    : "bg-white/80 border-white/40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:bg-white/95 text-gray-700"
+                }`}
+                style={{
+                  height: 28,
+                  padding: "0 10px",
+                  fontSize: 10,
+                  fontWeight: 500,
+                  cursor: visible ? "pointer" : "default",
+                }}
+              >
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: layer.color || "#ff3d58" }}
+                />
+                <span>{layer.name}</span>
+                <span className="text-rose-500/60 font-normal tabular-nums" style={{ fontSize: 10 }}>
+                  {(layer.thickness * 1000).toFixed(0)}mm
+                </span>
+              </motion.button>
+            </Html>
+          </group>
         );
       })}
-
-      {/* cards at anchor points */}
-      {layers.map((layer, i) => (
-        <Html
-          key={layer.name}
-          center
-          position={[anchors[i][0], anchors[i][1], anchors[i][2]]}
-          distanceFactor={8}
-          occlude={false}
-          style={{ pointerEvents: "auto" }}
-        >
-          <AccordionCard
-            layer={layer}
-            expanded={expandedIndex === i}
-            onToggle={() => setExpandedIndex((prev) => (prev === i ? -1 : i))}
-          />
-        </Html>
-      ))}
     </group>
-  );
-}
-
-/* ── single accordion card ── */
-function AccordionCard({ layer, expanded, onToggle }) {
-  return (
-    <div className="flex-shrink-0">
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        onPointerDown={(e) => e.stopPropagation()}
-        className={`flex items-center gap-1.5 backdrop-blur-md rounded-full border select-none whitespace-nowrap cursor-pointer transition-colors duration-200 ${
-          expanded
-            ? "bg-rose-50/95 border-rose-300/80 shadow-md"
-            : "bg-white/85 border-white/40 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:bg-white/95 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-        }`}
-        style={{ height: 28, padding: "0 10px", fontSize: 10, fontWeight: 500 }}
-      >
-        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-          style={{ backgroundColor: layer.color || "#ff3d58" }} />
-        <span className="text-gray-700">{layer.name}</span>
-        <span className="text-rose-500/60 font-normal tabular-nums" style={{ fontSize: 10 }}>
-          {(layer.thickness * 1000).toFixed(0)}mm
-        </span>
-      </button>
-
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            className="overflow-hidden"
-          >
-            <div
-              className="bg-white/85 backdrop-blur-xl rounded-xl border border-white/40 shadow-[0_6px_18px_rgba(0,0,0,0.05)] p-2 mt-1"
-              style={{ width: 160 }}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <p className="text-[10px] text-gray-500 mb-0.5">
-                <span className="text-gray-400">材料：</span>{layer.material}
-              </p>
-              <p className="text-[10px] text-gray-500 mb-0.5 tabular-nums">
-                <span className="text-gray-400">厚度：</span>{(layer.thickness * 1000).toFixed(0)} mm
-              </p>
-              {layer.description && (
-                <p className="text-[10px] text-gray-400 leading-relaxed mt-1.5 pt-1.5 border-t border-gray-200/40">
-                  {layer.description}
-                </p>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
   );
 }
 

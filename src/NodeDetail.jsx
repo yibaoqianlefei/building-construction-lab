@@ -1,17 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
 import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
 import ConstructionKnowledgePanel from "./components/viewer/ConstructionKnowledgePanel";
-import LeftKnowledgePanel from "./components/viewer/LeftKnowledgePanel";
-import LayerLabel from "./components/viewer/LayerLabel";
 import ScreenshotTool from "./components/viewer/ScreenshotTool";
 import { saveNote } from "./services/noteService";
 import { getNodeData } from "./data/nodesIndex";
 import { useModelInteraction } from "./hooks/useModelInteraction";
-import { usePanelState } from "./hooks/usePanelState";
 
 const ACCENT = "#e6354f";
 
@@ -28,8 +25,6 @@ function NodeDetail() {
     hoveredLayer,
     setHoveredLayer,
     selectedLayer,
-    activeCard,
-    setActiveCard,
     screenshotMode,
     setScreenshotMode,
     handleLayerClick,
@@ -37,7 +32,6 @@ function NodeDetail() {
     handleBlankClick,
   } = useModelInteraction();
 
-  const { showLeftPanel, toggleLeftPanel, closeLeftPanel } = usePanelState();
   const [showLabels, setShowLabels] = useState(true);
 
   const viewerRef = useRef(null);
@@ -106,10 +100,10 @@ function NodeDetail() {
               autoRotate={autoRotate}
               hoveredLayer={hoveredLayer}
               selectedLayer={selectedLayer}
-              showLabels={showLabels}
               onHoverLayer={setHoveredLayer}
               onLayerClick={handleLayerClick}
               onBlankClick={handleBlankClick}
+              showLabels={showLabels}
               onControlsReady={(ctrl) => { controlsRef.current = ctrl; }}
             />
 
@@ -120,19 +114,10 @@ function NodeDetail() {
               onExplodeMax={() => setExplodeValue(100)}
               autoRotate={autoRotate}
               onAutoRotateToggle={() => setAutoRotate((v) => !v)}
-              showLeftPanel={showLeftPanel}
-              onLeftPanelToggle={toggleLeftPanel}
               screenshotActive={screenshotMode}
               onScreenshotToggle={() => setScreenshotMode((v) => !v)}
               showLabels={showLabels}
               onLabelsToggle={() => setShowLabels((v) => !v)}
-            />
-
-            <LeftKnowledgePanel
-              layers={data.layers}
-              selectedLayerIndex={selectedLayer}
-              open={showLeftPanel}
-              onClose={closeLeftPanel}
             />
 
             {screenshotMode && (
@@ -174,25 +159,11 @@ function NodeDetail() {
 
           <ConstructionKnowledgePanel
             layers={data.layers}
-            hoveredLayerIndex={hoveredLayer}
-            selectedLayerIndex={selectedLayer}
-            onSelectLayer={handlePanelSelect}
-            explodeValue={explodeValue}
+            activeLayer={selectedLayer}
+            onLayerSelect={handlePanelSelect}
           />
         </aside>
       </main>
-
-      <AnimatePresence>
-        {activeCard && (
-          <LayerLabel
-            key={activeCard.layer.name}
-            layer={activeCard.layer}
-            screenX={activeCard.x}
-            screenY={activeCard.y}
-            onClose={() => setActiveCard(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -73,26 +73,8 @@ export interface BackgroundScene {
   position: number[];
 }
 
-/* ── interaction state ── */
-
-export interface ActiveCard {
-  layer: LayerData;
-  x: number;
-  y: number;
-}
-
-export interface ModelInteractionState {
-  explodeValue: number;
-  autoRotate: boolean;
-  hoveredLayer: number | null;
-  selectedLayer: number | null;
-  activeCard: ActiveCard | null;
-  screenshotMode: boolean;
-}
-
 export interface PanelState {
-  showLeftPanel: boolean;
-  knowledgePanelExpanded: boolean;
+  knowledgePanelExpanded: number;
   panelMode: string;
 }
 
