@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import roofSections from "../data/roofSections";
 import { nodesIndex } from "../data/nodesIndex";
+import { getTextbookSection } from "../services/contentService";
 
 function ModelCard({ nodeId }) {
   const node = nodesIndex.find((n) => n.id === nodeId);
@@ -213,10 +214,14 @@ function TextbookPage() {
   useEffect(() => {
     if (!sectionId) return;
     setLoading(true);
-    fetch(`/textbook/${sectionId}/content.md`)
-      .then((res) => {
-        if (!res.ok) throw new Error("not found");
-        return res.text();
+    /* try DB first, fallback to file */
+    getTextbookSection(sectionId)
+      .then((row) => {
+        if (row?.content) return row.content;
+        return fetch(`/textbook/${sectionId}/content.md`).then((res) => {
+          if (!res.ok) throw new Error("not found");
+          return res.text();
+        });
       })
       .then((text) => setContent(text))
       .catch(() => setContent(null))

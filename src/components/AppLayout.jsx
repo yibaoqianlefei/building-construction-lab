@@ -84,23 +84,14 @@ function AppLayout() {
                     {profile?.full_name || user.email}
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 font-medium">
-                    {profile?.role === "teacher" ? "教师" : "学生"}
+                    {profile?.role === "developer" ? "开发者" : "用户"}
                   </span>
                 </button>
 
                 {menuOpen && (
                   <div className="absolute right-0 top-full mt-1 w-48 bg-white/90 backdrop-blur-xl
                     rounded-xl border border-gray-200/50 shadow-lg shadow-black/5 py-1 z-50">
-                    <Link
-                      to="/classes"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600
-                        hover:bg-gray-50 transition-colors"
-                    >
-                      <GraduationCap size={15} />
-                      我的班级
-                    </Link>
-                    {profile?.role === "teacher" && (
+                    {profile && profile.role === "developer" && (
                       <Link
                         to="/admin"
                         onClick={() => setMenuOpen(false)}

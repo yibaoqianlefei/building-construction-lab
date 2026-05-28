@@ -1,18 +1,17 @@
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
 import HomePage from "./pages/HomePage";
 import LibraryPage from "./pages/LibraryPage";
 import CurriculumPage from "./pages/CurriculumPage";
 import AuthPage from "./pages/AuthPage";
-import ClassesPage from "./pages/ClassesPage";
-import ClassDetailPage from "./pages/ClassDetailPage";
 import NodeDetail from "./NodeDetail";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotesPage from "./pages/NotesPage";
 import SectionSubPage from "./pages/SectionSubPage";
 import TextbookPage from "./pages/TextbookPage";
 import GamesPage from "./pages/GamesPage";
+import AdminContentPage from "./pages/AdminContentPage";
+import DeveloperRoute from "./components/DeveloperRoute";
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
@@ -28,23 +27,7 @@ export const router = createBrowserRouter([
       { path: "/tools", element: <PlaceholderPage /> },
       { path: "/notes", element: <NotesPage /> },
       { path: "/contribute", element: <PlaceholderPage /> },
-      { path: "/admin", element: <PlaceholderPage /> },
-      {
-        path: "/classes",
-        element: (
-          <ProtectedRoute>
-            <ClassesPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "/classes/:classId",
-        element: (
-          <ProtectedRoute>
-            <ClassDetailPage />
-          </ProtectedRoute>
-        ),
-      },
+      { path: "/admin", element: <DeveloperRoute><AdminContentPage /></DeveloperRoute> },
     ],
   },
 ]);

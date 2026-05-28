@@ -9,6 +9,7 @@ import ScreenshotTool from "./components/viewer/ScreenshotTool";
 import { saveNote } from "./services/noteService";
 import { getNodeData } from "./data/nodesIndex";
 import { useModelInteraction } from "./hooks/useModelInteraction";
+import { getNodeDefinition } from "./services/contentService";
 
 const ACCENT = "#e6354f";
 
@@ -41,7 +42,14 @@ function NodeDetail() {
     if (!nodeId) return;
     setLoading(true);
     setData(null);
-    getNodeData(nodeId).then(setData).finally(() => setLoading(false));
+    /* try DB first, fallback to local import */
+    getNodeDefinition(nodeId)
+      .then((row) => {
+        if (row?.node_data) return row.node_data;
+        return getNodeData(nodeId);
+      })
+      .then(setData)
+      .finally(() => setLoading(false));
   }, [nodeId]);
 
   useEffect(() => {

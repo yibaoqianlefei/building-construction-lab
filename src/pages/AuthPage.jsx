@@ -11,7 +11,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("student");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +38,7 @@ function AuthPage() {
           }
         }
       } else {
-        const { error: err } = await signUp(email, password, fullName, role);
+        const { error: err } = await signUp(email, password, fullName);
         if (err) {
           setError(err.message);
         } else {
@@ -115,20 +114,6 @@ function AuthPage() {
                   />
                 </div>
 
-                <div className="relative">
-                  <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
-                      text-sm text-gray-700 bg-white/80
-                      focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
-                      transition-colors appearance-none cursor-pointer"
-                  >
-                    <option value="student">学生</option>
-                    <option value="teacher">教师</option>
-                  </select>
-                </div>
               </>
             )}
 

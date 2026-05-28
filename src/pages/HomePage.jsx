@@ -17,6 +17,7 @@ import {
   StickyNote,
   Pause,
   Play,
+  Settings,
 } from "lucide-react";
 import MenuBackground from "../components/viewer/MenuBackground";
 import LoadingOverlay from "../components/viewer/LoadingOverlay";
@@ -152,14 +153,11 @@ function MenuContent({ onModalOpen }) {
                   {profile?.full_name || user.email}
                 </p>
                 <p className="text-xs text-gray-400">
-                  {profile?.role === "teacher" ? "教师" : "学生"}
+                  {profile?.role === "developer" ? "开发者" : "用户"}
                 </p>
               </div>
             </div>
 
-            <MenuItem
-              item={{ icon: Users, label: "我的班级", to: "/classes" }}
-            />
             <MenuItem
               item={{ icon: StickyNote, label: "我的笔记", to: "/notes" }}
             />
@@ -175,6 +173,11 @@ function MenuContent({ onModalOpen }) {
 
       {/* ── group 3: 项目与社区 ── */}
       <motion.div className="space-y-0.5" variants={itemVariants}>
+        {profile?.role === "developer" && (
+          <MenuItem
+            item={{ icon: Settings, label: "管理后台", to: "/admin" }}
+          />
+        )}
         <MenuItem
           item={{ icon: GitPullRequest, label: "贡献节点", to: "/contribute" }}
         />

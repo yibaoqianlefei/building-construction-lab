@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-27 知识卡片系统重构
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-27 开发者后台 + 知识系统重构 + ExplosionLabels 优化
 
 ---
 
@@ -75,6 +75,7 @@
     ├── components/
     │   ├── AppLayout.jsx          # 全局布局：吸顶导航栏 + <Outlet>
     │   ├── ProtectedRoute.jsx     # 认证守卫：未登录重定向 /auth
+    │   ├── DeveloperRoute.tsx     # 开发者守卫：检查 role === 'developer'
     │   ├── viewer/                # 3D 查看器组件
     │   │   ├── ModelViewer.jsx    # Three.js Canvas 包装，含 WallAssembly/CameraAdjuster/ShadowLight
     │   │   ├── ConstructionLayer.jsx  # 单层渲染：GLB 模型 / 程序化 Box
@@ -82,10 +83,9 @@
     │   │   ├── LoadingOverlay.jsx # 加载动画覆盖层（Framer Motion 构造层堆叠动画）
     │   │   ├── BottomControlBar.jsx   # 底部控制栏：爆炸滑块/旋转/截图/面板
     │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
-    │   │   ├── LeftKnowledgePanel.jsx  # 左滑出全部构件面板
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
     │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
-    │   │   └── ExplosionLabels.jsx # 爆炸标注（引导线+极简 pill 标签）
+    │   │   └── ExplosionLabels.jsx # 空间标签（L形引导线+上下交叉pill+fade动画）
     │   └── game/                  # 游戏组件
     │       ├── AssemblyLine.jsx   # 2D 拼装目标区（useDroppable 槽位）
     │       ├── LayerCard.jsx      # 可拖拽构件卡片（useDraggable + 颜色条 + 名称）
@@ -101,7 +101,8 @@
     │   ├── GamesPage.jsx          # 游戏页：拖拽拼装构件（@dnd-kit）
     │   ├── ClassesPage.jsx        # 班级列表：创建/加入班级
     │   ├── ClassDetailPage.jsx    # 班级详情：课程/任务/成员标签
-    │   └── PlaceholderPage.jsx    # 占位页：/tools /contribute /admin
+    │   ├── PlaceholderPage.jsx    # 占位页：/tools /contribute
+    │   └── AdminContentPage.tsx   # 开发者后台（教材/节点编辑 + 媒体库）
     │
     ├── data/                      # 数据层
     │   ├── backgroundScenes.js    # 主菜单背景场景列表（GLB路径 + position配置）
@@ -125,8 +126,26 @@
     │
     └── services/                  # 业务逻辑层
         ├── classService.js        # 班级 CRUD（Supabase 操作）
-        └── noteService.js         # 笔记 CRUD（localStorage 操作）
+        ├── noteService.js         # 笔记 CRUD（localStorage 操作）
+        └── contentService.js      # 内容管理（教材/节点/媒体 Supabase CRUD）
 ```
+
+### 2026-05-27 开发者后台 + ExplosionLabels 优化
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `AdminContentPage.tsx` | 开发者后台：教材 Markdown 编辑器 + 节点 JSON 编辑器 + 媒体库 |
+| **新建** | `DeveloperRoute.tsx` | 开发者专用路由守卫 |
+| **新建** | `contentService.js` | Supabase 内容 CRUD + 媒体上传 |
+| **优化** | `ExplosionLabels.jsx` | L 形折线引导线 + 上下交叉排布 + fade 动画 + setState 节流 + React.memo |
+| **优化** | `MenuBackground.jsx` | scale=1.5 放大 + target 居中 |
+| **优化** | `HomePage.jsx` | 相机前视图 [0,1.2,4.0] |
+| **新增** | `supabase_schema.sql` | textbook_sections、node_definitions、media 表 + developer RLS |
+| **修改** | `TextbookPage.jsx` | DB 优先加载，文件 fallback |
+| **修改** | `NodeDetail.jsx` | DB 优先加载，本地 fallback |
+| **修改** | `routes.jsx` | /admin 使用 DeveloperRoute |
+| **修改** | `AppLayout.jsx` | 管理后台链接对 developer 可见 |
+| **修改** | `ModelViewer.jsx` | ShadowLight 节流更新 |
 
 ### 2026-05-27 知识卡片系统重构
 
@@ -318,7 +337,7 @@ routes.jsx — createBrowserRouter([
 
 ### 6.1 数据驱动
 
-所有构造节点均为 JS/TS 对象定义（`src/data/*.js` / `src/data/*.ts`），包含 `id`, `title`, `layers[]`。ModelViewer、ConstructionKnowledgePanel、LeftKnowledgePanel 等组件完全由 `layers[]` 驱动，新增节点只需添加数据文件和索引注册即可。
+所有构造节点均为 JS/TS 对象定义（`src/data/*.js` / `src/data/*.ts`），包含 `id`, `title`, `layers[]`。ModelViewer、ConstructionKnowledgePanel 等组件完全由 `layers[]` 驱动，新增节点只需添加数据文件和索引注册即可。支持从 Supabase `node_definitions` 表读取（DB 优先，文件回退）。
 
 **新增节点流程**（2 步）:
 1. `nodesIndex.ts` → `nodesIndex` 数组加一条 `NodeIndexEntry`
@@ -327,8 +346,8 @@ routes.jsx — createBrowserRouter([
 ### 6.2 组件复用
 
 - **ConstructionLayer**: 自动检测是否有 modelPath，有则走 GLB 渲染路径，无则走程序化 Box 路径。同时处理 hover/select/dim 三种视觉状态（emissive glow/opacity 变化）。
-- **KnowledgePanel** ×2: 右侧 ConstructionKnowledgePanel（可折叠卡片）+ 左侧 LeftKnowledgePanel（滑出面板），共享同一 layers 数据。
-- **ExplosionLabels**: 合并了原 LabelDetailCard 功能，在爆炸标注标签内直接集成详情卡片弹出逻辑，减少组件层级。
+- **ConstructionKnowledgePanel**: 唯一知识展示区，手风琴卡片，双向联动 activeLayer，spring 弹簧动画。
+- **ExplosionLabels**: 空间标签系统，L 形折线引导线 + 上下交叉 pill 排布，fade 动画跟随爆炸进度。
 
 ### 6.3 动态加载（代码分割）
 
@@ -469,7 +488,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | 内容 | 位置 | 状态 |
 |------|------|------|
 | GitHub 项目地址 | HomePage.jsx:293 | 待添加 |
-| 管理后台 | /admin (PlaceholderPage) | 占位 |
+| 管理后台 | /admin (AdminContentPage) | 已实现（教材/节点编辑+媒体库） |
 | 贡献节点 | /contribute (PlaceholderPage) | 占位 |
 | 构造工具 | /tools (PlaceholderPage) | 占位 |
 | 任务布置功能 | ClassDetailPage.jsx:96 | "即将上线" |

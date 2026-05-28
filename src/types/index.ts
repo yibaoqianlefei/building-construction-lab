@@ -51,7 +51,7 @@ export interface Note {
 
 export interface UserProfile {
   id: string;
-  role: "teacher" | "student";
+  role: "user" | "developer";
   full_name?: string;
   email?: string;
 }
