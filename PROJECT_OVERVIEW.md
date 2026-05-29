@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-27 开发者后台 + 知识系统重构 + ExplosionLabels 优化
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-27 角色简化 + 班级移除 + 开发者后台
 
 ---
 
@@ -10,7 +10,7 @@
 
 **目的**: 面向建筑学教育的开源数字交互教材。通过三维可视化、分解视图和交互式探索，帮助学生和从业者直观理解建筑构造层次的空间逻辑。
 
-**目标用户**: 建筑学专业学生、建筑行业从业者、高校教师（可通过班级系统管理学生）。
+**目标用户**: 建筑学专业学生、建筑行业从业者、独立学习者。
 
 ---
 
@@ -99,8 +99,6 @@
     │   ├── TextbookPage.jsx       # 教材阅读页：Markdown + [model]/[side-by-side] 标记
     │   ├── NotesPage.jsx          # 笔记管理：截图查看/备注/对比
     │   ├── GamesPage.jsx          # 游戏页：拖拽拼装构件（@dnd-kit）
-    │   ├── ClassesPage.jsx        # 班级列表：创建/加入班级
-    │   ├── ClassDetailPage.jsx    # 班级详情：课程/任务/成员标签
     │   ├── PlaceholderPage.jsx    # 占位页：/tools /contribute
     │   └── AdminContentPage.tsx   # 开发者后台（教材/节点编辑 + 媒体库）
     │
@@ -122,13 +120,27 @@
     │   │   ├── stairsSections.js
     │   │   ├── windowSections.js
     │   │   └── roofSections.js
-    │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/classes/class_members/assignments/student_progress）
+    │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/textbook_sections/node_definitions/media）
     │
     └── services/                  # 业务逻辑层
-        ├── classService.js        # 班级 CRUD（Supabase 操作）
         ├── noteService.js         # 笔记 CRUD（localStorage 操作）
         └── contentService.js      # 内容管理（教材/节点/媒体 Supabase CRUD）
 ```
+
+### 2026-05-27 角色简化 + 班级移除
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **简化** | `supabase_schema.sql` | 角色改为 user/developer，删除 classes/assignments 等表，trigger 默认 'user' |
+| **简化** | `AuthContext.jsx` | signUp 不再接收 role 参数 |
+| **简化** | `AuthPage.jsx` | 移除角色选择器，注册仅填名称/邮箱/密码 |
+| **删除** | `ClassesPage.jsx` | 班级列表页 |
+| **删除** | `ClassDetailPage.jsx` | 班级详情页 |
+| **删除** | `classService.js` | 班级 CRUD |
+| **清理** | `routes.jsx` | 移除 /classes 路由，移除 ProtectedRoute 引用 |
+| **清理** | `AppLayout.jsx` | 移除"我的班级"链接，角色标签改为"用户/开发者" |
+| **清理** | `HomePage.jsx` | 移除"我的班级"菜单，developer 显示"管理后台" |
+| **更新** | `types/index.ts` | UserProfile.role 改为 "user" \| "developer" |
 
 ### 2026-05-27 开发者后台 + ExplosionLabels 优化
 
@@ -209,10 +221,8 @@
 | **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 唯一知识展示区，手风琴卡片双向联动 activeLayer |
 | **框选截图**（保存笔记） | `/node/:nodeId` | ScreenshotTool | Canvas → dataURL |
 | **笔记管理**（查看/备注/对比/删除） | `/notes` | NotesPage | localStorage (max 30条) |
-| **班级管理**（创建/加入） | `/classes` | ClassesPage | classService → Supabase |
 | **2D 拖拽拼装游戏**（拖拽构件卡片至槽位 + 验证） | `/games` | GamesPage, AssemblyLine, LayerCard, GameInfoPanel | nodesIndex.getNodeData() |
-| **班级详情**（课程/任务/成员） | `/classes/:classId` | ClassDetailPage | classService → Supabase |
-| **教师后台**（占位） | `/admin` | PlaceholderPage | — |
+| **管理后台**（教材/节点编辑 + 媒体库） | `/admin` | AdminContentPage | contentService → Supabase |
 | **贡献节点**（占位） | `/contribute` | PlaceholderPage | — |
 | **构造工具**（占位） | `/tools` | PlaceholderPage | — |
 
@@ -261,27 +271,7 @@ AuthPage: signUp() 注册 / signIn() 登录
 
 **注意**: 重构后 `AuthProvider` 已从 `App.jsx` 内部移至 `main.jsx`，包裹在 `RouterProvider` 之外，使认证状态在路由器实例外部可用。
 
-### 5.3 班级与进度系统
-
-```
-ClassesPage
-  → createClass(name) → Supabase classes 表 INSERT (随机6位加入码)
-  → joinClass(code) → 查 classes 表 → class_members 表 INSERT
-  → getMyClasses() → 并行查询 taught (classes WHERE teacher_id) + enrolled (class_members JOIN classes)
-
-ClassDetailPage
-  → getClassDetail(id) → classes + profiles + class_members 联合查询
-  → 3 个标签: 课程(复用CurriculumPage) / 任务(占位) / 成员(仅教师可见)
-
-数据库表 (Supabase, RLS 已启用):
-  profiles        — 用户资料 (role: teacher/student)
-  classes         — 班级 (join_code, teacher_id)
-  class_members   — 班级成员关系
-  assignments     — 任务 (node_ids JSONB)
-  student_progress — 学生进度 (node_id + status)
-```
-
-### 5.4 教材系统
+### 5.3 教材系统
 
 ```
 路由 /textbook/:sectionId
@@ -294,7 +284,7 @@ ClassDetailPage
   → 自定义组件: img/table/thead/th/td 样式增强
 ```
 
-### 5.5 2D 拖拽拼装游戏（@dnd-kit + 手动验证）
+### 5.4 2D 拖拽拼装游戏（@dnd-kit + 手动验证）
 
 ```
 GamesPage (DndContext + DragOverlay)
@@ -325,7 +315,7 @@ routes.jsx — createBrowserRouter([
     element: <AppLayout />,             ← 全局导航栏 + <Outlet />
     children: [
       public routes:    / /auth /library /curriculum /node/:nodeId ...
-      protected routes: /classes /classes/:classId (ProtectedRoute 包裹)
+      admin route: /admin (DeveloperRoute 包裹)
     ]
   }
 ])
@@ -500,6 +490,4 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | 门窗模块 | courseModules.js | available: false |
 | 屋顶子章节 5/8 | roofSections.js | available: false |
 | 墙体子章节 4/5 | wallSections.js | available: false |
-| 学生进度追踪 | student_progress 表已建 | 前端未接入 |
-| 任务分配与提交 | assignments 表已建 | 前端未接入 |
 | TypeScript 全量迁移 | src/ 全部 .jsx → .tsx | 进行中（4 文件已迁移） |

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
+import { Image } from "lucide-react";
 import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
 import ConstructionKnowledgePanel from "./components/viewer/ConstructionKnowledgePanel";
@@ -87,10 +88,17 @@ function NodeDetail() {
       </div>
 
       <main className="flex-1 flex flex-col lg:flex-row min-h-0">
-        <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* 左侧：剖面图占位 */}
+        <aside className="hidden lg:flex flex-[2] bg-white/60 backdrop-blur-md border-r border-gray-200/30 flex-col items-center justify-center rounded-r-2xl m-4 mr-0">
+          <Image size={40} className="text-gray-300 mb-3" strokeWidth={1} />
+          <p className="text-sm text-gray-400 font-light">剖面图</p>
+          <p className="text-xs text-gray-300 mt-1">即将上线</p>
+        </aside>
+
+        <div className="flex-[3] flex flex-col min-h-0 relative">
           <motion.div
             ref={viewerRef}
-            className="flex-1 relative rounded-2xl overflow-hidden border border-gray-200/60 bg-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] m-4 md:m-6 md:mr-3"
+            className="flex-1 relative rounded-2xl overflow-hidden border border-gray-200/60 bg-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] m-4 md:m-6 md:mx-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
@@ -144,7 +152,7 @@ function NodeDetail() {
           </motion.div>
         </div>
 
-        <aside className="w-full lg:w-80 xl:w-88 flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200/50 bg-white/60 backdrop-blur-md overflow-y-auto">
+        <aside className="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200/50 bg-white/60 backdrop-blur-md overflow-y-auto">
           <motion.div
             className="p-4 md:p-5"
             initial={{ opacity: 0, y: 10 }}
