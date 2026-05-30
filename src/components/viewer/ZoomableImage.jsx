@@ -8,7 +8,7 @@ function clampScale(s) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
 }
 
-export default function ZoomableImage({ src, alt, onError }) {
+export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotClick }) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -137,13 +137,22 @@ export default function ZoomableImage({ src, alt, onError }) {
     setDragging(false);
   }, []);
 
+  /* ── hotspot click ── */
+  const handleHotspotClick = useCallback(
+    (e, layerIndex) => {
+      e.stopPropagation();
+      if (onHotspotClick) onHotspotClick(layerIndex);
+    },
+    [onHotspotClick]
+  );
+
   /* ── cursor ── */
   const cursor = scale > 1 ? (dragging ? "grabbing" : "grab") : "default";
 
   return (
     <div
       ref={containerRef}
-      className="w-full h-full overflow-hidden flex items-center justify-center"
+      className="w-full h-full overflow-hidden flex items-center justify-center relative"
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -162,6 +171,24 @@ export default function ZoomableImage({ src, alt, onError }) {
         draggable={false}
         onError={onError}
       />
+
+      {/* ── diagram hotspots ── */}
+      {hotspots &&
+        hotspots.map((hs, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => handleHotspotClick(e, hs.layerIndex)}
+            className="absolute bg-transparent hover:bg-rose-500/10 border border-transparent hover:border-rose-400/40 rounded transition-colors cursor-pointer z-10"
+            style={{
+              left: `${hs.x}%`,
+              top: `${hs.y}%`,
+              width: `${hs.width}%`,
+              height: `${hs.height}%`,
+            }}
+            title={`图层 ${hs.layerIndex + 1}`}
+            aria-label={`选择图层 ${hs.layerIndex + 1}`}
+          />
+        ))}
     </div>
   );
 }

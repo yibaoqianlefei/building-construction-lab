@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useDroppable } from "@dnd-kit/core";
@@ -32,8 +33,10 @@ function ReturnZone({ children }) {
 }
 
 function GamesPage() {
+  const [searchParams] = useSearchParams();
+  const urlNodeId = searchParams.get("nodeId");
   const nodes = nodesIndex;
-  const [nodeId, setNodeId] = useState(nodes[0]?.id);
+  const [nodeId, setNodeId] = useState(urlNodeId || nodes[0]?.id);
   const [nodeData, setNodeData] = useState(null);
   const [loading, setLoading] = useState(true);
 

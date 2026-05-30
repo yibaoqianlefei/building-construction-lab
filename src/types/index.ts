@@ -23,6 +23,7 @@ export interface NodeData {
   cameraPosition?: number[];
   layerOrderReverse?: boolean;
   diagramImage?: string;   // URL or path to section diagram
+  diagramHotspots?: Array<{ x: number; y: number; width: number; height: number; layerIndex: number }>;
 }
 
 export interface CourseModule {

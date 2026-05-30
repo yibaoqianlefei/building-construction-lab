@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import MDEditor from "@uiw/react-md-editor";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import SectionTree from "../components/admin/SectionTree";
+import SectionEditor from "../components/admin/SectionEditor";
 import {
   listTextbookSections,
   listNodeDefinitions,
@@ -10,6 +13,11 @@ import {
   upsertNodeDefinition,
   deleteTextbookSection,
   deleteNodeDefinition,
+  listAllSections,
+  createSection,
+  deleteSection,
+  softDeleteSection,
+  restoreSection,
 } from "../services/contentService";
 
 interface SectionRow {
@@ -28,6 +36,7 @@ interface NodeRow {
 const TABS = [
   { id: "textbook", label: "教材章节" },
   { id: "nodes", label: "节点定义" },
+  { id: "sections", label: "章节编辑" },
   { id: "media", label: "媒体库" },
 ];
 
@@ -63,8 +72,326 @@ function AdminContentPage() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {tab === "textbook" ? <TextbookEditor /> : tab === "nodes" ? <NodeEditor /> : <MediaLibrary />}
+        {tab === "textbook" ? <TextbookEditor /> : tab === "nodes" ? <NodeEditor /> : tab === "sections" ? <SectionManager /> : <MediaLibrary />}
       </div>
+    </div>
+  );
+}
+
+/* ── Section Manager ── */
+function SectionManager() {
+  const [sections, setSections] = useState<any[]>([]);
+  const [selectedSection, setSelectedSection] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [treeCollapsed, setTreeCollapsed] = useState(false);
+  const [toast, setToast] = useState<{ id: string; message: string; undoId: string | null } | null>(null);
+
+  useEffect(() => {
+    loadSections();
+  }, [showDeleted]);
+
+  async function loadSections() {
+    setLoading(true);
+    const data = await listAllSections(showDeleted);
+    setSections(data || []);
+    setLoading(false);
+  }
+
+  /* ── toast ── */
+  function showToast(message: string, undoId: string | null) {
+    const id = Date.now().toString();
+    setToast({ id, message, undoId });
+    setTimeout(() => {
+      setToast((prev) => (prev?.id === id ? null : prev));
+    }, 5000);
+  }
+
+  async function handleUndoDelete(sectionId: string) {
+    try {
+      await restoreSection(sectionId);
+      setToast(null);
+      await loadSections();
+    } catch (e: any) {
+      alert("恢复失败: " + e.message);
+    }
+  }
+
+  async function handleAddChild(parent: any) {
+    const moduleId = parent?.module_id || null;
+    const parentId = parent?.id || null;
+    const title = prompt("输入章节标题：");
+    if (!title) return;
+    try {
+      const newSection = await createSection({
+        title,
+        module_id: moduleId,
+        parent_id: parentId,
+        sort_order: 0,
+        available: false,
+        node_ids: [],
+      });
+      await loadSections();
+      setSelectedSection(newSection);
+    } catch (e: any) {
+      alert("创建失败: " + e.message);
+    }
+  }
+
+  /* soft-delete with toast */
+  async function handleDelete(sectionId: string) {
+    try {
+      await softDeleteSection(sectionId);
+      if (selectedSection?.id === sectionId) {
+        setSelectedSection((prev: any) => prev ? { ...prev, deleted_at: new Date().toISOString() } : null);
+      }
+      await loadSections();
+      showToast("章节已移至回收站", sectionId);
+    } catch (e: any) {
+      alert("删除失败: " + e.message);
+    }
+  }
+
+  /* restore from editor */
+  async function handleRestore(sectionId: string) {
+    try {
+      await restoreSection(sectionId);
+      setSelectedSection(null);
+      await loadSections();
+    } catch (e: any) {
+      alert("恢复失败: " + e.message);
+    }
+  }
+
+  /* ── fetch textbook content for a section ── */
+  async function fetchTextbookContent(sec) {
+    /* sec.id is the file-based section ID e.g. "roof-membrane" */
+    if (!sec.hasTextbook && !sec.content) return "";
+    const contentId = typeof sec.content === "string" && sec.content
+      ? sec.content
+      : sec.id;
+    try {
+      const res = await fetch(`/textbook/${contentId}/content.md`);
+      if (!res.ok) return "";
+      return await res.text();
+    } catch {
+      return "";
+    }
+  }
+
+  async function handleImport() {
+    if (!confirm("将从现有代码文件导入所有模块的章节数据到数据库，确认？")) return;
+    setImporting(true);
+    try {
+      const moduleSections = [
+        { module: "introduction", file: "../data/sections/introSections" },
+        { module: "structures", file: "../data/sections/structureSections" },
+        { module: "foundation", file: "../data/sections/foundationSections" },
+        { module: "wall", file: "../data/sections/wallSections" },
+        { module: "floor", file: "../data/sections/floorSections" },
+        { module: "stairs", file: "../data/sections/stairsSections" },
+        { module: "door-window", file: "../data/sections/windowSections" },
+        { module: "roof", file: "../data/sections/roofSections" },
+        { module: "cases", file: "../data/sections/caseSections" },
+      ];
+
+      let count = 0;
+      for (const ms of moduleSections) {
+        try {
+          const mod = await import(/* @vite-ignore */ ms.file);
+          const secs = mod.default || [];
+          for (let i = 0; i < secs.length; i++) {
+            const sec = secs[i];
+            const children = sec.children || [];
+
+            /* fetch textbook content if this section has it */
+            const textbookContent = await fetchTextbookContent(sec);
+
+            const parentData: any = {
+              title: sec.title,
+              description: sec.description || "",
+              module_id: ms.module,
+              parent_id: null,
+              sort_order: i,
+              available: sec.available !== false,
+              node_ids: sec.nodeIds || [],
+              content: textbookContent,
+              slug: sec.id || null,
+            };
+            const created = await createSection(parentData);
+            count++;
+
+            /* create children */
+            for (let j = 0; j < children.length; j++) {
+              const child = children[j];
+              const childContent = await fetchTextbookContent(child);
+              await createSection({
+                title: child.title,
+                description: child.description || "",
+                module_id: ms.module,
+                parent_id: created.id,
+                sort_order: j,
+                available: child.available !== false,
+                node_ids: child.nodeIds || [],
+                content: childContent,
+                slug: child.id || null,
+              });
+              count++;
+            }
+          }
+        } catch {
+          /* module file may not exist */
+        }
+      }
+      alert(`导入完成：${count} 个章节`);
+      await loadSections();
+    } catch (e: any) {
+      alert("导入失败: " + e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  /* ── re-import textbook content for ALL existing sections ── */
+  async function handleReimportContent() {
+    if (!confirm("将从代码文件重新读取教材文本并更新所有章节的 content 字段，确认？")) return;
+    setImporting(true);
+    try {
+      const moduleSections = [
+        { module: "introduction", file: "../data/sections/introSections" },
+        { module: "structures", file: "../data/sections/structureSections" },
+        { module: "foundation", file: "../data/sections/foundationSections" },
+        { module: "wall", file: "../data/sections/wallSections" },
+        { module: "floor", file: "../data/sections/floorSections" },
+        { module: "stairs", file: "../data/sections/stairsSections" },
+        { module: "door-window", file: "../data/sections/windowSections" },
+        { module: "roof", file: "../data/sections/roofSections" },
+        { module: "cases", file: "../data/sections/caseSections" },
+      ];
+
+      let fixed = 0;
+      const { updateSection } = await import("../services/contentService");
+
+      for (const ms of moduleSections) {
+        try {
+          const mod = await import(/* @vite-ignore */ ms.file);
+          const secs = mod.default || [];
+
+          /* fetch all existing DB sections for this module */
+          const existing = sections.filter((s) => s.module_id === ms.module && s.parent_id === null);
+          const existingChildren = sections.filter((s) => s.module_id === ms.module && s.parent_id !== null);
+
+          for (let i = 0; i < secs.length; i++) {
+            const sec = secs[i];
+            const content = await fetchTextbookContent(sec);
+            /* find matching DB row by title */
+            const match = existing.find((s) => s.title === sec.title);
+            if (match && content) {
+              await updateSection(match.id, { content });
+              fixed++;
+            }
+            /* fix children too */
+            const children = sec.children || [];
+            for (let j = 0; j < children.length; j++) {
+              const child = children[j];
+              const childContent = await fetchTextbookContent(child);
+              const childMatch = existingChildren.find((s) => s.title === child.title);
+              if (childMatch && childContent) {
+                await updateSection(childMatch.id, { content: childContent });
+                fixed++;
+              }
+            }
+          }
+        } catch {
+          /* ok */
+        }
+      }
+      alert(`修复完成：${fixed} 个章节的教材文本已更新`);
+      await loadSections();
+    } catch (e: any) {
+      alert("修复失败: " + e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="flex h-full relative">
+      {!treeCollapsed && (
+        <div className="w-72 flex-shrink-0 border-r border-gray-100">
+          <div className="px-2 py-1 border-b border-gray-100 flex items-center gap-2">
+            <label className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showDeleted}
+                onChange={(e) => {
+                  setShowDeleted(e.target.checked);
+                  if (!e.target.checked) setSelectedSection(null);
+                }}
+                className="accent-rose-500 w-3 h-3"
+              />
+              回收站
+            </label>
+            <button
+              onClick={() => setTreeCollapsed(true)}
+              className="ml-auto p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              title="折叠章节树"
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          </div>
+          <SectionTree
+            sections={sections}
+            selectedId={selectedSection?.id}
+            onSelect={setSelectedSection}
+            onAddChild={handleAddChild}
+            onDelete={handleDelete}
+            onImport={handleImport}
+            onReimport={handleReimportContent}
+            loading={loading || importing}
+          />
+        </div>
+      )}
+      {treeCollapsed && (
+        <button
+          onClick={() => setTreeCollapsed(false)}
+          className="flex-shrink-0 w-8 flex items-start justify-center pt-2 border-r border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+          title="展开章节树"
+        >
+          <PanelLeftOpen size={14} className="text-gray-400" />
+        </button>
+      )}
+      <SectionEditor
+        section={selectedSection}
+        onSaved={loadSections}
+        onRefresh={loadSections}
+        onRestore={handleRestore}
+      />
+
+      {/* ── toast notification ── */}
+      {toast && (
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-50
+          flex items-center gap-3 px-5 py-2.5
+          bg-gray-800 text-white text-sm rounded-xl shadow-xl
+          animate-[slideUp_0.25s_ease-out]">
+          <span>{toast.message}</span>
+          {toast.undoId && (
+            <button
+              onClick={() => handleUndoDelete(toast.undoId!)}
+              className="text-rose-400 hover:text-rose-300 font-medium transition-colors cursor-pointer"
+            >
+              撤销
+            </button>
+          )}
+          <button
+            onClick={() => setToast(null)}
+            className="text-gray-400 hover:text-gray-300 ml-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

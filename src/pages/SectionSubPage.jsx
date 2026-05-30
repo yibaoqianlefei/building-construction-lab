@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import courseModules from "../data/courseModules";
+import { getSectionsForModule, getChildSections } from "../services/contentService";
 
 const sectionsMap = {
   introduction: () => import("../data/sections/introSections"),
@@ -15,6 +16,22 @@ const sectionsMap = {
   roof: () => import("../data/sections/roofSections"),
   cases: () => import("../data/sections/caseSections"),
 };
+
+/* map DB row to section-card format */
+function dbRowToSection(row) {
+  const sectionId = row.slug || row.id;  // prefer human-readable slug over UUID
+  return {
+    id: sectionId,
+    title: row.title,
+    description: row.description || "",
+    available: row.available,
+    nodeIds: row.node_ids || [],
+    hasTextbook: !!row.content,
+    hasChildren: false,
+    _dbId: row.id,  // internal DB UUID for API calls
+    _hasChildren: false,
+  };
+}
 
 function SectionCard({ sec, index, onClick }) {
   const hasChildren = sec.children && sec.children.length > 0;
@@ -107,15 +124,43 @@ function SectionSubPage() {
   const moduleInfo = courseModules.find((m) => m.id === moduleId);
 
   useEffect(() => {
-    const loader = sectionsMap[moduleId];
-    if (!loader) {
-      setLoading(false);
-      return;
+    let cancelled = false;
+    async function load() {
+      /* 1. try DB first */
+      try {
+        const dbRows = await getSectionsForModule(moduleId);
+        console.log(`[SectionSubPage] DB rows for "${moduleId}":`, dbRows?.length || 0, dbRows?.map(r => ({id: r.id, slug: r.slug, title: r.title, hasContent: !!r.content})));
+        if (!cancelled && dbRows && dbRows.length > 0) {
+          const dbSections = dbRows.map(dbRowToSection);
+          console.log("[SectionSubPage] mapped sections:", dbSections.map(s => ({id: s.id, hasTextbook: s.hasTextbook, nodeIds: s.nodeIds})));
+          /* check which DB sections have children */
+          const withChildrenFlags = await Promise.all(
+            dbSections.map(async (sec) => {
+              const children = await getChildSections(sec._dbId);
+              return { ...sec, children: children.map(dbRowToSection), _hasChildren: children.length > 0 };
+            })
+          );
+          setSections(withChildrenFlags);
+          return;
+        }
+        console.log("[SectionSubPage] no DB rows, falling back to file import");
+      } catch (e) { console.log("[SectionSubPage] DB error:", e); }
+
+      /* 2. fallback to file import */
+      const loader = sectionsMap[moduleId];
+      if (!loader) { setSections([]); return; }
+      try {
+        const mod = await loader();
+        if (!cancelled) setSections(mod.default || []);
+      } catch {
+        if (!cancelled) setSections([]);
+      }
     }
-    loader()
-      .then((mod) => setSections(mod.default || []))
-      .catch(() => setSections([]))
-      .finally(() => setLoading(false));
+
+    setLoading(true);
+    load().finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
   }, [moduleId]);
 
   /* reset child drill-down when switching modules */

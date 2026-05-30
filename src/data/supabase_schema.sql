@@ -69,6 +69,41 @@ CREATE POLICY "Developers can update node definitions" ON node_definitions FOR U
 CREATE POLICY "Developers can delete node definitions" ON node_definitions FOR DELETE
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'developer'));
 
+-- ── course sections (hierarchical chapter tree) ──
+CREATE TABLE IF NOT EXISTS course_sections (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  parent_id uuid REFERENCES course_sections(id) ON DELETE CASCADE,
+  module_id text,
+  title text NOT NULL,
+  description text,
+  content text,
+  diagram_image_url text,
+  node_ids jsonb DEFAULT '[]',
+  sort_order int DEFAULT 0,
+  slug text UNIQUE,              -- human-readable ID from code (e.g. "roof-membrane")
+  available boolean DEFAULT false,
+  deleted_at timestamptz,         -- soft-delete: NULL = active, non-NULL = in trash
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_course_sections_parent ON course_sections(parent_id);
+CREATE INDEX IF NOT EXISTS idx_course_sections_module ON course_sections(module_id);
+
+ALTER TABLE course_sections ENABLE ROW LEVEL SECURITY;
+
+/* Regular users: only see non-deleted sections */
+CREATE POLICY "Anyone can read active course_sections" ON course_sections
+  FOR SELECT USING (deleted_at IS NULL);
+
+/* Developers: see all (including deleted) for recovery */
+CREATE POLICY "Developers can read all course_sections" ON course_sections
+  FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'developer'));
+
+CREATE POLICY "Developers can manage course_sections" ON course_sections FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'developer'))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'developer'));
+
 -- ── media table ──
 CREATE TABLE IF NOT EXISTS media (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,

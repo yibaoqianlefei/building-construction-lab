@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-30 统一三栏布局验证
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-30 可视化章节编辑器
 
 ---
 
@@ -56,7 +56,7 @@
     ├── main.jsx                   # React 入口：AuthProvider + RouterProvider
     ├── routes.jsx                 # 路由配置（createBrowserRouter 数组）
     ├── App.jsx                    # 向后兼容 re-export（路由已迁移至 routes.jsx）
-    ├── NodeDetail.jsx             # 核心页面：异步数据加载 + 三栏布局 + 剖面图缩放拖拽 + 自定义 Hooks
+    ├── NodeDetail.tsx             # 核心页面：异步数据加载 + 三栏布局 + 剖面图缩放拖拽 + 快捷键 + 热区 + 骨架屏 + 错误边界
     ├── index.css                  # Tailwind 入口 + rose 色板定义
     │
     ├── types/                     # TypeScript 类型定义
@@ -81,16 +81,21 @@
     │   │   ├── ConstructionLayer.jsx  # 单层渲染：GLB 模型 / 程序化 Box
     │   │   ├── MenuBackground.jsx # 主菜单 3D 背景（GLB + OrbitControls + autoRotate + 场景切换 + 加载回调）
     │   │   ├── LoadingOverlay.jsx # 加载动画覆盖层（Framer Motion 构造层堆叠动画）
-    │   │   ├── BottomControlBar.jsx   # 底部控制栏：爆炸滑块/旋转/截图/面板
+    │   │   ├── BottomControlBar.tsx   # 底部控制栏：爆炸滑块(含移动端+/-)/旋转/截图/标注（带快捷键提示）
     │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
     │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
     │   │   ├── ExplosionLabels.jsx # 空间标签（L形引导线+上下交叉pill+fade动画）
-    │   │   └── ZoomableImage.jsx  # 可缩放拖拽剖面图（滚轮缩放+拖拽+双击重置+双指缩放）
+    │   │   ├── ModelViewerSkeleton.jsx # 3D 视图加载骨架屏
+    │   │   ├── ModelErrorBoundary.jsx  # 3D 场景错误边界（崩溃降级）
+    │   │   └── ZoomableImage.jsx  # 可缩放拖拽剖面图（滚轮缩放+拖拽+双击重置+双指缩放+热区）
     │   └── game/                  # 游戏组件
     │       ├── AssemblyLine.jsx   # 2D 拼装目标区（useDroppable 槽位）
     │       ├── LayerCard.jsx      # 可拖拽构件卡片（useDraggable + 颜色条 + 名称）
     │       └── GameInfoPanel.jsx  # 游戏信息面板（进度条/错误计数/选中提示）
+    ├── admin/                    # 后台管理组件
+    │   ├── SectionTree.jsx       # 递归章节树（展开/折叠/选中/增删）
+    │   └── SectionEditor.jsx     # 章节编辑器（MDEditor + 图片上传 + 模型关联 + 剖面图）
     ├── pages/                     # 页面组件
     │   ├── HomePage.jsx           # 首页：侧边菜单 + 3D 背景
     │   ├── AuthPage.jsx           # 登录/注册页
@@ -123,7 +128,7 @@
     │   │   ├── windowSections.js
     │   │   ├── roofSections.js
     │   │   └── caseSections.js    # 案例章节（3个占位 + 1个嵌套项目含1个子章节）
-    │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/textbook_sections/node_definitions/media）
+    │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/textbook_sections/node_definitions/course_sections/media）
     │
     └── services/                  # 业务逻辑层
         ├── noteService.js         # 笔记 CRUD（localStorage 操作）
@@ -147,11 +152,36 @@
 | **新增** | `caseSections.js` | 添加"郓城县南湖新区公共服务建筑C地块设计"章节，含 `children` 嵌套子章节"01" |
 | **重构** | `SectionSubPage.jsx` | 支持章节嵌套：`parentSection` 状态、面包屑导航、返回上级按钮、有 `children` 的卡片 drill-down |
 
+### 2026-05-30 可视化章节编辑器
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `supabase_schema.sql` | `course_sections` 表（层级树、uuid主键、级联删除、RLS） |
+| **新增** | `contentService.js` | 新增 9 个 CRUD 函数：getSectionTree, getSectionById, create/update/deleteSection, getSectionsForModule, getChildSections, listAllSections, importSectionsFromCode |
+| **新建** | `SectionTree.jsx` | 递归章节树组件：缩进+展开/折叠+选中高亮+添加子章节/删除按钮+树形连线 |
+| **新建** | `SectionEditor.jsx` | 章节编辑器：标题/描述/模块/可用开关 + MDEditor + 图片上传→Markdown插入 + 模型多选关联 + 剖面图上传 |
+| **新增** | `AdminContentPage.tsx` | 新增"章节编辑"标签页；SectionManager（左树右编辑器）；"导入"按钮从代码文件批量导入所有模块章节到DB |
+| **修改** | `SectionSubPage.jsx` | DB优先加载：getSectionsForModule → 文件回退；子章节 getChildSections；dbRowToSection 映射函数 |
+| **修改** | `TextbookPage.jsx` | 三级回退：course_sections → textbook_sections → 文件 fetch |
+
+### 2026-05-30 批量优化 8 项
+
+| # | 变更类型 | 文件 | 说明 |
+|---|----------|------|------|
+| 1 | **新增** | `NodeDetail.tsx` | 全局快捷键：E 爆炸切换、R 旋转、L 标注、Ctrl+S 截图、Esc 取消选中 |
+| 2 | **新增** | `types/index.ts`, `ZoomableImage.jsx` | `diagramHotspots` 热区字段；ZoomableImage 渲染可点击透明热区覆盖层 |
+| 3 | **优化** | `BottomControlBar.tsx` | 移动端滑块增大高度(h-6)、touch-action:none、+/- 步进按钮(sm:hidden) |
+| 4 | **新建** | `ModelViewerSkeleton.jsx` | 加载时中间区域显示骨架屏（玫瑰色旋转环） |
+| 5 | **迁移** | `NodeDetail.tsx`, `BottomControlBar.tsx` | JSX→TSX，添加 props 接口和类型标注（ModelViewer/ConstructionLayer 保留 JSX） |
+| 6 | **新建** | `ModelErrorBoundary.jsx` | 3D 场景错误边界：崩溃时显示毛玻璃降级卡片 + "重新加载"按钮 |
+| 7 | **新增** | `ConstructionKnowledgePanel.jsx` | 移动端底部抽屉：右下角浮动按钮 → 底部滑出面板(弹簧动画) + 遮罩关闭 |
+| 8 | **打通** | `ConstructionKnowledgePanel.jsx`, `GamesPage.jsx` | 知识卡片内"拼装练习"按钮(幽灵按钮) → `/games?nodeId=xxx` 自动选中节点 |
+
 ### 2026-05-30 统一三栏布局验证 + 左侧面板留白
 
 | 变更类型 | 文件 | 说明 |
 |----------|------|------|
-| **验证** | `NodeDetail.jsx` | 确认三栏布局（flex-[2]/flex-[3]/w-[360px]）对所有节点类型统一生效 |
+| **验证** | `NodeDetail.tsx` | 确认三栏布局（flex-[2]/flex-[3]/w-[360px]）对所有节点类型统一生效 |
 | **验证** | 全局 | 废弃组件 `LayerLabel`/`LeftKnowledgePanel` 无残留引用 |
 | **验证** | `BottomControlBar.jsx` | `explodeAxis` 条件隐藏爆炸控件对所有节点类型一致 |
 | **微调** | `NodeDetail.jsx` | 左侧占位 aside 补充 `p-8`，与剖面图面板留白一致 |

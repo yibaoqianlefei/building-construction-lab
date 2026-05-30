@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import roofSections from "../data/roofSections";
 import { nodesIndex } from "../data/nodesIndex";
-import { getTextbookSection } from "../services/contentService";
+import { getTextbookSection, getSectionById } from "../services/contentService";
 
 function ModelCard({ nodeId }) {
   const node = nodesIndex.find((n) => n.id === nodeId);
@@ -214,15 +214,30 @@ function TextbookPage() {
   useEffect(() => {
     if (!sectionId) return;
     setLoading(true);
-    /* try DB first, fallback to file */
-    getTextbookSection(sectionId)
-      .then((row) => {
+
+    async function load() {
+      /* 1. try course_sections DB (UUID or slug match) */
+      try {
+        const sec = await getSectionById(sectionId);
+        console.log("[TextbookPage] course_sections match:", sectionId, sec ? "found" : "not found", sec?.content?.substring(0, 50) || "(empty)");
+        if (sec?.content) return sec.content;
+      } catch { /* fall through */ }
+
+      /* 2. try textbook_sections DB */
+      try {
+        const row = await getTextbookSection(sectionId);
+        console.log("[TextbookPage] textbook_sections match:", sectionId, row ? "found" : "not found");
         if (row?.content) return row.content;
-        return fetch(`/textbook/${sectionId}/content.md`).then((res) => {
-          if (!res.ok) throw new Error("not found");
-          return res.text();
-        });
-      })
+      } catch { /* fall through */ }
+
+      /* 3. fallback to file */
+      console.log("[TextbookPage] falling back to file:", sectionId);
+      const res = await fetch(`/textbook/${sectionId}/content.md`);
+      if (!res.ok) throw new Error("not found");
+      return res.text();
+    }
+
+    load()
       .then((text) => setContent(text))
       .catch(() => setContent(null))
       .finally(() => setLoading(false));
