@@ -14,14 +14,15 @@ export interface NodeData {
   id: string;
   title: string;
   description: string;
-  directionLabel: string;
+  directionLabel?: string;  // optional — not meaningful for single-layer nodes
   layers: LayerData[];
-  explodeAxis: string;     // "x" | "y" | "-x" | "-y"
-  floatDirection?: string;
+  explodeAxis?: string | null;     // null → disable explosion
+  floatDirection?: string | null;  // null → disable float-on-select
   floatDistance?: number;
   modelRotation?: number[];
   cameraPosition?: number[];
   layerOrderReverse?: boolean;
+  diagramImage?: string;   // URL or path to section diagram
 }
 
 export interface CourseModule {

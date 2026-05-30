@@ -7,6 +7,7 @@ import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
 import ConstructionKnowledgePanel from "./components/viewer/ConstructionKnowledgePanel";
 import ScreenshotTool from "./components/viewer/ScreenshotTool";
+import ZoomableImage from "./components/viewer/ZoomableImage";
 import { saveNote } from "./services/noteService";
 import { getNodeData } from "./data/nodesIndex";
 import { useModelInteraction } from "./hooks/useModelInteraction";
@@ -35,6 +36,7 @@ function NodeDetail() {
   } = useModelInteraction();
 
   const [showLabels, setShowLabels] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const viewerRef = useRef(null);
   const controlsRef = useRef(null);
@@ -43,6 +45,7 @@ function NodeDetail() {
     if (!nodeId) return;
     setLoading(true);
     setData(null);
+    setImageError(false);
     /* try DB first, fallback to local import */
     getNodeDefinition(nodeId)
       .then((row) => {
@@ -88,12 +91,22 @@ function NodeDetail() {
       </div>
 
       <main className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* 左侧：剖面图占位 */}
-        <aside className="hidden lg:flex flex-[2] bg-white/60 backdrop-blur-md border-r border-gray-200/30 flex-col items-center justify-center rounded-r-2xl m-4 mr-0">
-          <Image size={40} className="text-gray-300 mb-3" strokeWidth={1} />
-          <p className="text-sm text-gray-400 font-light">剖面图</p>
-          <p className="text-xs text-gray-300 mt-1">即将上线</p>
-        </aside>
+        {/* 左侧：剖面图 */}
+        {data.diagramImage && !imageError ? (
+          <aside className="hidden lg:flex flex-[2] bg-white/60 backdrop-blur-md border-r border-gray-200/30 rounded-r-2xl m-4 mr-0 overflow-hidden p-8">
+            <ZoomableImage
+              src={data.diagramImage}
+              alt={`${data.title} 剖面图`}
+              onError={() => setImageError(true)}
+            />
+          </aside>
+        ) : (
+          <aside className="hidden lg:flex flex-[2] bg-white/60 backdrop-blur-md border-r border-gray-200/30 flex-col items-center justify-center rounded-r-2xl m-4 mr-0 p-8">
+            <Image size={40} className="text-gray-300 mb-3" strokeWidth={1} />
+            <p className="text-sm text-gray-400 font-light">剖面图</p>
+            <p className="text-xs text-gray-300 mt-1">即将上线</p>
+          </aside>
+        )}
 
         <div className="flex-[3] flex flex-col min-h-0 relative">
           <motion.div
@@ -106,8 +119,8 @@ function NodeDetail() {
             <ModelViewer
               layers={data.layers}
               explodeValue={explodeValue}
-              explodeAxis={data.explodeAxis || "x"}
-              floatDirection={data.floatDirection || "y"}
+              explodeAxis={data.explodeAxis}
+              floatDirection={data.floatDirection}
               floatDistance={data.floatDistance}
               modelRotation={data.modelRotation || [0, 0, 0]}
               nodeTitle={data.title}
@@ -134,6 +147,7 @@ function NodeDetail() {
               onScreenshotToggle={() => setScreenshotMode((v) => !v)}
               showLabels={showLabels}
               onLabelsToggle={() => setShowLabels((v) => !v)}
+              explodeAxis={data.explodeAxis}
             />
 
             {screenshotMode && (
@@ -167,9 +181,11 @@ function NodeDetail() {
               <p className="text-gray-500 text-sm leading-relaxed">
                 {data.description}
               </p>
-              <p className="text-gray-400 text-xs mt-2">
-                方向：{data.directionLabel}
-              </p>
+              {data.directionLabel && (
+                <p className="text-gray-400 text-xs mt-2">
+                  方向：{data.directionLabel}
+                </p>
+              )}
             </div>
           </motion.div>
 

@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-27 角色简化 + 班级移除 + 开发者后台
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-30 统一三栏布局验证
 
 ---
 
@@ -56,11 +56,11 @@
     ├── main.jsx                   # React 入口：AuthProvider + RouterProvider
     ├── routes.jsx                 # 路由配置（createBrowserRouter 数组）
     ├── App.jsx                    # 向后兼容 re-export（路由已迁移至 routes.jsx）
-    ├── NodeDetail.jsx             # 核心页面：异步数据加载 + 自定义 Hooks
+    ├── NodeDetail.jsx             # 核心页面：异步数据加载 + 三栏布局 + 剖面图缩放拖拽 + 自定义 Hooks
     ├── index.css                  # Tailwind 入口 + rose 色板定义
     │
     ├── types/                     # TypeScript 类型定义
-    │   └── index.ts               # 核心类型：NodeData, LayerData, UserProfile, Note 等
+    │   └── index.ts               # 核心类型：NodeData (含 diagramImage), LayerData, UserProfile, Note 等
     │
     ├── hooks/                     # 自定义 Hooks（页面状态封装）
     │   ├── useModelInteraction.ts # 3D 模型交互状态（explode/hover/select/screenshot）
@@ -85,7 +85,8 @@
     │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
     │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
-    │   │   └── ExplosionLabels.jsx # 空间标签（L形引导线+上下交叉pill+fade动画）
+    │   │   ├── ExplosionLabels.jsx # 空间标签（L形引导线+上下交叉pill+fade动画）
+    │   │   └── ZoomableImage.jsx  # 可缩放拖拽剖面图（滚轮缩放+拖拽+双击重置+双指缩放）
     │   └── game/                  # 游戏组件
     │       ├── AssemblyLine.jsx   # 2D 拼装目标区（useDroppable 槽位）
     │       ├── LayerCard.jsx      # 可拖拽构件卡片（useDraggable + 颜色条 + 名称）
@@ -105,11 +106,12 @@
     ├── data/                      # 数据层
     │   ├── backgroundScenes.js    # 主菜单背景场景列表（GLB路径 + position配置）
     │   ├── nodesIndex.ts          # 节点统一入口：NodeIndexEntry[] + nodeLoaders + getNodeData
-    │   ├── courseModules.js       # 课程模块定义（绪论/墙体/屋顶/...）
+    │   ├── courseModules.js       # 课程模块定义（绪论/墙体/屋顶/案例/...）
     │   ├── externalWall.ts        # 外墙外保温节点数据（5层，程序化Box + 类型标注）
     │   ├── flatRoof.js            # 平屋面节点数据（6层，每层独立GLB）
     │   ├── membraneRoof.js        # 卷材防水屋面节点数据（6层，单GLB+layerObjectName）
     │   ├── roofInsulation.js      # 卷材平面屋顶保温节点数据（9层，单GLB+layerObjectName）
+    │   ├── yunchengC01.js         # 郓城C地块案例节点（1层整体模型，无爆炸）
     │   ├── roofSections.js        # 屋顶章节数据
     │   ├── sections/              # 各模块章节数据（动态import）
     │   │   ├── introSections.js
@@ -119,13 +121,60 @@
     │   │   ├── floorSections.js
     │   │   ├── stairsSections.js
     │   │   ├── windowSections.js
-    │   │   └── roofSections.js
+    │   │   ├── roofSections.js
+    │   │   └── caseSections.js    # 案例章节（3个占位 + 1个嵌套项目含1个子章节）
     │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/textbook_sections/node_definitions/media）
     │
     └── services/                  # 业务逻辑层
         ├── noteService.js         # 笔记 CRUD（localStorage 操作）
         └── contentService.js      # 内容管理（教材/节点/媒体 Supabase CRUD）
 ```
+
+### 2026-05-29 剖面图 + 缩放拖拽 + 三栏比例布局
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `ZoomableImage.jsx` | 可缩放拖拽图片组件：滚轮缩放(0.3x–3x)、鼠标拖拽、双击/按钮重置、触摸双指缩放 |
+| **新增** | `types/index.ts` | NodeData 新增 `diagramImage?: string` 字段 |
+| **新增** | `externalWall.ts` | 外墙节点添加 `diagramImage` 示例配置 |
+| **重构** | `NodeDetail.jsx` | 三栏 flex 比例布局（左 flex-[2] / 中 flex-[3] / 右 w-[360px]），左侧剖面图条件渲染 |
+| **新增** | `NodeDetail.jsx` | 左侧面板：有 diagramImage 显示 ZoomableImage，无则显示占位，加载失败回退 |
+
+### 2026-05-30 案例嵌套子章节
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `caseSections.js` | 添加"郓城县南湖新区公共服务建筑C地块设计"章节，含 `children` 嵌套子章节"01" |
+| **重构** | `SectionSubPage.jsx` | 支持章节嵌套：`parentSection` 状态、面包屑导航、返回上级按钮、有 `children` 的卡片 drill-down |
+
+### 2026-05-30 统一三栏布局验证 + 左侧面板留白
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **验证** | `NodeDetail.jsx` | 确认三栏布局（flex-[2]/flex-[3]/w-[360px]）对所有节点类型统一生效 |
+| **验证** | 全局 | 废弃组件 `LayerLabel`/`LeftKnowledgePanel` 无残留引用 |
+| **验证** | `BottomControlBar.jsx` | `explodeAxis` 条件隐藏爆炸控件对所有节点类型一致 |
+| **微调** | `NodeDetail.jsx` | 左侧占位 aside 补充 `p-8`，与剖面图面板留白一致 |
+
+### 2026-05-30 案例01节点 + 无爆炸模式
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `yunchengC01.js` | 郓城C地块01节点数据（1层整体GLB模型，explodeAxis=null, floatDirection=null） |
+| **修改** | `nodesIndex.ts` | 注册 yuncheng-c-01 节点索引和动态加载器 |
+| **修改** | `caseSections.js` | case-yuncheng-c-01 子章节关联 nodeIds, available=true |
+| **修改** | `types/index.ts` | NodeData 中 explodeAxis/floatDirection/directionLabel 改为可选 |
+| **修改** | `BottomControlBar.jsx` | explodeAxis 为 null 时隐藏爆炸滑块和分解/复原按钮 |
+| **修改** | `ModelViewer.jsx` | WallAssembly/CameraAdjuster/ShadowLight 处理 null explodeAxis；无爆炸时不渲染 ExplosionLabels |
+| **修改** | `NodeDetail.jsx` | directionLabel 条件渲染；explodeAxis 直传不设默认值 |
+
+### 2026-05-30 新增案例课程模块
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `caseSections.js` | 案例子章节数据（3个占位子章节：砖混外墙/幕墙/坡屋顶改造） |
+| **新增** | `courseModules.js` | 新增"案例"模块（id: cases, icon: 📋, available: true） |
+| **修改** | `SectionSubPage.jsx` | sectionsMap 新增 cases 动态导入映射 |
 
 ### 2026-05-27 角色简化 + 班级移除
 
@@ -393,12 +442,13 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | `backgroundScenes.js` | — | **背景场景列表** | — | GLB路径 + position 配置 | JavaScript |
 | `nodesIndex.ts` | — | **节点统一入口** | — | `nodeLoaders` 映射 + 元数据数组 | TypeScript |
 | `roofSections.js` | — | 屋顶章节索引 | — | — | JavaScript |
-| `courseModules.js` | — | 课程模块定义 | — | 8 个模块 (2 个 available) | JavaScript |
+| `courseModules.js` | — | 课程模块定义 | — | 9 个模块 (3 个 available) | JavaScript |
 | `sections/wallSections.js` | — | 墙体章节 | — | 5 个章节 (1 个 available) | JavaScript |
 | `sections/roofSections.js` | — | 屋顶章节（动态） | — | 2 个章节 (均 available) | JavaScript |
+| `sections/caseSections.js` | — | 案例章节（动态，含嵌套） | — | 4 个章节 (3 unavailable + 1 含 children) | JavaScript |
 | `sections/*.js` | — | 其他模块章节 | — | 均不可用 (available: false) | JavaScript |
 
-**已实现课程模块**: 墙体 (wall)、屋顶 (roof)、楼梯 (stairs)
+**已实现课程模块**: 墙体 (wall)、屋顶 (roof)、楼梯 (stairs)、案例 (cases)
 **可用节点**: ext-wall-01, flat-roof-01, membrane-roof-01, roof-insulation-04
 
 ---
@@ -490,4 +540,5 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | 门窗模块 | courseModules.js | available: false |
 | 屋顶子章节 5/8 | roofSections.js | available: false |
 | 墙体子章节 4/5 | wallSections.js | available: false |
+| 案例子章节 3/4 | caseSections.js | available: false（砖混/幕墙/坡屋顶 → 01 已实现） |
 | TypeScript 全量迁移 | src/ 全部 .jsx → .tsx | 进行中（4 文件已迁移） |

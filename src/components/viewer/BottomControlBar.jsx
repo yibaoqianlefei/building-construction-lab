@@ -12,6 +12,7 @@ function BottomControlBar({
   onScreenshotToggle,
   showLabels,
   onLabelsToggle,
+  explodeAxis,
 }) {
   const sliderRef = useRef();
 
@@ -30,50 +31,54 @@ function BottomControlBar({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerDown}
     >
-      <button
-        onClick={onExplodeReset}
-        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
-          text-gray-400 hover:text-rose-500 hover:bg-rose-50
-          transition-all duration-200"
-        title="复原"
-      >
-        <ChevronsLeft size={16} className="sm:size-[18px]" strokeWidth={1.5} />
-      </button>
+      {explodeAxis != null && (
+        <>
+          <button
+            onClick={onExplodeReset}
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
+              text-gray-400 hover:text-rose-500 hover:bg-rose-50
+              transition-all duration-200"
+            title="复原"
+          >
+            <ChevronsLeft size={16} className="sm:size-[18px]" strokeWidth={1.5} />
+          </button>
 
-      <input
-        ref={sliderRef}
-        type="range"
-        min="0"
-        max="100"
-        value={explodeValue}
-        onChange={(e) => onExplodeChange(Number(e.target.value))}
-        className="w-16 sm:w-24 md:w-32 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer
-          accent-rose-500
-          [&::-webkit-slider-thumb]:appearance-none
-          [&::-webkit-slider-thumb]:w-3.5
-          [&::-webkit-slider-thumb]:h-3.5
-          sm:[&::-webkit-slider-thumb]:w-4
-          sm:[&::-webkit-slider-thumb]:h-4
-          [&::-webkit-slider-thumb]:rounded-full
-          [&::-webkit-slider-thumb]:bg-white
-          [&::-webkit-slider-thumb]:border-2
-          [&::-webkit-slider-thumb]:border-rose-400
-          [&::-webkit-slider-thumb]:shadow-sm
-          [&::-webkit-slider-thumb]:hover:border-rose-500
-          [&::-webkit-slider-thumb]:transition-colors"
-      />
+          <input
+            ref={sliderRef}
+            type="range"
+            min="0"
+            max="100"
+            value={explodeValue}
+            onChange={(e) => onExplodeChange(Number(e.target.value))}
+            className="w-16 sm:w-24 md:w-32 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer
+              accent-rose-500
+              [&::-webkit-slider-thumb]:appearance-none
+              [&::-webkit-slider-thumb]:w-3.5
+              [&::-webkit-slider-thumb]:h-3.5
+              sm:[&::-webkit-slider-thumb]:w-4
+              sm:[&::-webkit-slider-thumb]:h-4
+              [&::-webkit-slider-thumb]:rounded-full
+              [&::-webkit-slider-thumb]:bg-white
+              [&::-webkit-slider-thumb]:border-2
+              [&::-webkit-slider-thumb]:border-rose-400
+              [&::-webkit-slider-thumb]:shadow-sm
+              [&::-webkit-slider-thumb]:hover:border-rose-500
+              [&::-webkit-slider-thumb]:transition-colors"
+          />
 
-      <button
-        onClick={onExplodeMax}
-        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
-          text-gray-400 hover:text-rose-500 hover:bg-rose-50
-          transition-all duration-200"
-        title="分解"
-      >
-        <ChevronsRight size={16} className="sm:size-[18px]" strokeWidth={1.5} />
-      </button>
+          <button
+            onClick={onExplodeMax}
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
+              text-gray-400 hover:text-rose-500 hover:bg-rose-50
+              transition-all duration-200"
+            title="分解"
+          >
+            <ChevronsRight size={16} className="sm:size-[18px]" strokeWidth={1.5} />
+          </button>
 
-      <div className="w-px h-5 bg-gray-200 mx-1" />
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+        </>
+      )}
 
       <button
         onClick={onAutoRotateToggle}

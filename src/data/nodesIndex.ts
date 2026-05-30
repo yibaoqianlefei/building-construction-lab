@@ -39,6 +39,14 @@ const nodesIndex: NodeIndexEntry[] = [
     category: "屋顶",
     thumbnail: null,
   },
+  {
+    id: "yuncheng-c-01",
+    title: "01",
+    description:
+      "郓城县南湖新区公共服务建筑C地块设计 - 构造节点01",
+    category: "案例",
+    thumbnail: null,
+  },
 ];
 
 type NodeLoader = () => Promise<{ default: any }>;
@@ -48,6 +56,7 @@ const nodeLoaders: Record<string, NodeLoader> = {
   "flat-roof-01": () => import("./flatRoof.js"),
   "membrane-roof-01": () => import("./membraneRoof.js"),
   "roof-insulation-01": () => import("./roofInsulation.js"),
+  "yuncheng-c-01": () => import("./yunchengC01"),
 };
 
 export async function getNodeData(id: string): Promise<any> {

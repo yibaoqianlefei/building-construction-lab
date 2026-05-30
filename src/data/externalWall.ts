@@ -46,6 +46,7 @@ const externalWallData: NodeData = {
       description: "外饰面板，提供耐候保护，抵抗风雨侵蚀，同时赋予建筑外观。",
     },
   ],
+  diagramImage: "/images/wall-section.png.png",
 };
 
 export default externalWallData;

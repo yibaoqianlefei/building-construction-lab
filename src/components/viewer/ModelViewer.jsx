@@ -59,8 +59,8 @@ function RendererSetup() {
 function WallAssembly({
   layers,
   explodeValue,
-  explodeAxis = "x",
-  floatDirection = "y",
+  explodeAxis,
+  floatDirection,
   floatDistance,
   hoveredLayer,
   selectedLayer,
@@ -72,6 +72,7 @@ function WallAssembly({
   const groupRefs = useRef([]);
 
   const useModelPositions = layers[0]?.layerObjectName != null;
+  const hasExplosion = explodeAxis != null;
 
   const initialPositions = useMemo(() => {
     if (useModelPositions) return layers.map(() => 0);
@@ -85,13 +86,13 @@ function WallAssembly({
     });
   }, [layers, useModelPositions]);
 
-  const explodeDir = explodeAxis.startsWith("-") ? -1 : 1;
-  const cleanAxis = explodeAxis.replace("-", "");
+  const explodeDir = hasExplosion ? (explodeAxis.startsWith("-") ? -1 : 1) : 1;
+  const cleanAxis = hasExplosion ? explodeAxis.replace("-", "") : "x";
   const isX = cleanAxis === "x";
   const hasSelection = selectedLayer !== null && selectedLayer !== undefined;
 
   useFrame((_, delta) => {
-    const target = explodeValue;
+    const target = hasExplosion ? explodeValue : 0;
     const alpha = 1 - Math.exp(-EXPLODE_LERP * delta);
     smoothExplodeRef.current += (target - smoothExplodeRef.current) * alpha;
 
@@ -136,7 +137,7 @@ function WallAssembly({
   );
 }
 
-function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRef, onControlsReady }) {
+function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onControlsReady }) {
   const { camera } = useThree();
   const controlsRef = useRef(null);
   const userInteracting = useRef(false);
@@ -144,13 +145,16 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRe
   const explodedTarget = useRef(new THREE.Vector3());
   const defaultTarget = useRef(new THREE.Vector3());
   const cacheReady = useRef(false);
+  const hasExplosion = explodeAxis != null;
 
   /* set up on first frame */
   if (!cacheReady.current && controlsRef.current) {
     defaultTarget.current.copy(controlsRef.current.target);
 
-    const { center, isX } = getExplodedBounds(layers, explodeAxis);
-    explodedTarget.current.set(isX ? center : 0, isX ? 0 : center, 0);
+    if (hasExplosion) {
+      const { center, isX } = getExplodedBounds(layers, explodeAxis);
+      explodedTarget.current.set(isX ? center : 0, isX ? 0 : center, 0);
+    }
     cacheReady.current = true;
   }
 
@@ -160,6 +164,8 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRe
   useFrame((_, delta) => {
     const ctrl = controlsRef.current;
     if (!ctrl || !cacheReady.current || userInteracting.current) return;
+
+    if (!hasExplosion) return; // no explosion → keep default target
 
     const t = smoothExplodeRef.current / 100;
     const goal = new THREE.Vector3().lerpVectors(
@@ -199,10 +205,12 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis = "x", smoothExplodeRe
 function ShadowLight({ layers, explodeAxis, smoothExplodeRef }) {
   const lightRef = useRef();
   const lastTRef = useRef(-1);
+  const hasExplosion = explodeAxis != null;
 
   useFrame(() => {
     const light = lightRef.current;
     if (!light || !layers?.length) return;
+    if (!hasExplosion) return; // no explosion → keep default shadow camera
 
     const t = smoothExplodeRef.current / 100;
     if (Math.abs(t - lastTRef.current) < 0.005) return;
@@ -331,14 +339,16 @@ function Scene({
           wallRef={wallRef}
           smoothExplodeRef={smoothExplodeRef}
         />
-        <ExplosionLabels
-          layers={layers}
-          explodeValue={explodeValue}
-          explodeAxis={explodeAxis}
-          activeLayer={selectedLayer}
-          showLabels={showLabels}
-          onLabelClick={onLayerClick}
-        />
+        {explodeAxis != null && (
+          <ExplosionLabels
+            layers={layers}
+            explodeValue={explodeValue}
+            explodeAxis={explodeAxis}
+            activeLayer={selectedLayer}
+            showLabels={showLabels}
+            onLabelClick={onLayerClick}
+          />
+        )}
       </group>
 
       <Grid
@@ -368,8 +378,8 @@ function Scene({
 function ModelViewer({
   layers,
   explodeValue,
-  explodeAxis = "x",
-  floatDirection = "y",
+  explodeAxis,
+  floatDirection,
   floatDistance,
   modelRotation = [0, 0, 0],
   nodeTitle,

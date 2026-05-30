@@ -63,6 +63,14 @@ const courseModules = [
     nodeIds: ["flat-roof-01", "membrane-roof-01", "roof-insulation-01"],
     available: true,
   },
+  {
+    id: "cases",
+    title: "案例",
+    icon: "📋",
+    description: "实际建筑构造案例分析与交互演示",
+    nodeIds: [],
+    available: true,
+  },
 ];
 
 export default courseModules;
