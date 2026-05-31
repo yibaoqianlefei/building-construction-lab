@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import roofSections from "../data/roofSections";
 import { nodesIndex } from "../data/nodesIndex";
 import { getTextbookSection, getSectionById } from "../services/contentService";
+import { assetPath } from "../utils/baseUrl";
 
 function ModelCard({ nodeId }) {
   const node = nodesIndex.find((n) => n.id === nodeId);
@@ -232,7 +233,7 @@ function TextbookPage() {
 
       /* 3. fallback to file */
       console.log("[TextbookPage] falling back to file:", sectionId);
-      const res = await fetch(`/textbook/${sectionId}/content.md`);
+      const res = await fetch(assetPath(`/textbook/${sectionId}/content.md`));
       if (!res.ok) throw new Error("not found");
       return res.text();
     }

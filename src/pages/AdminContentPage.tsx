@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import AdminSectionTree from "../components/admin/AdminSectionTree";
 import courseModules from "../data/courseModules";
 import { nodesIndex } from "../data/nodesIndex";
+import { assetPath } from "../utils/baseUrl";
 import {
   listTextbookSections, getTextbookSection, upsertTextbookSection, deleteTextbookSection,
   listNodeDefinitions, getNodeDefinition, upsertNodeDefinition, deleteNodeDefinition,
@@ -235,7 +236,7 @@ function SectionsManager({ profile }: any) {
             let textbookContent = "";
             if (sec.hasTextbook || sec.content) {
               const cid = typeof sec.content === "string" && sec.content ? sec.content : sec.id;
-              try { const r = await fetch(`/textbook/${cid}/content.md`); if (r.ok) textbookContent = await r.text(); } catch {}
+              try { const r = await fetch(assetPath(`/textbook/${cid}/content.md`)); if (r.ok) textbookContent = await r.text(); } catch {}
             }
             const created = await createSection({
               title: sec.title, description: sec.description || "", module_id: ms.module,

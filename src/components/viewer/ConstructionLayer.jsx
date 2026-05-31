@@ -1,7 +1,8 @@
 import { Suspense, useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Edges, useGLTF } from "@react-three/drei"; // Edges still used by procedural box path
+import { Edges, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { assetPath } from "../../utils/baseUrl";
 
 const DEFAULT_LIFT = 0.14;
 const LIFT_LERP = 0.06;
@@ -13,7 +14,7 @@ const COLOR_OFF = new THREE.Color("#000000");
 
 /* ── Per-layer GLB loader ── */
 function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, onClick }) {
-  const { scene } = useGLTF(modelPath);
+  const { scene } = useGLTF(assetPath(modelPath));
 
   const { model, edgeLines, hitBox } = useMemo(() => {
     let source;

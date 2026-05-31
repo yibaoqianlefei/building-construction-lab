@@ -7,10 +7,11 @@ import { useRef, useEffect, Suspense, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { assetPath } from "../../utils/baseUrl";
 
 /* ── model loader ── */
 function SceneModel({ modelPath }) {
-  const { scene } = useGLTF(modelPath);
+  const { scene } = useGLTF(assetPath(modelPath));
 
   const fixed = useMemo(() => {
     if (!scene) return null;

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { assetPath } from "../../utils/baseUrl";
 
 const MIN_SCALE = 0.3;
 const MAX_SCALE = 3.0;
@@ -161,7 +162,7 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
       style={{ cursor }}
     >
       <img
-        src={src}
+        src={assetPath(src)}
         alt={alt}
         className="max-w-full max-h-full rounded-xl shadow-sm select-none"
         style={{
