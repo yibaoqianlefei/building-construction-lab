@@ -1,0 +1,586 @@
+# PROJECT_OVERVIEW — 建筑构造交互系统
+
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-30 后台第一阶段：三栏布局 + 自动保存 + Toast + 活动日志
+
+---
+
+## 1. 项目简介
+
+**项目名称**: 建筑构造交互系统 (Building Construction Interactive Textbook)
+
+**目的**: 面向建筑学教育的开源数字交互教材。通过三维可视化、分解视图和交互式探索，帮助学生和从业者直观理解建筑构造层次的空间逻辑。
+
+**目标用户**: 建筑学专业学生、建筑行业从业者、独立学习者。
+
+---
+
+## 2. 技术栈
+
+| 类别 | 技术 | 用途 |
+|------|------|------|
+| 前端框架 | React 19 + React Router DOM v7 (`createBrowserRouter`) | 组件化 UI 与路由 |
+| 构建工具 | Vite 8 | 开发服务器与生产构建 |
+| 3D 渲染 | Three.js v0.184 + `@react-three/fiber` + `@react-three/drei` | 3D 模型加载、场景渲染、交互控制 |
+| 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 rose-* 色板 |
+| 字体 | Noto Serif SC (Google Fonts) | 中文字体 |
+| 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
+| 状态管理 | React Context (AuthContext) + Custom Hooks | 认证全局共享 + 页面状态封装 |
+| 后端/数据库 | Supabase (PostgreSQL) | 用户认证、数据库、RLS 行级安全 |
+| Markdown 渲染 | `react-markdown` + `remark-gfm` | 教材内容渲染 |
+| 拖拽交互 | `@dnd-kit/core` | 2D 拼装游戏拖拽 |
+| 图标 | Lucide React + React Icons | UI 图标 |
+| 语言 | TypeScript + JavaScript (JSX/TSX, 渐进迁移中) | 全项目 |
+
+---
+
+## 3. 文件结构
+
+```
+02-2/
+├── index.html                     # 入口 HTML，加载 Noto Serif SC 字体
+├── package.json                   # 依赖与脚本
+├── tsconfig.json                  # TypeScript 配置（strict, ES2020, bundler）
+├── PROJECT_OVERVIEW.md            # 本文件
+├── vite.config.js                 # Vite 配置 (Tailwind CSS 插件)
+├── public/
+│   ├── favicon.svg
+│   ├── images/                    # 教材插图
+│   ├── models/                    # GLB 3D 模型文件
+│   │   ├── flat-roof-01/          # 平屋面：每层独立 GLB (6 个)
+│   │   ├── membrane-roof-01/      # 卷材防水屋面：单 GLB + layerObjectName
+│   │   └── roof-insulation-01/    # 卷材平面屋顶保温：单 GLB + layerObjectName
+│   └── textbook/                  # 教材 Markdown 文件
+│       ├── roof-membrane/content.md
+│       └── roof-insulation/content.md
+└── src/
+    ├── main.jsx                   # React 入口：AuthProvider + RouterProvider
+    ├── routes.jsx                 # 路由配置（createBrowserRouter 数组）
+    ├── App.jsx                    # 向后兼容 re-export（路由已迁移至 routes.jsx）
+    ├── NodeDetail.tsx             # 核心页面：异步数据加载 + 三栏布局 + 剖面图缩放拖拽 + 快捷键 + 热区 + 骨架屏 + 错误边界
+    ├── index.css                  # Tailwind 入口 + rose 色板定义
+    │
+    ├── types/                     # TypeScript 类型定义
+    │   └── index.ts               # 核心类型：NodeData (含 diagramImage), LayerData, UserProfile, Note 等
+    │
+    ├── hooks/                     # 自定义 Hooks（页面状态封装）
+    │   ├── useModelInteraction.ts # 3D 模型交互状态（explode/hover/select/screenshot）
+    │   └── usePanelState.ts       # 面板模式（knowledge/practice/textbook）
+    │
+    ├── contexts/
+    │   └── AuthContext.jsx        # 认证上下文：Supabase auth + profiles 表
+    │
+    ├── lib/
+    │   └── supabaseClient.js      # Supabase 客户端初始化
+    │
+    ├── components/
+    │   ├── AppLayout.jsx          # 全局布局：吸顶导航栏 + <Outlet>
+    │   ├── ProtectedRoute.jsx     # 认证守卫：未登录重定向 /auth
+    │   ├── DeveloperRoute.tsx     # 开发者守卫：检查 role === 'developer'
+    │   ├── viewer/                # 3D 查看器组件
+    │   │   ├── ModelViewer.jsx    # Three.js Canvas 包装，含 WallAssembly/CameraAdjuster/ShadowLight
+    │   │   ├── ConstructionLayer.jsx  # 单层渲染：GLB 模型 / 程序化 Box
+    │   │   ├── MenuBackground.jsx # 主菜单 3D 背景（GLB + OrbitControls + autoRotate + 场景切换 + 加载回调）
+    │   │   ├── LoadingOverlay.jsx # 加载动画覆盖层（Framer Motion 构造层堆叠动画）
+    │   │   ├── BottomControlBar.tsx   # 底部控制栏：爆炸滑块(含移动端+/-)/旋转/截图/标注（带快捷键提示）
+    │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
+    │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
+    │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
+    │   │   ├── ExplosionLabels.jsx # 空间标签（L形引导线+上下交叉pill+fade动画）
+    │   │   ├── ModelViewerSkeleton.jsx # 3D 视图加载骨架屏
+    │   │   ├── ModelErrorBoundary.jsx  # 3D 场景错误边界（崩溃降级）
+    │   │   └── ZoomableImage.jsx  # 可缩放拖拽剖面图（滚轮缩放+拖拽+双击重置+双指缩放+热区）
+    │   └── game/                  # 游戏组件
+    │       ├── AssemblyLine.jsx   # 2D 拼装目标区（useDroppable 槽位）
+    │       ├── LayerCard.jsx      # 可拖拽构件卡片（useDraggable + 颜色条 + 名称）
+    │       └── GameInfoPanel.jsx  # 游戏信息面板（进度条/错误计数/选中提示）
+    ├── admin/                    # 后台管理组件
+    │   ├── AdminSectionTree.jsx  # 章节树（模块筛选 + 递归展开 + 右键菜单 + 更多操作）
+    │   ├── SectionTree.jsx       # 旧版章节树（保留兼容）
+    │   └── SectionEditor.jsx     # 旧版章节编辑器（保留兼容）
+    ├── pages/                     # 页面组件
+    │   ├── HomePage.jsx           # 首页：侧边菜单 + 3D 背景
+    │   ├── AuthPage.jsx           # 登录/注册页
+    │   ├── LibraryPage.jsx        # 节点库：按分类展示所有构造节点
+    │   ├── CurriculumPage.jsx     # 课程目录：课程模块网格 → 章节列表
+    │   ├── SectionSubPage.jsx     # 章节子页面：动态加载章节数据
+    │   ├── TextbookPage.jsx       # 教材阅读页：Markdown + [model]/[side-by-side] 标记
+    │   ├── NotesPage.jsx          # 笔记管理：截图查看/备注/对比
+    │   ├── GamesPage.jsx          # 游戏页：拖拽拼装构件（@dnd-kit）
+    │   ├── PlaceholderPage.jsx    # 占位页：/tools /contribute
+    │   └── AdminContentPage.tsx   # 开发者后台（教材/节点编辑 + 媒体库）
+    │
+    ├── data/                      # 数据层
+    │   ├── backgroundScenes.js    # 主菜单背景场景列表（GLB路径 + position配置）
+    │   ├── nodesIndex.ts          # 节点统一入口：NodeIndexEntry[] + nodeLoaders + getNodeData
+    │   ├── courseModules.js       # 课程模块定义（绪论/墙体/屋顶/案例/...）
+    │   ├── externalWall.ts        # 外墙外保温节点数据（5层，程序化Box + 类型标注）
+    │   ├── flatRoof.js            # 平屋面节点数据（6层，每层独立GLB）
+    │   ├── membraneRoof.js        # 卷材防水屋面节点数据（6层，单GLB+layerObjectName）
+    │   ├── roofInsulation.js      # 卷材平面屋顶保温节点数据（9层，单GLB+layerObjectName）
+    │   ├── yunchengC01.js         # 郓城C地块案例节点（1层整体模型，无爆炸）
+    │   ├── roofSections.js        # 屋顶章节数据
+    │   ├── sections/              # 各模块章节数据（动态import）
+    │   │   ├── introSections.js
+    │   │   ├── structureSections.js
+    │   │   ├── foundationSections.js
+    │   │   ├── wallSections.js
+    │   │   ├── floorSections.js
+    │   │   ├── stairsSections.js
+    │   │   ├── windowSections.js
+    │   │   ├── roofSections.js
+    │   │   └── caseSections.js    # 案例章节（3个占位 + 1个嵌套项目含1个子章节）
+    │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/textbook_sections/node_definitions/course_sections/media）
+    │
+    └── services/                  # 业务逻辑层
+        ├── noteService.js         # 笔记 CRUD（localStorage 操作）
+        └── contentService.js      # 内容管理（教材/节点/媒体 Supabase CRUD）
+```
+
+### 2026-05-29 剖面图 + 缩放拖拽 + 三栏比例布局
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `ZoomableImage.jsx` | 可缩放拖拽图片组件：滚轮缩放(0.3x–3x)、鼠标拖拽、双击/按钮重置、触摸双指缩放 |
+| **新增** | `types/index.ts` | NodeData 新增 `diagramImage?: string` 字段 |
+| **新增** | `externalWall.ts` | 外墙节点添加 `diagramImage` 示例配置 |
+| **重构** | `NodeDetail.jsx` | 三栏 flex 比例布局（左 flex-[2] / 中 flex-[3] / 右 w-[360px]），左侧剖面图条件渲染 |
+| **新增** | `NodeDetail.jsx` | 左侧面板：有 diagramImage 显示 ZoomableImage，无则显示占位，加载失败回退 |
+
+### 2026-05-30 案例嵌套子章节
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `caseSections.js` | 添加"郓城县南湖新区公共服务建筑C地块设计"章节，含 `children` 嵌套子章节"01" |
+| **重构** | `SectionSubPage.jsx` | 支持章节嵌套：`parentSection` 状态、面包屑导航、返回上级按钮、有 `children` 的卡片 drill-down |
+
+### 2026-05-30 后台第一阶段：三栏布局 + 自动保存 + Toast + 活动日志
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `supabase_schema.sql` | `activity_log` 操作日志表、`user_roles` 扩展角色表；RLS 简化策略注释 |
+| **新增** | `sonner` 依赖 | Toast 通知库，替代 alert |
+| **新建** | `AdminSectionTree.jsx` | 递归章节树：模块筛选下拉、右键菜单（添加子章节/删除）、展开/折叠、高亮选中、已删标记 |
+| **重写** | `AdminContentPage.tsx` | 三栏布局（树w-64/编辑器flex-1/属性w-64）；URL 子路由（`/admin/:tab`）；自动保存（停止输入 2s + ⌘S 手动）；Sonner toast（保存/删除/恢复/上传/复制）；logActivity 记录操作日志；右侧属性面板（子章节数/关联模型/时间戳/slug/复制链接/前端预览） |
+| **新增** | `contentService.js` | `logActivity` 函数记录操作到 activity_log 表 |
+| **修改** | `routes.jsx` | 新增 `/admin/:tab` 子路由，保留 `/admin` 向后兼容 |
+
+### 2026-05-30 可视化章节编辑器
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `supabase_schema.sql` | `course_sections` 表（层级树、uuid主键、级联删除、RLS） |
+| **新增** | `contentService.js` | 新增 9 个 CRUD 函数：getSectionTree, getSectionById, create/update/deleteSection, getSectionsForModule, getChildSections, listAllSections, importSectionsFromCode |
+| **新建** | `SectionTree.jsx` | 递归章节树组件：缩进+展开/折叠+选中高亮+添加子章节/删除按钮+树形连线 |
+| **新建** | `SectionEditor.jsx` | 章节编辑器：标题/描述/模块/可用开关 + MDEditor + 图片上传→Markdown插入 + 模型多选关联 + 剖面图上传 |
+| **新增** | `AdminContentPage.tsx` | 新增"章节编辑"标签页；SectionManager（左树右编辑器）；"导入"按钮从代码文件批量导入所有模块章节到DB |
+| **修改** | `SectionSubPage.jsx` | DB优先加载：getSectionsForModule → 文件回退；子章节 getChildSections；dbRowToSection 映射函数 |
+| **修改** | `TextbookPage.jsx` | 三级回退：course_sections → textbook_sections → 文件 fetch |
+
+### 2026-05-30 批量优化 8 项
+
+| # | 变更类型 | 文件 | 说明 |
+|---|----------|------|------|
+| 1 | **新增** | `NodeDetail.tsx` | 全局快捷键：E 爆炸切换、R 旋转、L 标注、Ctrl+S 截图、Esc 取消选中 |
+| 2 | **新增** | `types/index.ts`, `ZoomableImage.jsx` | `diagramHotspots` 热区字段；ZoomableImage 渲染可点击透明热区覆盖层 |
+| 3 | **优化** | `BottomControlBar.tsx` | 移动端滑块增大高度(h-6)、touch-action:none、+/- 步进按钮(sm:hidden) |
+| 4 | **新建** | `ModelViewerSkeleton.jsx` | 加载时中间区域显示骨架屏（玫瑰色旋转环） |
+| 5 | **迁移** | `NodeDetail.tsx`, `BottomControlBar.tsx` | JSX→TSX，添加 props 接口和类型标注（ModelViewer/ConstructionLayer 保留 JSX） |
+| 6 | **新建** | `ModelErrorBoundary.jsx` | 3D 场景错误边界：崩溃时显示毛玻璃降级卡片 + "重新加载"按钮 |
+| 7 | **新增** | `ConstructionKnowledgePanel.jsx` | 移动端底部抽屉：右下角浮动按钮 → 底部滑出面板(弹簧动画) + 遮罩关闭 |
+| 8 | **打通** | `ConstructionKnowledgePanel.jsx`, `GamesPage.jsx` | 知识卡片内"拼装练习"按钮(幽灵按钮) → `/games?nodeId=xxx` 自动选中节点 |
+
+### 2026-05-30 统一三栏布局验证 + 左侧面板留白
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **验证** | `NodeDetail.tsx` | 确认三栏布局（flex-[2]/flex-[3]/w-[360px]）对所有节点类型统一生效 |
+| **验证** | 全局 | 废弃组件 `LayerLabel`/`LeftKnowledgePanel` 无残留引用 |
+| **验证** | `BottomControlBar.jsx` | `explodeAxis` 条件隐藏爆炸控件对所有节点类型一致 |
+| **微调** | `NodeDetail.jsx` | 左侧占位 aside 补充 `p-8`，与剖面图面板留白一致 |
+
+### 2026-05-30 案例01节点 + 无爆炸模式
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `yunchengC01.js` | 郓城C地块01节点数据（1层整体GLB模型，explodeAxis=null, floatDirection=null） |
+| **修改** | `nodesIndex.ts` | 注册 yuncheng-c-01 节点索引和动态加载器 |
+| **修改** | `caseSections.js` | case-yuncheng-c-01 子章节关联 nodeIds, available=true |
+| **修改** | `types/index.ts` | NodeData 中 explodeAxis/floatDirection/directionLabel 改为可选 |
+| **修改** | `BottomControlBar.jsx` | explodeAxis 为 null 时隐藏爆炸滑块和分解/复原按钮 |
+| **修改** | `ModelViewer.jsx` | WallAssembly/CameraAdjuster/ShadowLight 处理 null explodeAxis；无爆炸时不渲染 ExplosionLabels |
+| **修改** | `NodeDetail.jsx` | directionLabel 条件渲染；explodeAxis 直传不设默认值 |
+
+### 2026-05-30 新增案例课程模块
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `caseSections.js` | 案例子章节数据（3个占位子章节：砖混外墙/幕墙/坡屋顶改造） |
+| **新增** | `courseModules.js` | 新增"案例"模块（id: cases, icon: 📋, available: true） |
+| **修改** | `SectionSubPage.jsx` | sectionsMap 新增 cases 动态导入映射 |
+
+### 2026-05-27 角色简化 + 班级移除
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **简化** | `supabase_schema.sql` | 角色改为 user/developer，删除 classes/assignments 等表，trigger 默认 'user' |
+| **简化** | `AuthContext.jsx` | signUp 不再接收 role 参数 |
+| **简化** | `AuthPage.jsx` | 移除角色选择器，注册仅填名称/邮箱/密码 |
+| **删除** | `ClassesPage.jsx` | 班级列表页 |
+| **删除** | `ClassDetailPage.jsx` | 班级详情页 |
+| **删除** | `classService.js` | 班级 CRUD |
+| **清理** | `routes.jsx` | 移除 /classes 路由，移除 ProtectedRoute 引用 |
+| **清理** | `AppLayout.jsx` | 移除"我的班级"链接，角色标签改为"用户/开发者" |
+| **清理** | `HomePage.jsx` | 移除"我的班级"菜单，developer 显示"管理后台" |
+| **更新** | `types/index.ts` | UserProfile.role 改为 "user" \| "developer" |
+
+### 2026-05-27 开发者后台 + ExplosionLabels 优化
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `AdminContentPage.tsx` | 开发者后台：教材 Markdown 编辑器 + 节点 JSON 编辑器 + 媒体库 |
+| **新建** | `DeveloperRoute.tsx` | 开发者专用路由守卫 |
+| **新建** | `contentService.js` | Supabase 内容 CRUD + 媒体上传 |
+| **优化** | `ExplosionLabels.jsx` | L 形折线引导线 + 上下交叉排布 + fade 动画 + setState 节流 + React.memo |
+| **优化** | `MenuBackground.jsx` | scale=1.5 放大 + target 居中 |
+| **优化** | `HomePage.jsx` | 相机前视图 [0,1.2,4.0] |
+| **新增** | `supabase_schema.sql` | textbook_sections、node_definitions、media 表 + developer RLS |
+| **修改** | `TextbookPage.jsx` | DB 优先加载，文件 fallback |
+| **修改** | `NodeDetail.jsx` | DB 优先加载，本地 fallback |
+| **修改** | `routes.jsx` | /admin 使用 DeveloperRoute |
+| **修改** | `AppLayout.jsx` | 管理后台链接对 developer 可见 |
+| **修改** | `ModelViewer.jsx` | ShadowLight 节流更新 |
+
+### 2026-05-27 知识卡片系统重构
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **重写** | `ConstructionKnowledgePanel.jsx` | 确立为唯一知识展示区，手风琴卡片，双向联动 activeLayer |
+| **简化** | `ExplosionLabels.jsx` | 仅保留引导线+极简 pill 标签，点击仅更新 activeLayer，不弹出详情 |
+| **删除** | `LayerLabel.jsx` | 浮层卡片被右侧面板替代 |
+| **删除** | `LeftKnowledgePanel.jsx` | 左侧滑出面板被右侧面板替代 |
+| **清理** | `useModelInteraction.ts` | 移除 activeCard 相关状态和逻辑 |
+| **清理** | `usePanelState.ts` | 移除 showLeftPanel 相关状态 |
+| **简化** | `BottomControlBar.jsx` | 移除 PanelLeftOpen 和 Tags 按钮 |
+| **重构** | `NodeDetail.jsx` | 移除 LayerLabel/LeftKnowledgePanel 渲染，统一 activeLayer 状态 |
+| **清理** | `types/index.ts` | 移除 ActiveCard、ModelInteractionState 类型 |
+
+### TypeScript 迁移（早期变更）
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **TypeScript 迁移** | `src/data/externalWall.ts` | JS → TS，添加 `NodeData` 类型标注 |
+| **TypeScript 迁移** | `src/data/nodesIndex.ts` | JS → TS，添加 `NodeIndexEntry`/`NodeLoader` 类型 |
+| **TypeScript 迁移** | `src/hooks/useModelInteraction.ts` | JS → TS，添加返回值类型 |
+| **TypeScript 迁移** | `src/hooks/usePanelState.ts` | JS → TS，添加返回值类型 |
+| **新建** | `src/types/index.ts` | 集中类型定义：NodeData, LayerData, Note, UserProfile, GameState 等 |
+| **新建** | `tsconfig.json` | TypeScript 配置：strict, ES2020, bundler module resolution |
+| **新建** | `npm run typecheck` | `tsc --noEmit` 类型检查脚本 |
+| **重构** | `ExplosionLabels.jsx` | 合并 LabelDetailCard 功能，标签和详情卡片统一管理 |
+| **删除** | `LabelDetailCard.jsx` | 功能合并至 ExplosionLabels |
+| **重新引入** | `@dnd-kit/core` | 拖拽库恢复使用，2D 拼装游戏改为拖拽式交互 |
+
+### 历史变更（2026-05 系列重构）
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/routes.jsx` | 所有路由以 `createBrowserRouter` 数组集中定义 |
+| **新建** | `src/components/game/GameInfoPanel.jsx` | 游戏信息面板（进度条/错误计数/选中提示/层列表） |
+| **新建** | `src/pages/GamesPage.jsx` | 游戏页面：顶部节点选择器 + 左右分栏（3D 场景 + 信息面板） |
+| **重写** | `src/data/nodesIndex.js` | 移除静态 import，改为 `nodeLoaders` 动态加载 + `getNodeData` 异步 |
+| **重写** | `src/main.jsx` | `<BrowserRouter>` + `<App />` → `<AuthProvider>` + `<RouterProvider>` |
+| **改写** | `src/App.jsx` | 路由定义移除，仅保留 re-export |
+| **改写** | `src/NodeDetail.jsx` | 异步数据加载 + 改用 `useModelInteraction` / `usePanelState` hooks |
+| **删除** | `src/services/nodeService.js` | 功能合并至 `nodesIndex.js` |
+| **删除** | `src/pages/RoofSubPage.jsx` | 无路由引用，已被 `SectionSubPage` 替代 |
+
+---
+
+## 4. 功能清单
+
+| 功能 | 路由 | 核心组件 | 数据来源 |
+|------|------|----------|----------|
+| **首页**（3D 背景 + 菜单 + 场景切换） | `/` | HomePage, MenuBackground | backgroundScenes.js (GLB模型列表) |
+| **用户认证**（登录/注册） | `/auth` | AuthPage | Supabase Auth + profiles 表 |
+| **节点库**（分类浏览） | `/library` | LibraryPage | nodesIndex.ts (元数据数组) |
+| **课程目录**（模块选择） | `/curriculum` | CurriculumPage | courseModules.js |
+| **章节浏览**（模块子章节） | `/curriculum/:moduleId` | SectionSubPage | sections/*.js (动态import) |
+| **教材阅读**（含交互模型引用） | `/textbook/:sectionId` | TextbookPage | public/textbook/*/content.md |
+| **3D 模型查看器**（核心） | `/node/:nodeId` | NodeDetail, ModelViewer, ConstructionLayer | nodesIndex.getNodeData() 异步加载 |
+| **图层爆炸/分解** | `/node/:nodeId` | BottomControlBar (滑块 0-100) | useModelInteraction hook |
+| **爆炸标注**（引导线+pill 标签） | `/node/:nodeId` | ExplosionLabels | 爆炸时显示引导线和极简 pill 标签，点击更新 activeLayer |
+| **图层高亮/选中** | `/node/:nodeId` | ConstructionLayer (hover/select) | useModelInteraction hook |
+| **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 唯一知识展示区，手风琴卡片双向联动 activeLayer |
+| **框选截图**（保存笔记） | `/node/:nodeId` | ScreenshotTool | Canvas → dataURL |
+| **笔记管理**（查看/备注/对比/删除） | `/notes` | NotesPage | localStorage (max 30条) |
+| **2D 拖拽拼装游戏**（拖拽构件卡片至槽位 + 验证） | `/games` | GamesPage, AssemblyLine, LayerCard, GameInfoPanel | nodesIndex.getNodeData() |
+| **管理后台**（教材/节点编辑 + 媒体库） | `/admin` | AdminContentPage | contentService → Supabase |
+| **贡献节点**（占位） | `/contribute` | PlaceholderPage | — |
+| **构造工具**（占位） | `/tools` | PlaceholderPage | — |
+
+---
+
+## 5. 数据流说明
+
+### 5.1 节点数据加载
+
+```
+路由 /node/:nodeId
+  → NodeDetail.jsx: useEffect → getNodeData(nodeId)
+    → nodesIndex.ts: nodeLoaders[id] → import() 动态加载节点 JS/TS 文件
+    → module.default 返回 NodeData 对象 (title, layers[], explodeAxis, ...)
+  → 设置 data state（异步，含 loading 状态）
+  → ModelViewer: 接收 layers[] 数组
+    → WallAssembly: 计算初始位置（层厚累加偏移 / 模型层全为0）
+      → ConstructionLayer × N: 每层渲染
+        → 有 modelPath + layerObjectName → useGLTF(modelPath) → scene.getObjectByName(name) → clone
+        → 有 modelPath 无 layerObjectName → useGLTF(modelPath) → clone 整个 scene
+        → 无 modelPath → 程序化 Box (boxGeometry + Edges)
+```
+
+**关键点**:
+- `getNodeData(id)` 是唯一的节点数据加载入口，NodeDetail 等页面统一使用
+- WallAssembly 通过 `layers[0]?.layerObjectName != null` 判断是否使用模型内建坐标（全部置 0，依赖 GLB 内部坐标）还是程序化位置（按 thickness 累加偏移）
+- `nodesIndex` 元数据数组供 LibraryPage/CurriculumPage/TextbookPage 等展示列表使用，不经过动态 import
+
+### 5.2 用户认证流程
+
+```
+main.jsx: <AuthProvider> 包裹 <RouterProvider>
+  → AuthContext: supabase.auth.getSession() 恢复会话
+  → supabase.auth.onAuthStateChange() 监听变化
+  → fetchProfile(userId) → profiles 表查询 role/full_name
+  → Context value: { user, profile, loading, signUp, signIn, signOut }
+
+ProtectedRoute: 检查 user && !loading
+  → 未登录 → <Navigate to="/auth">
+  → 已登录 → 渲染 children
+
+AuthPage: signUp() 注册 / signIn() 登录
+  → Supabase trigger on_auth_user_created 自动创建 profiles 行
+  → role 通过 raw_user_meta_data 传递
+```
+
+**注意**: 重构后 `AuthProvider` 已从 `App.jsx` 内部移至 `main.jsx`，包裹在 `RouterProvider` 之外，使认证状态在路由器实例外部可用。
+
+### 5.3 教材系统
+
+```
+路由 /textbook/:sectionId
+  → TextbookPage: 从 roofSections.js 找章节元数据
+  → fetch(/textbook/{sectionId}/content.md) 加载 Markdown
+  → parseContent() 解析自定义标记:
+    - [model: nodeId]  → 渲染 ModelCard (Link → /node/:nodeId)
+    - [side-by-side]...[/side-by-side] → 渲染 SideBySide (图片+模型并排)
+    - 普通 Markdown → react-markdown + remarkGfm 渲染
+  → 自定义组件: img/table/thead/th/td 样式增强
+```
+
+### 5.4 2D 拖拽拼装游戏（@dnd-kit + 手动验证）
+
+```
+GamesPage (DndContext + DragOverlay)
+  → 状态: slotOccupants (Map<slotIndex,layerIndex>) + verifiedSlots (Map<slotIndex,boolean>)
+  → 上方 AssemblyLine: 每个槽位 — 空标记 (useDroppable) 或 已放置卡片 (useDraggable variant="slot")
+  → 下方 ReturnZone (useDroppable id="return-zone"): 未放置卡片的拖拽回退区
+  → 右侧 GameInfoPanel: 进度条、错误计数、选中提示、层列表
+  → 拖拽规则:
+    - 下方卡片 → 空槽位: 放入，卡片从下方消失
+    - 下方卡片 → 已占槽位: 新卡片放入，旧卡片自动回下方
+    - 槽位卡片 → 空槽位: 移动卡片
+    - 槽位卡片 → 已占槽位: 交换
+    - 槽位卡片 → ReturnZone: 卡片回下方，槽位清空
+  → 验证按钮: 所有槽位填满后可点击
+    - 检查 slotOccupants.get(i) === i → 正确(绿) / 错误(红)
+    - 全部正确 → 庆祝弹窗；有误 → 可调整后重新验证
+  → 全部重来: 清空所有槽位，重新打乱卡片顺序
+```
+
+### 5.6 路由架构
+
+```
+  <AuthProvider>                        ← 认证上下文（路由器外部）
+    <RouterProvider router={router} />  ← router 对象（来自 routes.jsx）
+
+routes.jsx — createBrowserRouter([
+  {
+    element: <AppLayout />,             ← 全局导航栏 + <Outlet />
+    children: [
+      public routes:    / /auth /library /curriculum /node/:nodeId ...
+      admin route: /admin (DeveloperRoute 包裹)
+    ]
+  }
+])
+```
+
+---
+
+## 6. 关键设计模式
+
+### 6.1 数据驱动
+
+所有构造节点均为 JS/TS 对象定义（`src/data/*.js` / `src/data/*.ts`），包含 `id`, `title`, `layers[]`。ModelViewer、ConstructionKnowledgePanel 等组件完全由 `layers[]` 驱动，新增节点只需添加数据文件和索引注册即可。支持从 Supabase `node_definitions` 表读取（DB 优先，文件回退）。
+
+**新增节点流程**（2 步）:
+1. `nodesIndex.ts` → `nodesIndex` 数组加一条 `NodeIndexEntry`
+2. `nodesIndex.ts` → `nodeLoaders` 映射加一行 `import()`
+
+### 6.2 组件复用
+
+- **ConstructionLayer**: 自动检测是否有 modelPath，有则走 GLB 渲染路径，无则走程序化 Box 路径。同时处理 hover/select/dim 三种视觉状态（emissive glow/opacity 变化）。
+- **ConstructionKnowledgePanel**: 唯一知识展示区，手风琴卡片，双向联动 activeLayer，spring 弹簧动画。
+- **ExplosionLabels**: 空间标签系统，L 形折线引导线 + 上下交叉 pill 排布，fade 动画跟随爆炸进度。
+
+### 6.3 动态加载（代码分割）
+
+- **节点数据**: `nodesIndex.ts` 的 `nodeLoaders[id]()` 通过 `import()` 动态加载节点数据文件，避免首屏加载所有大型数据。`getNodeData` 统一入口，替代了旧的 `nodeService.js`。
+- **章节数据**: `SectionSubPage.jsx` 根据 moduleId 动态 `import()` 对应 sections 数据。
+- **教材内容**: `TextbookPage` 通过 `fetch()` 从 `/public/textbook/` 动态加载 Markdown 文件。
+
+### 6.4 自定义 Hooks 模式（已迁移至 TypeScript）
+
+重构后，NodeDetail 的核心状态被抽取为两个自定义 Hooks（已迁移至 `.ts`）：
+
+- **`useModelInteraction.ts`**: 管理 3D 模型交互状态
+  - `explodeValue` / `autoRotate` / `hoveredLayer` / `selectedLayer`
+  - `screenshotMode`
+  - 处理函数: `handleLayerClick`, `handlePanelSelect`, `handleBlankClick`
+  - 自动清除: `explodeValue === 0` 时重置选中状态
+
+- **`usePanelState.ts`**: 管理面板模式
+  - `knowledgePanelExpanded` / `panelMode`
+  - `panelMode` 预留 "knowledge" / "practice" / "textbook" 三态切换
+
+NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记保存等顶层逻辑。
+
+### 6.5 两种模型加载模式
+
+1. **独立 GLB 模式** (flat-roof-01): 每层一个独立 GLB 文件，`modelPath` 直接指向文件，不需要 `layerObjectName`。
+2. **共享 GLB 模式** (membrane-roof-01, roof-insulation-01): 所有层共用一个 GLB 文件，每层通过 `layerObjectName` (如 "01"~"09") 从场景中提取子物体并克隆渲染。`useGLTF` 内置缓存保证同一文件只加载一次。
+
+### 6.6 路由集中管理
+
+所有路由在 `src/routes.jsx` 中以 `createBrowserRouter` 数组形式集中定义。AuthProvider 提升至 `main.jsx` 包裹 RouterProvider，确保认证状态在路由匹配前可用。`<AppLayout>` 作为根路由元素，通过 `<Outlet>` 渲染子路由。
+
+### 6.7 TypeScript 类型系统
+
+`src/types/index.ts` 定义所有核心类型，渐进式迁移中：
+
+- **数据模型**: `NodeData`, `LayerData`, `CourseModule`, `SectionData`
+- **运行时实体**: `Note`, `UserProfile`, `ClassData`, `BackgroundScene`
+- **交互状态**: `ActiveCard`, `ModelInteractionState`, `PanelState`, `GameState`
+
+已迁移至 TypeScript 的文件通过 `import type` 引用类型，编译由 `tsc --noEmit` 检查。配置文件 `tsconfig.json` 启用 strict 模式，`allowJs: true` 兼容现有 JSX 文件。
+
+---
+
+## 7. 当前数据文件索引
+
+| 文件 | 节点/章节 ID | 标题 | layers | 模型方式 | 语言 |
+|------|-------------|------|--------|----------|------|
+| `externalWall.ts` | ext-wall-01 | 外墙外保温系统 | 5 层 | 程序化 Box | TypeScript |
+| `flatRoof.js` | flat-roof-01 | 平屋面构造 | 6 层 | 每层独立 GLB | JavaScript |
+| `membraneRoof.js` | membrane-roof-01 | 卷材防水屋面 | 6 层 | 共享 GLB + layerObjectName | JavaScript |
+| `roofInsulation.js` | roof-insulation-01 | 卷材平面屋顶保温构造 | 9 层 | 共享 GLB + layerObjectName | JavaScript |
+| `backgroundScenes.js` | — | **背景场景列表** | — | GLB路径 + position 配置 | JavaScript |
+| `nodesIndex.ts` | — | **节点统一入口** | — | `nodeLoaders` 映射 + 元数据数组 | TypeScript |
+| `roofSections.js` | — | 屋顶章节索引 | — | — | JavaScript |
+| `courseModules.js` | — | 课程模块定义 | — | 9 个模块 (3 个 available) | JavaScript |
+| `sections/wallSections.js` | — | 墙体章节 | — | 5 个章节 (1 个 available) | JavaScript |
+| `sections/roofSections.js` | — | 屋顶章节（动态） | — | 2 个章节 (均 available) | JavaScript |
+| `sections/caseSections.js` | — | 案例章节（动态，含嵌套） | — | 4 个章节 (3 unavailable + 1 含 children) | JavaScript |
+| `sections/*.js` | — | 其他模块章节 | — | 均不可用 (available: false) | JavaScript |
+
+**已实现课程模块**: 墙体 (wall)、屋顶 (roof)、楼梯 (stairs)、案例 (cases)
+**可用节点**: ext-wall-01, flat-roof-01, membrane-roof-01, roof-insulation-04
+
+---
+
+## 8. 已知约定
+
+### 8.1 爆炸轴命名
+
+- **x 轴**: 墙体类（沿水平方向展开）
+- **y 轴**: 屋顶类（沿垂直方向展开）
+- 支持负方向: `"-x"`, `"-y"` 开头表示反向爆炸
+
+### 8.2 浮动方向 (floatDirection)
+
+- 墙体: `"y"` — 选中层垂直浮起
+- 屋顶: `"z"` — 选中层水平突出
+- 浮动距离: `floatDistance` (通常 0.14 ~ 0.22)
+
+### 8.3 模型路径与命名
+
+- GLB 文件放在 `public/models/{nodeId}/` 目录下
+- 独立层模型命名: `layer_{NN}_{name}.glb` (如 `layer_01_protection.glb`)
+- 共享模型命名: `{nodeId}.glb` 或描述性名称
+- 层内物体命名: `"01"`, `"02"`, ... 从下到上/从内到外编号
+
+### 8.4 Markdown 标记语法
+
+| 语法 | 用途 | 示例 |
+|------|------|------|
+| `[model: nodeId]` | 嵌入模型卡片 | `[model: membrane-roof-01]` |
+| `[side-by-side]...[/side-by-side]` | 并排布局 | 内含图片和 [model:] 标记 |
+| GFM 表格 | 材料/厚度表格 | `remarkGfm` 插件渲染 |
+
+### 8.5 样式约定
+
+- rose-500 (`#ff3d58`) 为主强调色
+- 毛玻璃效果: `bg-white/70 backdrop-blur-md`
+- 圆角: `rounded-2xl` (卡片), `rounded-full` (按钮)
+- 字体: Noto Serif SC + 系统回退
+
+### 8.6 笔记系统
+
+- 存储在 localStorage key `"construction_notes"`
+- 最大 30 条，超量自动删除最旧记录
+- 每条笔记: `{ id, nodeId, nodeTitle, image (dataURL), text, createdAt }`
+- 类型定义见 `src/types/index.ts` → `Note` interface
+
+### 8.7 Hooks 拆分约定
+
+- NodeDetail 的状态逻辑封装在 `src/hooks/` 目录下的独立 `.ts` 文件中
+- `useModelInteraction` 管理所有 3D 模型交互状态，不涉及 UI 面板
+- `usePanelState` 管理所有面板/标签 UI 状态
+- Hooks 返回原始值和方法，由页面组件自行传递给子组件
+
+### 8.8 新增节点流程
+
+在 `src/data/nodesIndex.ts` 中：
+1. `nodesIndex` 数组加一条 `NodeIndexEntry` 元数据 `{ id, title, description, category, thumbnail }`
+2. `nodeLoaders` 映射加一行 `"my-node": () => import("./myNode")`
+
+无需修改其他任何文件。
+
+### 8.9 TypeScript 约定（渐进迁移）
+
+- `tsconfig.json` 配置 `allowJs: true`，兼容现有 JSX 文件
+- `skitLibCheck: true` 跳过库类型检查
+- 新文件优先使用 `.ts` / `.tsx`
+- 类型定义集中在 `src/types/index.ts`
+- 通过 `npm run typecheck` 进行类型检查
+
+---
+
+## 9. 未来规划
+
+从代码中的占位和注释提取：
+
+| 内容 | 位置 | 状态 |
+|------|------|------|
+| GitHub 项目地址 | HomePage.jsx:293 | 待添加 |
+| 管理后台 | /admin (AdminContentPage) | 已实现（教材/节点编辑+媒体库） |
+| 贡献节点 | /contribute (PlaceholderPage) | 占位 |
+| 构造工具 | /tools (PlaceholderPage) | 占位 |
+| 任务布置功能 | ClassDetailPage.jsx:96 | "即将上线" |
+| panelMode 练习/教材标签 | usePanelState.ts | 状态已预留，UI 未接入 |
+| 绪论模块 | courseModules.js | available: false |
+| 构筑物模块 | courseModules.js | available: false |
+| 地基与基础模块 | courseModules.js | available: false |
+| 楼底层模块 | courseModules.js | available: false |
+| 门窗模块 | courseModules.js | available: false |
+| 屋顶子章节 5/8 | roofSections.js | available: false |
+| 墙体子章节 4/5 | wallSections.js | available: false |
+| 案例子章节 3/4 | caseSections.js | available: false（砖混/幕墙/坡屋顶 → 01 已实现） |
+| TypeScript 全量迁移 | src/ 全部 .jsx → .tsx | 进行中（4 文件已迁移） |
