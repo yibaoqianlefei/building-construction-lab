@@ -31,4 +31,6 @@ export const router = createBrowserRouter([
       { path: "/admin/:tab", element: <DeveloperRoute><AdminContentPage /></DeveloperRoute> },
     ],
   },
-]);
+], {
+  basename: import.meta.env.BASE_URL || "/",
+});
