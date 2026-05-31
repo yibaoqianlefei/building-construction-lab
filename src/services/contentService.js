@@ -255,6 +255,22 @@ export async function getChildSections(parentId) {
   }
 }
 
+/* ── activity log ── */
+
+export async function logActivity(userId, action, targetType, targetId, details = {}) {
+  try {
+    await supabase.from("activity_log").insert({
+      user_id: userId,
+      action,
+      target_type: targetType,
+      target_id: targetId,
+      details,
+    });
+  } catch {
+    /* non-critical, ignore */
+  }
+}
+
 /* ── media ── */
 
 export async function listMediaFiles() {

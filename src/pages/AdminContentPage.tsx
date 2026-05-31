@@ -1,48 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Toaster, toast } from "sonner";
 import MDEditor from "@uiw/react-md-editor";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import SectionTree from "../components/admin/SectionTree";
-import SectionEditor from "../components/admin/SectionEditor";
+import AdminSectionTree from "../components/admin/AdminSectionTree";
+import courseModules from "../data/courseModules";
+import { nodesIndex } from "../data/nodesIndex";
 import {
-  listTextbookSections,
-  listNodeDefinitions,
-  getTextbookSection,
-  getNodeDefinition,
-  upsertTextbookSection,
-  upsertNodeDefinition,
-  deleteTextbookSection,
-  deleteNodeDefinition,
-  listAllSections,
-  createSection,
-  deleteSection,
-  softDeleteSection,
-  restoreSection,
+  listTextbookSections, getTextbookSection, upsertTextbookSection, deleteTextbookSection,
+  listNodeDefinitions, getNodeDefinition, upsertNodeDefinition, deleteNodeDefinition,
+  listAllSections, createSection, updateSection,
+  softDeleteSection, restoreSection, logActivity,
+  uploadMedia,
 } from "../services/contentService";
 
-interface SectionRow {
-  section_id: string;
-  title: string;
-  updated_at: string;
+/* ── helpers ── */
+function formatTime(ts) {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" });
 }
 
-interface NodeRow {
-  node_id: string;
-  title: string;
-  category: string;
-  updated_at: string;
-}
-
-const TABS = [
-  { id: "textbook", label: "教材章节" },
-  { id: "nodes", label: "节点定义" },
-  { id: "sections", label: "章节编辑" },
-  { id: "media", label: "媒体库" },
-];
+/* ════════════════════════════════════════════════════════════════════════════ */
 
 function AdminContentPage() {
   const { profile } = useAuth();
-  const [tab, setTab] = useState("textbook");
+  const { tab } = useParams();
+  const navigate = useNavigate();
+  const currentTab = tab || "sections";
 
   if (!profile || (profile as any).role !== "developer") {
     return (
@@ -52,17 +36,25 @@ function AdminContentPage() {
     );
   }
 
+  const TABS = [
+    { id: "sections", label: "章节管理" },
+    { id: "nodes", label: "节点管理" },
+    { id: "media", label: "媒体库" },
+    { id: "textbook", label: "旧版教材" },
+  ];
+
   return (
     <div className="min-h-screen bg-white flex flex-col h-screen">
-      <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-6">
-        <h2 className="text-base font-semibold text-gray-800">内容管理</h2>
+      <Toaster position="top-right" richColors closeButton />
+      <div className="px-5 py-2.5 border-b border-gray-100 flex items-center gap-6 flex-shrink-0">
+        <h2 className="text-sm font-semibold text-gray-800">管理后台</h2>
         <div className="flex gap-1">
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                tab === t.id ? "bg-rose-100 text-rose-700" : "text-gray-500 hover:text-gray-700"
+              onClick={() => navigate(`/admin/${t.id}`)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                currentTab === t.id ? "bg-rose-100 text-rose-700" : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {t.label}
@@ -72,116 +64,154 @@ function AdminContentPage() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {tab === "textbook" ? <TextbookEditor /> : tab === "nodes" ? <NodeEditor /> : tab === "sections" ? <SectionManager /> : <MediaLibrary />}
+        {currentTab === "sections" ? (
+          <SectionsManager profile={profile} />
+        ) : currentTab === "nodes" ? (
+          <NodeEditor />
+        ) : currentTab === "media" ? (
+          <MediaLibrary />
+        ) : (
+          <TextbookEditor />
+        )}
       </div>
     </div>
   );
 }
 
-/* ── Section Manager ── */
-function SectionManager() {
+/* ════════════════════ SECTIONS MANAGER (3-column) ════════════════════════ */
+
+function SectionsManager({ profile }: any) {
   const [sections, setSections] = useState<any[]>([]);
-  const [selectedSection, setSelectedSection] = useState<any>(null);
+  const [selected, setSelected] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
-  const [showDeleted, setShowDeleted] = useState(false);
-  const [treeCollapsed, setTreeCollapsed] = useState(false);
-  const [toast, setToast] = useState<{ id: string; message: string; undoId: string | null } | null>(null);
+  const [lastSaved, setLastSaved] = useState("");
 
-  useEffect(() => {
-    loadSections();
-  }, [showDeleted]);
+  /* ── editor state ── */
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [content, setContent] = useState("");
+  const [moduleId, setModuleId] = useState("");
+  const [available, setAvailable] = useState(false);
+  const [nodeIds, setNodeIds] = useState<string[]>([]);
+  const [diagramUrl, setDiagramUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const autoSaveTimer = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const diagramInputRef = useRef<HTMLInputElement>(null);
+
+  /* ── load ── */
+  useEffect(() => { loadSections(); }, []);
 
   async function loadSections() {
     setLoading(true);
-    const data = await listAllSections(showDeleted);
+    const data = await listAllSections(true);
     setSections(data || []);
     setLoading(false);
   }
 
-  /* ── toast ── */
-  function showToast(message: string, undoId: string | null) {
-    const id = Date.now().toString();
-    setToast({ id, message, undoId });
-    setTimeout(() => {
-      setToast((prev) => (prev?.id === id ? null : prev));
-    }, 5000);
-  }
-
-  async function handleUndoDelete(sectionId: string) {
-    try {
-      await restoreSection(sectionId);
-      setToast(null);
-      await loadSections();
-    } catch (e: any) {
-      alert("恢复失败: " + e.message);
+  /* ── sync editor from selected ── */
+  useEffect(() => {
+    if (!selected) {
+      setTitle(""); setDesc(""); setContent(""); setModuleId("");
+      setAvailable(false); setNodeIds([]); setDiagramUrl("");
+      return;
     }
-  }
+    setTitle(selected.title || "");
+    setDesc(selected.description || "");
+    setContent(selected.content || "");
+    setModuleId(selected.module_id || "");
+    setAvailable(selected.available || false);
+    setNodeIds(Array.isArray(selected.node_ids) ? selected.node_ids : []);
+    setDiagramUrl(selected.diagram_image_url || "");
+  }, [selected]);
 
-  async function handleAddChild(parent: any) {
-    const moduleId = parent?.module_id || null;
-    const parentId = parent?.id || null;
-    const title = prompt("输入章节标题：");
-    if (!title) return;
+  /* ── auto-save (2s debounce) ── */
+  const triggerAutoSave = useCallback(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => doSave(true), 2000);
+  }, [title, desc, content, moduleId, available, nodeIds, diagramUrl, selected]);
+
+  useEffect(() => {
+    if (!selected || selected.deleted_at) return;
+    triggerAutoSave();
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [title, desc, content, moduleId, available, nodeIds, diagramUrl]);
+
+  async function doSave(silent = false) {
+    if (!selected || selected.deleted_at) return;
+    setSaving(true);
     try {
-      const newSection = await createSection({
-        title,
-        module_id: moduleId,
-        parent_id: parentId,
-        sort_order: 0,
-        available: false,
-        node_ids: [],
+      await updateSection(selected.id, {
+        title, description: desc, content,
+        module_id: moduleId || null, available,
+        node_ids: nodeIds, diagram_image_url: diagramUrl || null,
       });
-      await loadSections();
-      setSelectedSection(newSection);
+      const now = new Date().toISOString();
+      setLastSaved(now);
+      if (!silent) toast.success("已保存");
+      await logActivity((profile as any).id || "anon", "update", "section", selected.id, { title });
     } catch (e: any) {
-      alert("创建失败: " + e.message);
-    }
+      if (!silent) toast.error("保存失败: " + e.message);
+    } finally { setSaving(false); }
   }
 
-  /* soft-delete with toast */
-  async function handleDelete(sectionId: string) {
-    try {
-      await softDeleteSection(sectionId);
-      if (selectedSection?.id === sectionId) {
-        setSelectedSection((prev: any) => prev ? { ...prev, deleted_at: new Date().toISOString() } : null);
+  /* ── keyboard save ── */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        doSave(false);
       }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, title, desc, content, moduleId, available, nodeIds, diagramUrl]);
+
+  /* ── handlers ── */
+  async function handleAddChild(parent: any) {
+    const t = prompt("章节标题：");
+    if (!t) return;
+    try {
+      const created = await createSection({
+        title: t, module_id: parent?.module_id || null,
+        parent_id: parent?.id || null, sort_order: 0, available: false, node_ids: [],
+      });
+      toast.success("章节已创建");
+      await logActivity((profile as any).id || "anon", "create", "section", created.id, { title: t });
       await loadSections();
-      showToast("章节已移至回收站", sectionId);
-    } catch (e: any) {
-      alert("删除失败: " + e.message);
-    }
+      setSelected(created);
+    } catch (e: any) { toast.error("创建失败: " + e.message); }
   }
 
-  /* restore from editor */
-  async function handleRestore(sectionId: string) {
+  async function handleDelete(id: string) {
     try {
-      await restoreSection(sectionId);
-      setSelectedSection(null);
+      await softDeleteSection(id);
+      toast("已移至回收站", {
+        action: { label: "撤销", onClick: async () => {
+          await restoreSection(id); await loadSections();
+          toast.success("已恢复");
+        }},
+      });
+      if (selected?.id === id) setSelected({ ...selected, deleted_at: new Date().toISOString() });
+      await logActivity((profile as any).id || "anon", "soft_delete", "section", id, {});
       await loadSections();
-    } catch (e: any) {
-      alert("恢复失败: " + e.message);
-    }
+    } catch (e: any) { toast.error("删除失败: " + e.message); }
   }
 
-  /* ── fetch textbook content for a section ── */
-  async function fetchTextbookContent(sec) {
-    /* sec.id is the file-based section ID e.g. "roof-membrane" */
-    if (!sec.hasTextbook && !sec.content) return "";
-    const contentId = typeof sec.content === "string" && sec.content
-      ? sec.content
-      : sec.id;
+  async function handleRestore(id: string) {
     try {
-      const res = await fetch(`/textbook/${contentId}/content.md`);
-      if (!res.ok) return "";
-      return await res.text();
-    } catch {
-      return "";
-    }
+      await restoreSection(id);
+      toast.success("已恢复");
+      setSelected(null);
+      await loadSections();
+    } catch (e: any) { toast.error("恢复失败: " + e.message); }
   }
 
   async function handleImport() {
-    if (!confirm("将从现有代码文件导入所有模块的章节数据到数据库，确认？")) return;
+    if (!confirm("从代码文件导入所有模块章节？")) return;
     setImporting(true);
     try {
       const moduleSections = [
@@ -195,7 +225,6 @@ function SectionManager() {
         { module: "roof", file: "../data/sections/roofSections" },
         { module: "cases", file: "../data/sections/caseSections" },
       ];
-
       let count = 0;
       for (const ms of moduleSections) {
         try {
@@ -203,460 +232,404 @@ function SectionManager() {
           const secs = mod.default || [];
           for (let i = 0; i < secs.length; i++) {
             const sec = secs[i];
-            const children = sec.children || [];
-
-            /* fetch textbook content if this section has it */
-            const textbookContent = await fetchTextbookContent(sec);
-
-            const parentData: any = {
-              title: sec.title,
-              description: sec.description || "",
-              module_id: ms.module,
-              parent_id: null,
-              sort_order: i,
-              available: sec.available !== false,
-              node_ids: sec.nodeIds || [],
-              content: textbookContent,
-              slug: sec.id || null,
-            };
-            const created = await createSection(parentData);
-            count++;
-
-            /* create children */
-            for (let j = 0; j < children.length; j++) {
-              const child = children[j];
-              const childContent = await fetchTextbookContent(child);
-              await createSection({
-                title: child.title,
-                description: child.description || "",
-                module_id: ms.module,
-                parent_id: created.id,
-                sort_order: j,
-                available: child.available !== false,
-                node_ids: child.nodeIds || [],
-                content: childContent,
-                slug: child.id || null,
-              });
-              count++;
+            let textbookContent = "";
+            if (sec.hasTextbook || sec.content) {
+              const cid = typeof sec.content === "string" && sec.content ? sec.content : sec.id;
+              try { const r = await fetch(`/textbook/${cid}/content.md`); if (r.ok) textbookContent = await r.text(); } catch {}
             }
-          }
-        } catch {
-          /* module file may not exist */
-        }
-      }
-      alert(`导入完成：${count} 个章节`);
-      await loadSections();
-    } catch (e: any) {
-      alert("导入失败: " + e.message);
-    } finally {
-      setImporting(false);
-    }
-  }
-
-  /* ── re-import textbook content for ALL existing sections ── */
-  async function handleReimportContent() {
-    if (!confirm("将从代码文件重新读取教材文本并更新所有章节的 content 字段，确认？")) return;
-    setImporting(true);
-    try {
-      const moduleSections = [
-        { module: "introduction", file: "../data/sections/introSections" },
-        { module: "structures", file: "../data/sections/structureSections" },
-        { module: "foundation", file: "../data/sections/foundationSections" },
-        { module: "wall", file: "../data/sections/wallSections" },
-        { module: "floor", file: "../data/sections/floorSections" },
-        { module: "stairs", file: "../data/sections/stairsSections" },
-        { module: "door-window", file: "../data/sections/windowSections" },
-        { module: "roof", file: "../data/sections/roofSections" },
-        { module: "cases", file: "../data/sections/caseSections" },
-      ];
-
-      let fixed = 0;
-      const { updateSection } = await import("../services/contentService");
-
-      for (const ms of moduleSections) {
-        try {
-          const mod = await import(/* @vite-ignore */ ms.file);
-          const secs = mod.default || [];
-
-          /* fetch all existing DB sections for this module */
-          const existing = sections.filter((s) => s.module_id === ms.module && s.parent_id === null);
-          const existingChildren = sections.filter((s) => s.module_id === ms.module && s.parent_id !== null);
-
-          for (let i = 0; i < secs.length; i++) {
-            const sec = secs[i];
-            const content = await fetchTextbookContent(sec);
-            /* find matching DB row by title */
-            const match = existing.find((s) => s.title === sec.title);
-            if (match && content) {
-              await updateSection(match.id, { content });
-              fixed++;
-            }
-            /* fix children too */
+            const created = await createSection({
+              title: sec.title, description: sec.description || "", module_id: ms.module,
+              parent_id: null, sort_order: i, available: sec.available !== false,
+              node_ids: sec.nodeIds || [], content: textbookContent, slug: sec.id || null,
+            }); count++;
             const children = sec.children || [];
             for (let j = 0; j < children.length; j++) {
               const child = children[j];
-              const childContent = await fetchTextbookContent(child);
-              const childMatch = existingChildren.find((s) => s.title === child.title);
-              if (childMatch && childContent) {
-                await updateSection(childMatch.id, { content: childContent });
-                fixed++;
+              let cc = "";
+              if (child.hasTextbook || child.content) {
+                const cid2 = typeof child.content === "string" && child.content ? child.content : child.id;
+                try { const r = await fetch(`/textbook/${cid2}/content.md`); if (r.ok) cc = await r.text(); } catch {}
               }
+              await createSection({
+                title: child.title, description: child.description || "", module_id: ms.module,
+                parent_id: created.id, sort_order: j, available: child.available !== false,
+                node_ids: child.nodeIds || [], content: cc, slug: child.id || null,
+              }); count++;
             }
           }
-        } catch {
-          /* ok */
-        }
+        } catch {}
       }
-      alert(`修复完成：${fixed} 个章节的教材文本已更新`);
+      toast.success(`导入完成：${count} 个章节`);
       await loadSections();
-    } catch (e: any) {
-      alert("修复失败: " + e.message);
-    } finally {
-      setImporting(false);
-    }
+    } catch (e: any) { toast.error("导入失败: " + e.message); }
+    finally { setImporting(false); }
   }
 
-  return (
-    <div className="flex h-full relative">
-      {!treeCollapsed && (
-        <div className="w-72 flex-shrink-0 border-r border-gray-100">
-          <div className="px-2 py-1 border-b border-gray-100 flex items-center gap-2">
-            <label className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showDeleted}
-                onChange={(e) => {
-                  setShowDeleted(e.target.checked);
-                  if (!e.target.checked) setSelectedSection(null);
-                }}
-                className="accent-rose-500 w-3 h-3"
-              />
-              回收站
-            </label>
-            <button
-              onClick={() => setTreeCollapsed(true)}
-              className="ml-auto p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-              title="折叠章节树"
-            >
-              <PanelLeftClose size={14} />
-            </button>
-          </div>
-          <SectionTree
-            sections={sections}
-            selectedId={selectedSection?.id}
-            onSelect={setSelectedSection}
-            onAddChild={handleAddChild}
-            onDelete={handleDelete}
-            onImport={handleImport}
-            onReimport={handleReimportContent}
-            loading={loading || importing}
-          />
-        </div>
-      )}
-      {treeCollapsed && (
-        <button
-          onClick={() => setTreeCollapsed(false)}
-          className="flex-shrink-0 w-8 flex items-start justify-center pt-2 border-r border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-          title="展开章节树"
-        >
-          <PanelLeftOpen size={14} className="text-gray-400" />
-        </button>
-      )}
-      <SectionEditor
-        section={selectedSection}
-        onSaved={loadSections}
-        onRefresh={loadSections}
-        onRestore={handleRestore}
-      />
-
-      {/* ── toast notification ── */}
-      {toast && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-50
-          flex items-center gap-3 px-5 py-2.5
-          bg-gray-800 text-white text-sm rounded-xl shadow-xl
-          animate-[slideUp_0.25s_ease-out]">
-          <span>{toast.message}</span>
-          {toast.undoId && (
-            <button
-              onClick={() => handleUndoDelete(toast.undoId!)}
-              className="text-rose-400 hover:text-rose-300 font-medium transition-colors cursor-pointer"
-            >
-              撤销
-            </button>
-          )}
-          <button
-            onClick={() => setToast(null)}
-            className="text-gray-400 hover:text-gray-300 ml-1 cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Textbook Editor ── */
-function TextbookEditor() {
-  const [sections, setSections] = useState<SectionRow[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    listTextbookSections().then(setSections);
-  }, []);
-
-  function loadSection(id: string) {
-    setSelectedId(id);
-    getTextbookSection(id).then((row: any) => {
-      if (row) {
-        setTitle(row.title || "");
-        setContent(row.content || "");
-      }
-    });
-  }
-
-  function newSection() {
-    const id = prompt("输入 section_id（如 roof-membrane）：");
-    if (!id) return;
-    setSelectedId(id);
-    setTitle("");
-    setContent("");
-  }
-
-  async function handleSave() {
-    if (!selectedId) return;
-    setSaving(true);
+  /* ── image upload ── */
+  async function handleImageUpload(e: any) {
+    const file = e.target.files?.[0]; if (!file) return;
+    setUploading(true);
     try {
-      await upsertTextbookSection(selectedId, title, content);
-      listTextbookSections().then(setSections);
-      alert("保存成功");
-    } catch (e: any) {
-      alert("保存失败: " + e.message);
-    } finally {
-      setSaving(false);
-    }
+      const url = await uploadMedia(file);
+      setContent((p) => p + `\n![${file.name}](${url})\n`);
+      toast.success("图片已上传");
+    } catch (err: any) { toast.error("上传失败: " + err.message); }
+    finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
   }
 
-  async function handleDelete() {
-    if (!selectedId || !confirm("确认删除此章节？")) return;
-    await deleteTextbookSection(selectedId);
-    setSelectedId(null);
-    setTitle("");
-    setContent("");
-    listTextbookSections().then(setSections);
+  async function handleDiagramUpload(e: any) {
+    const file = e.target.files?.[0]; if (!file) return;
+    setUploading(true);
+    try { const url = await uploadMedia(file); setDiagramUrl(url); toast.success("剖面图已上传"); }
+    catch (err: any) { toast.error("上传失败: " + err.message); }
+    finally { setUploading(false); }
   }
+
+  function toggleNodeId(id: string) {
+    setNodeIds((p) => p.includes(id) ? p.filter((n) => n !== id) : [...p, id]);
+  }
+
+  /* ── stats for right panel ── */
+  const childCount = sections.filter((s) => s.parent_id === selected?.id).length;
+  const associatedNodes = (selected?.node_ids || []).length;
+
+  const isDeleted = !!(selected?.deleted_at);
 
   return (
     <div className="flex h-full">
-      <div className="w-64 border-r border-gray-100 overflow-y-auto p-3 flex flex-col gap-1">
-        <button onClick={newSection} className="w-full py-1.5 text-sm rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors">
-          + 新建章节
-        </button>
-        {sections.map((s) => (
-          <button
-            key={s.section_id}
-            onClick={() => loadSection(s.section_id)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-              selectedId === s.section_id ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-600"
-            }`}
-          >
-            <div className="font-medium truncate">{s.title || s.section_id}</div>
-            <div className="text-xs text-gray-400">{s.section_id}</div>
-          </button>
-        ))}
+      {/* ── LEFT: Section Tree (w-64) ── */}
+      <div className="w-64 flex-shrink-0 border-r border-gray-100">
+        <AdminSectionTree
+          sections={sections}
+          selectedId={selected?.id}
+          onSelect={setSelected}
+          onAddChild={handleAddChild}
+          onDelete={handleDelete}
+          onImport={handleImport}
+          loading={loading || importing}
+        />
       </div>
 
-      <div className="flex-1 flex flex-col">
-        {selectedId ? (
-          <>
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="章节标题"
-                className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300"
-              />
-              <button onClick={handleSave} disabled={saving}
-                className="px-4 py-1.5 text-sm rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors">
-                {saving ? "保存中..." : "保存"}
-              </button>
-              <button onClick={handleDelete}
-                className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 transition-colors">
-                删除
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <MDEditor
-                value={content}
-                onChange={(val) => setContent(val || "")}
-                height="100%"
-                preview="edit"
-                visibleDragbar={false}
-              />
-            </div>
-          </>
-        ) : (
+      {/* ── CENTER: Editor (flex-1) ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {!selected ? (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
             选择一个章节开始编辑
           </div>
+        ) : (
+          <>
+            {/* restore banner */}
+            {isDeleted && (
+              <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+                <span className="text-sm text-amber-700 font-medium">已删除</span>
+                <button onClick={() => handleRestore(selected.id)}
+                  className="px-3 py-1 text-xs rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer">
+                  恢复章节
+                </button>
+              </div>
+            )}
+
+            {/* ── toolbar ── */}
+            <div className="px-4 py-2.5 border-b border-gray-100 space-y-2 flex-shrink-0">
+              <div className="flex gap-2">
+                <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="章节标题"
+                  className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300"
+                  disabled={isDeleted} />
+                <select value={moduleId} onChange={(e) => setModuleId(e.target.value)}
+                  className="w-32 text-xs px-2 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300 bg-white"
+                  disabled={isDeleted}>
+                  <option value="">无模块</option>
+                  {courseModules.map((m) => (
+                    <option key={m.id} value={m.id}>{m.icon} {m.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="描述"
+                  className="flex-1 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300"
+                  disabled={isDeleted} />
+                <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer flex-shrink-0">
+                  <input type="checkbox" checked={available} onChange={(e) => setAvailable(e.target.checked)}
+                    className="accent-rose-500" disabled={isDeleted} />
+                  可用
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => doSave(false)} disabled={saving || isDeleted}
+                  className="px-4 py-1.5 text-xs rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors cursor-pointer">
+                  {saving ? "..." : "保存 ⌘S"}
+                </button>
+                <label className={`px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 transition-colors cursor-pointer ${isDeleted ? "opacity-50 pointer-events-none" : ""}`}>
+                  {uploading ? "上传中..." : "上传图片"}
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+                <span className="text-[10px] text-gray-400 ml-auto">
+                  {saving ? "保存中..." : lastSaved ? `上次保存 ${formatTime(lastSaved)}` : "自动保存已启用"}
+                </span>
+              </div>
+            </div>
+
+            {/* ── scrollable content area ── */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Markdown editor */}
+              <div className="border-b border-gray-100">
+                <div className="px-4 py-1.5 text-[11px] text-gray-400 uppercase tracking-wider font-medium">
+                  教材内容 (Markdown) — 停止输入 2 秒后自动保存
+                </div>
+                <MDEditor value={content} onChange={(v) => setContent(v || "")}
+                  height="50vh" preview="edit" visibleDragbar={false} />
+              </div>
+
+              {/* diagram */}
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-2">剖面图</div>
+                <div className="flex items-center gap-3">
+                  <label className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 transition-colors cursor-pointer">
+                    上传剖面图
+                    <input ref={diagramInputRef} type="file" accept="image/*" className="hidden" onChange={handleDiagramUpload} />
+                  </label>
+                  {diagramUrl && (
+                    <div className="flex items-center gap-2">
+                      <img src={diagramUrl} alt="剖面图" className="h-10 w-auto rounded border border-gray-200 object-contain" />
+                      <button onClick={() => setDiagramUrl("")}
+                        className="text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer">清除</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* model association */}
+              <div className="px-4 py-3">
+                <div className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-2">关联模型节点</div>
+                <div className="grid grid-cols-2 gap-1 max-h-36 overflow-y-auto">
+                  {nodesIndex.map((n) => {
+                    const checked = nodeIds.includes(n.id);
+                    return (
+                      <label key={n.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] cursor-pointer transition-colors ${checked ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-500"}`}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleNodeId(n.id)} className="accent-rose-500 w-3 h-3" />
+                        <span className="truncate">{n.title}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── RIGHT: Properties Panel (w-64) ── */}
+      <div className="w-64 flex-shrink-0 border-l border-gray-100 bg-gray-50/50 p-4 overflow-y-auto">
+        <h3 className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-3">属性</h3>
+        {selected ? (
+          <div className="space-y-3 text-xs">
+            <div>
+              <span className="text-gray-400">子章节</span>
+              <span className="float-right text-gray-700 font-medium">{childCount}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">关联模型</span>
+              <span className="float-right text-gray-700 font-medium">{associatedNodes}</span>
+            </div>
+            <div className="border-t border-gray-200 pt-2">
+              <span className="text-gray-400 block">创建时间</span>
+              <span className="text-gray-600">{formatTime(selected.created_at)}</span>
+            </div>
+            <div>
+              <span className="text-gray-400 block">更新时间</span>
+              <span className="text-gray-600">{formatTime(selected.updated_at)}</span>
+            </div>
+            <div>
+              <span className="text-gray-400 block">Slug</span>
+              <code className="text-[10px] text-gray-500 bg-gray-100 px-1 rounded">{selected.slug || "(自动生成)"}</code>
+            </div>
+            {isDeleted && (
+              <div className="border-t border-red-200 pt-2 mt-2">
+                <span className="text-red-400 block">删除时间</span>
+                <span className="text-red-500">{formatTime(selected.deleted_at)}</span>
+              </div>
+            )}
+            <div className="border-t border-gray-200 pt-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(selected.slug
+                    ? `${window.location.origin}/textbook/${selected.slug}`
+                    : `${window.location.origin}/node/${selected.node_ids?.[0] || ""}`);
+                  toast.success("链接已复制");
+                }}
+                className="w-full py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 hover:border-rose-300 transition-colors cursor-pointer"
+              >
+                复制链接
+              </button>
+              {selected.slug && (
+                <button
+                  onClick={() => window.open(`/textbook/${selected.slug}`, "_blank")}
+                  className="w-full mt-1 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 hover:border-rose-300 transition-colors cursor-pointer"
+                >
+                  前端预览 →
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400">选择章节查看属性</p>
         )}
       </div>
     </div>
   );
 }
 
-/* ── Node Editor ── */
+/* ════════════════════ NODE EDITOR ════════════════════════ */
+
+interface NodeRow { node_id: string; title: string; category: string; updated_at: string; }
+
 function NodeEditor() {
   const [nodes, setNodes] = useState<NodeRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const [nodeData, setNodeData] = useState("");
+  const [title, setTitle] = useState(""); const [category, setCategory] = useState("");
+  const [desc, setDesc] = useState(""); const [nodeData, setNodeData] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    listNodeDefinitions().then(setNodes);
-  }, []);
+  useEffect(() => { listNodeDefinitions().then(setNodes); }, []);
 
   function loadNode(id: string) {
     setSelectedId(id);
     getNodeDefinition(id).then((row: any) => {
-      if (row) {
-        setTitle(row.title || "");
-        setCategory(row.category || "");
-        setDescription(row.description || "");
-        setNodeData(JSON.stringify(row.node_data, null, 2));
-      }
+      if (row) { setTitle(row.title || ""); setCategory(row.category || ""); setDesc(row.description || ""); setNodeData(JSON.stringify(row.node_data, null, 2)); }
     });
   }
 
-  function newNode() {
-    const id = prompt("输入 node_id（如 ext-wall-01）：");
-    if (!id) return;
-    setSelectedId(id);
-    setTitle("");
-    setCategory("");
-    setDescription("");
-    setNodeData("{}");
-  }
-
   async function handleSave() {
-    if (!selectedId) return;
-    setSaving(true);
+    if (!selectedId) return; setSaving(true);
     try {
-      const parsed = JSON.parse(nodeData);
-      await upsertNodeDefinition(selectedId, title, category, description, parsed);
-      listNodeDefinitions().then(setNodes);
-      alert("保存成功");
-    } catch (e: any) {
-      alert("保存失败: " + e.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!selectedId || !confirm("确认删除此节点？")) return;
-    await deleteNodeDefinition(selectedId);
-    setSelectedId(null);
-    listNodeDefinitions().then(setNodes);
+      await upsertNodeDefinition(selectedId, title, category, desc, JSON.parse(nodeData));
+      listNodeDefinitions().then(setNodes); toast.success("已保存");
+    } catch (e: any) { toast.error("保存失败: " + e.message); }
+    finally { setSaving(false); }
   }
 
   return (
     <div className="flex h-full">
-      <div className="w-64 border-r border-gray-100 overflow-y-auto p-3 flex flex-col gap-1">
-        <button onClick={newNode} className="w-full py-1.5 text-sm rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors">
-          + 新建节点
-        </button>
+      <div className="w-56 border-r border-gray-100 overflow-y-auto p-2 flex flex-col gap-0.5">
+        <button onClick={() => { const id = prompt("node_id:"); if (id) { setSelectedId(id); setTitle(""); setCategory(""); setDesc(""); setNodeData("{}"); } }}
+          className="w-full py-1.5 text-xs rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer">+ 新建</button>
         {nodes.map((n) => (
-          <button
-            key={n.node_id}
-            onClick={() => loadNode(n.node_id)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-              selectedId === n.node_id ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-600"
-            }`}
-          >
+          <button key={n.node_id} onClick={() => loadNode(n.node_id)}
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedId === n.node_id ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-600"}`}>
             <div className="font-medium truncate">{n.title || n.node_id}</div>
-            <div className="text-xs text-gray-400">{n.node_id}</div>
+            <div className="text-[10px] text-gray-400">{n.node_id}</div>
           </button>
         ))}
       </div>
-
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedId ? (
           <>
-            <div className="px-4 py-3 border-b border-gray-100 space-y-2">
+            <div className="px-4 py-2 border-b border-gray-100 space-y-1.5">
               <div className="flex gap-2">
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题"
-                  className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+                  className="flex-1 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
                 <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="分类"
-                  className="w-32 text-sm px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+                  className="w-24 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
               </div>
-              <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="描述"
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
-              <div className="flex gap-2">
-                <button onClick={handleSave} disabled={saving}
-                  className="px-4 py-1.5 text-sm rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors">
-                  {saving ? "保存中..." : "保存"}
-                </button>
-                <button onClick={handleDelete}
-                  className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 transition-colors">
-                  删除
-                </button>
-              </div>
+              <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="描述"
+                className="w-full text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+              <button onClick={handleSave} disabled={saving}
+                className="px-4 py-1.5 text-xs rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors cursor-pointer">
+                {saving ? "..." : "保存"}
+              </button>
             </div>
             <textarea value={nodeData} onChange={(e) => setNodeData(e.target.value)}
-              placeholder="JSON 节点数据..." className="flex-1 p-4 text-sm font-mono outline-none resize-none" />
+              placeholder="JSON 数据" className="flex-1 p-4 text-xs font-mono outline-none resize-none" />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-            选择一个节点开始编辑
-          </div>
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">选择节点编辑</div>
         )}
       </div>
     </div>
   );
 }
 
-/* ── Media Library ── */
+/* ════════════════════ TEXTBOOK EDITOR ════════════════════ */
+
+interface SectionRow { section_id: string; title: string; updated_at: string; }
+
+function TextbookEditor() {
+  const [sections, setSections] = useState<SectionRow[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [title, setTitle] = useState(""); const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { listTextbookSections().then(setSections); }, []);
+
+  function loadSection(id: string) {
+    setSelectedId(id);
+    getTextbookSection(id).then((row: any) => { if (row) { setTitle(row.title || ""); setContent(row.content || ""); } });
+  }
+
+  async function handleSave() {
+    if (!selectedId) return; setSaving(true);
+    try { await upsertTextbookSection(selectedId, title, content); listTextbookSections().then(setSections); toast.success("已保存"); }
+    catch (e: any) { toast.error("保存失败: " + e.message); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="flex h-full">
+      <div className="w-56 border-r border-gray-100 overflow-y-auto p-2 flex flex-col gap-0.5">
+        <button onClick={() => { const id = prompt("section_id:"); if (id) { setSelectedId(id); setTitle(""); setContent(""); } }}
+          className="w-full py-1.5 text-xs rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer">+ 新建</button>
+        {sections.map((s) => (
+          <button key={s.section_id} onClick={() => loadSection(s.section_id)}
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedId === s.section_id ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-600"}`}>
+            <div className="font-medium truncate">{s.title || s.section_id}</div>
+            <div className="text-[10px] text-gray-400">{s.section_id}</div>
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 flex flex-col">
+        {selectedId ? (
+          <>
+            <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题"
+                className="flex-1 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+              <button onClick={handleSave} disabled={saving}
+                className="px-4 py-1.5 text-xs rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors cursor-pointer">
+                {saving ? "..." : "保存"}
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <MDEditor value={content} onChange={(v) => setContent(v || "")} height="100%" preview="edit" visibleDragbar={false} />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">选择章节编辑</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════ MEDIA LIBRARY ════════════════════ */
+
 function MediaLibrary() {
   const [files, setFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [copied, setCopied] = useState("");
 
-  useEffect(() => {
-    loadFiles();
-  }, []);
+  useEffect(() => { loadFiles(); }, []);
 
   async function loadFiles() {
-    try {
-      const { listMediaFiles } = await import("../services/contentService");
-      const data = await listMediaFiles();
-      setFiles(data || []);
-    } catch { setFiles([]); }
+    try { const { listMediaFiles } = await import("../services/contentService"); setFiles(await listMediaFiles() || []); }
+    catch { setFiles([]); }
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const { uploadMedia } = await import("../services/contentService");
-      await uploadMedia(file);
-      loadFiles();
-    } catch (err: any) { alert("上传失败: " + err.message); }
+  async function handleUpload(e: any) {
+    const file = e.target.files?.[0]; if (!file) return; setUploading(true);
+    try { await uploadMedia(file); loadFiles(); toast.success("上传成功"); }
+    catch (err: any) { toast.error("上传失败: " + err.message); }
     finally { setUploading(false); }
   }
 
-  function copyUrl(url: string) {
-    navigator.clipboard.writeText(url);
-    setCopied(url);
-    setTimeout(() => setCopied(""), 2000);
-  }
+  function copyUrl(url: string) { navigator.clipboard.writeText(url); toast.success("已复制"); }
 
   return (
     <div className="p-6">
@@ -665,23 +638,16 @@ function MediaLibrary() {
           {uploading ? "上传中..." : "上传文件"}
           <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
         </label>
-        <span className="text-xs text-gray-400">
-          上传到 Supabase Storage media bucket，URL 自动生成
-        </span>
+        <span className="text-xs text-gray-400">上传到 Supabase Storage media bucket</span>
       </div>
-
       <div className="grid grid-cols-4 gap-4">
         {files.map((f: any, i: number) => (
           <div key={i} className="bg-white border border-gray-200 rounded-xl p-3 text-sm">
-            <p className="font-medium truncate text-gray-700">{f.name}</p>
-            <button onClick={() => copyUrl(f.url)} className="text-xs text-rose-500 hover:underline mt-1">
-              {copied === f.url ? "已复制!" : "复制链接"}
-            </button>
+            <p className="font-medium truncate text-gray-700 text-xs">{f.name}</p>
+            <button onClick={() => copyUrl(f.url)} className="text-xs text-rose-500 hover:underline mt-1 cursor-pointer">复制链接</button>
           </div>
         ))}
-        {files.length === 0 && (
-          <p className="col-span-4 text-gray-400 text-sm">暂无文件，请上传</p>
-        )}
+        {files.length === 0 && <p className="col-span-4 text-gray-400 text-sm">暂无文件</p>}
       </div>
     </div>
   );

@@ -120,3 +120,43 @@ CREATE POLICY "Developers can insert media" ON media FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'developer'));
 CREATE POLICY "Developers can delete media" ON media FOR DELETE
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'developer'));
+
+-- ── RLS fix: simpler policies for course_sections ──
+-- Run these if you get 400 errors on course_sections queries:
+-- ALTER TABLE course_sections DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE course_sections ENABLE ROW LEVEL SECURITY;
+-- DROP POLICY IF EXISTS "Anyone can read active course_sections" ON course_sections;
+-- DROP POLICY IF EXISTS "Developers can read all course_sections" ON course_sections;
+-- DROP POLICY IF EXISTS "Developers can manage course_sections" ON course_sections;
+-- DROP POLICY IF EXISTS "read_all" ON course_sections;
+-- DROP POLICY IF EXISTS "manage_all" ON course_sections;
+-- CREATE POLICY "read_all" ON course_sections FOR SELECT USING (true);
+-- CREATE POLICY "manage_all" ON course_sections FOR ALL USING (true);
+
+-- ── activity log ──
+CREATE TABLE IF NOT EXISTS activity_log (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES profiles(id),
+  action text NOT NULL,
+  target_type text NOT NULL,
+  target_id text,
+  details jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "read_all" ON activity_log FOR SELECT USING (true);
+CREATE POLICY "manage_all" ON activity_log FOR ALL USING (true);
+
+-- ── user roles ──
+CREATE TABLE IF NOT EXISTS user_roles (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  role text NOT NULL DEFAULT 'user' CHECK (role IN ('super_admin', 'developer', 'content_editor', 'user')),
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id)
+);
+
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "read_all" ON user_roles FOR SELECT USING (true);
+CREATE POLICY "manage_all" ON user_roles FOR ALL USING (true);

@@ -28,6 +28,7 @@ export const router = createBrowserRouter([
       { path: "/notes", element: <NotesPage /> },
       { path: "/contribute", element: <PlaceholderPage /> },
       { path: "/admin", element: <DeveloperRoute><AdminContentPage /></DeveloperRoute> },
+      { path: "/admin/:tab", element: <DeveloperRoute><AdminContentPage /></DeveloperRoute> },
     ],
   },
 ]);

@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-30 可视化章节编辑器
+> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-30 后台第一阶段：三栏布局 + 自动保存 + Toast + 活动日志
 
 ---
 
@@ -94,8 +94,9 @@
     │       ├── LayerCard.jsx      # 可拖拽构件卡片（useDraggable + 颜色条 + 名称）
     │       └── GameInfoPanel.jsx  # 游戏信息面板（进度条/错误计数/选中提示）
     ├── admin/                    # 后台管理组件
-    │   ├── SectionTree.jsx       # 递归章节树（展开/折叠/选中/增删）
-    │   └── SectionEditor.jsx     # 章节编辑器（MDEditor + 图片上传 + 模型关联 + 剖面图）
+    │   ├── AdminSectionTree.jsx  # 章节树（模块筛选 + 递归展开 + 右键菜单 + 更多操作）
+    │   ├── SectionTree.jsx       # 旧版章节树（保留兼容）
+    │   └── SectionEditor.jsx     # 旧版章节编辑器（保留兼容）
     ├── pages/                     # 页面组件
     │   ├── HomePage.jsx           # 首页：侧边菜单 + 3D 背景
     │   ├── AuthPage.jsx           # 登录/注册页
@@ -151,6 +152,17 @@
 |----------|------|------|
 | **新增** | `caseSections.js` | 添加"郓城县南湖新区公共服务建筑C地块设计"章节，含 `children` 嵌套子章节"01" |
 | **重构** | `SectionSubPage.jsx` | 支持章节嵌套：`parentSection` 状态、面包屑导航、返回上级按钮、有 `children` 的卡片 drill-down |
+
+### 2026-05-30 后台第一阶段：三栏布局 + 自动保存 + Toast + 活动日志
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `supabase_schema.sql` | `activity_log` 操作日志表、`user_roles` 扩展角色表；RLS 简化策略注释 |
+| **新增** | `sonner` 依赖 | Toast 通知库，替代 alert |
+| **新建** | `AdminSectionTree.jsx` | 递归章节树：模块筛选下拉、右键菜单（添加子章节/删除）、展开/折叠、高亮选中、已删标记 |
+| **重写** | `AdminContentPage.tsx` | 三栏布局（树w-64/编辑器flex-1/属性w-64）；URL 子路由（`/admin/:tab`）；自动保存（停止输入 2s + ⌘S 手动）；Sonner toast（保存/删除/恢复/上传/复制）；logActivity 记录操作日志；右侧属性面板（子章节数/关联模型/时间戳/slug/复制链接/前端预览） |
+| **新增** | `contentService.js` | `logActivity` 函数记录操作到 activity_log 表 |
+| **修改** | `routes.jsx` | 新增 `/admin/:tab` 子路由，保留 `/admin` 向后兼容 |
 
 ### 2026-05-30 可视化章节编辑器
 
