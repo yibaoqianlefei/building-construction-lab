@@ -275,6 +275,31 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
   return <axesHelper args={[1.5]} />;
 }
 
+/* ── sync diagram scale to 3D camera distance ── */
+function SyncZoomAdjuster({ syncScale }) {
+  const { camera } = useThree();
+  const baseDist = useRef(0);
+  const init = useRef(false);
+
+  useFrame(() => {
+    if (!init.current) {
+      baseDist.current = camera.position.length();
+      init.current = true;
+      return;
+    }
+    const targetDist = baseDist.current / syncScale;
+    /* lerp for smooth transition */
+    const alpha = 0.15;
+    const currentDist = camera.position.length();
+    const ratio = targetDist / currentDist;
+    const lerped = currentDist + (targetDist - currentDist) * alpha;
+    const newRatio = lerped / currentDist;
+    camera.position.multiplyScalar(newRatio);
+  });
+
+  return null;
+}
+
 function Scene({
   layers,
   explodeValue,
@@ -291,6 +316,7 @@ function Scene({
   autoRotate,
   onControlsReady,
   showLabels,
+  syncScale,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -300,6 +326,9 @@ function Scene({
       <RendererSetup />
 
       <color attach="background" args={["#f5f5f7"]} />
+
+      {/* sync camera zoom with diagram scale */}
+      {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} />}
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
@@ -393,6 +422,7 @@ function ModelViewer({
   onLayerClick,
   onBlankClick,
   showLabels,
+  syncScale,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -417,6 +447,7 @@ function ModelViewer({
           onHoverLayer={onHoverLayer}
           onLayerClick={onLayerClick}
           autoRotate={autoRotate}
+          syncScale={syncScale}
           showLabels={showLabels}
         />
       </Canvas>

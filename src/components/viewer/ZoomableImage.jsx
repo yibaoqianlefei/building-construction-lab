@@ -9,12 +9,20 @@ function clampScale(s) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
 }
 
-export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotClick }) {
+/* ref to latest callback without re-creating listeners */
+function useLatest(fn) {
+  const ref = useRef(fn);
+  ref.current = fn;
+  return ref;
+}
+
+export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotClick, onScaleChange, syncScale }) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
   const containerRef = useRef(null);
+  const onScaleRef = useLatest(onScaleChange);
   const dragRef = useRef({
     active: false,
     startX: 0,
@@ -35,7 +43,11 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
     const onWheel = (e) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-      setScale((prev) => clampScale(prev + delta));
+      setScale((prev) => {
+        const ns = clampScale(prev + delta);
+        if (onScaleRef.current) onScaleRef.current(ns);
+        return ns;
+      });
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -88,7 +100,8 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
   const handleDoubleClick = useCallback(() => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
-  }, []);
+    if (onScaleChange) onScaleChange(1);
+  }, [onScaleChange]);
 
   /* ── touch pinch zoom + single-finger drag ── */
   const getDist = (touches) => {
@@ -123,7 +136,9 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
       e.preventDefault();
       const dist = getDist(e.touches);
       const ratio = dist / pinchRef.current.lastDist;
-      setScale(clampScale(pinchRef.current.scaleStart * ratio));
+      const ns = clampScale(pinchRef.current.scaleStart * ratio);
+      setScale(ns);
+      if (onScaleRef.current) onScaleRef.current(ns);
     } else if (e.touches.length === 1 && dragRef.current.active) {
       const d = dragRef.current;
       setPosition({
@@ -146,6 +161,13 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
     },
     [onHotspotClick]
   );
+
+  /* ── sync external scale (from 3D model zoom) ── */
+  useEffect(() => {
+    if (syncScale !== undefined && syncScale !== scale) {
+      setScale(clampScale(syncScale));
+    }
+  }, [syncScale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── cursor ── */
   const cursor = scale > 1 ? (dragging ? "grabbing" : "grab") : "default";

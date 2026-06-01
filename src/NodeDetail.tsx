@@ -40,6 +40,8 @@ function NodeDetail() {
 
   const [showLabels, setShowLabels] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [syncZoom, setSyncZoom] = useState(false);
+  const [diagramScale, setDiagramScale] = useState(1);
 
   const viewerRef = useRef<HTMLDivElement>(null!);
   const controlsRef = useRef<any>(null);
@@ -177,6 +179,7 @@ function NodeDetail() {
               onError={() => setImageError(true)}
               hotspots={hasHotspots ? data.diagramHotspots! : null}
               onHotspotClick={handleHotspotClick}
+              onScaleChange={setDiagramScale}
             />
           </aside>
         ) : (
@@ -214,6 +217,7 @@ function NodeDetail() {
                 onBlankClick={handleBlankClick}
                 showLabels={showLabels}
                 onControlsReady={(ctrl: any) => { controlsRef.current = ctrl; }}
+                syncScale={syncZoom ? diagramScale : undefined}
               />
 
               <BottomControlBar
@@ -228,6 +232,8 @@ function NodeDetail() {
                 showLabels={showLabels}
                 onLabelsToggle={() => setShowLabels((v) => !v)}
                 explodeAxis={data.explodeAxis}
+                syncZoom={syncZoom}
+                onSyncZoomToggle={() => setSyncZoom((v) => !v)}
               />
 
               {screenshotMode && (

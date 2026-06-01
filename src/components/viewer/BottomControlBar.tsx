@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { ChevronsLeft, ChevronsRight, RotateCw, Tags, Minus, Plus } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, RotateCw, Tags, Minus, Plus, Link2 } from "lucide-react";
 
 const STEP = 10;
 
@@ -15,6 +15,8 @@ interface BottomControlBarProps {
   showLabels: boolean;
   onLabelsToggle: () => void;
   explodeAxis?: string | null;
+  syncZoom?: boolean;
+  onSyncZoomToggle?: () => void;
 }
 
 function BottomControlBar({
@@ -29,6 +31,8 @@ function BottomControlBar({
   showLabels,
   onLabelsToggle,
   explodeAxis,
+  syncZoom,
+  onSyncZoomToggle,
 }: BottomControlBarProps) {
   const sliderRef = useRef<HTMLInputElement>(null);
 
@@ -189,6 +193,26 @@ function BottomControlBar({
               <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
               <circle cx="12" cy="13" r="3" />
             </svg>
+          </button>
+        </>
+      )}
+      {onSyncZoomToggle && (
+        <>
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+          <button
+            onClick={onSyncZoomToggle}
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center
+              transition-all duration-300 relative
+              ${syncZoom ? "bg-rose-50 animate-pulse" : ""}`}
+            title="同步缩放"
+          >
+            <Link2
+              size={16}
+              className={`sm:size-[18px] transition-colors duration-300 ${
+                syncZoom ? "text-rose-500" : "text-gray-400"
+              }`}
+              strokeWidth={1.5}
+            />
           </button>
         </>
       )}
