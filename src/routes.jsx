@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createHashRouter } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 import HomePage from "./pages/HomePage";
 import LibraryPage from "./pages/LibraryPage";
@@ -12,7 +12,7 @@ import TextbookPage from "./pages/TextbookPage";
 import GamesPage from "./pages/GamesPage";
 import AdminContentPage from "./pages/AdminContentPage";
 import DeveloperRoute from "./components/DeveloperRoute";
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     element: <AppLayout />,
     children: [
@@ -31,6 +31,4 @@ export const router = createBrowserRouter([
       { path: "/admin/:tab", element: <DeveloperRoute><AdminContentPage /></DeveloperRoute> },
     ],
   },
-], {
-  basename: import.meta.env.BASE_URL || "/",
-});
+]);
