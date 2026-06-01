@@ -64,14 +64,17 @@ function LoadingOverlay({ isLoading }) {
               />
             ))}
           </div>
-          <motion.p
-            className="mt-7 text-[11px] text-rose-500/50 font-light tracking-[0.2em] uppercase"
+          <motion.div
+            className="mt-6 flex flex-col items-center gap-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.0, duration: 0.5 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
           >
-            Loading
-          </motion.p>
+            <div className="w-8 h-8 rounded-full border-2 border-rose-300 border-t-transparent animate-spin" />
+            <p className="text-xs text-rose-400/60 font-light tracking-wider">
+              模型加载中...
+            </p>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

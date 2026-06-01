@@ -132,9 +132,14 @@ function LoadingFallback() {
 function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb", position = [0, 0, 0], onLoaded }) {
   const groupRef = useRef();
 
+  /* detect actual model load instead of guessing with a timeout */
   useEffect(() => {
-    const t = setTimeout(() => onLoaded?.(), 1800);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    const path = assetPath(modelPath);
+    useGLTF.preload(path, true)
+      .then(() => { if (!cancelled) onLoaded?.(); })
+      .catch(() => { if (!cancelled) onLoaded?.(); }); // show fallback even on error
+    return () => { cancelled = true; };
   }, [modelPath, onLoaded]);
 
   return (
