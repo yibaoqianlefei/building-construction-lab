@@ -7,7 +7,31 @@ import { useRef, useEffect, Suspense, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { Component } from "react";
 import { assetPath } from "../../utils/baseUrl";
+
+/* ── error boundary for GLB loading ── */
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error) { console.warn("[MenuBackground] GLB load error:", error.message); }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+function SceneModelPlaceholder() {
+  return (
+    <mesh>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color="#e5e7eb" wireframe />
+    </mesh>
+  );
+}
 
 /* ── model loader ── */
 function SceneModel({ modelPath }) {
@@ -137,7 +161,9 @@ function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb
 
       <group ref={groupRef} position={position} scale={1.5}>
         <Suspense fallback={<LoadingFallback />}>
-          <SceneModel modelPath={modelPath} />
+          <ErrorBoundary fallback={<SceneModelPlaceholder />}>
+            <SceneModel modelPath={modelPath} />
+          </ErrorBoundary>
         </Suspense>
       </group>
     </>
