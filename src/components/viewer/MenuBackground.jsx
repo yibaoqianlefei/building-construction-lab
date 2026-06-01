@@ -3,7 +3,7 @@
 // - 可添加 onLayerClick 回调实现点击高亮
 // - 可集成 ConstructionLayer 组件支持逐层交互
 
-import { useRef, useEffect, Suspense, useMemo } from "react";
+import { useRef, useEffect, Suspense, useMemo, useCallback } from "react";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -34,8 +34,10 @@ function SceneModelPlaceholder() {
 }
 
 /* ── model loader ── */
-function SceneModel({ modelPath }) {
+function SceneModel({ modelPath, onReady }) {
   const { scene } = useGLTF(assetPath(modelPath), true);  /* Draco enabled */
+
+  useEffect(() => { if (scene) onReady?.(); }, [scene, onReady]);
 
   const fixed = useMemo(() => {
     if (!scene) return null;
@@ -132,15 +134,12 @@ function LoadingFallback() {
 function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb", position = [0, 0, 0], onLoaded }) {
   const groupRef = useRef();
 
-  /* detect actual model load instead of guessing with a timeout */
+  /* preload + handle model-ready callback */
+  const handleSceneReady = useCallback(() => onLoaded?.(), [onLoaded]);
+
   useEffect(() => {
-    let cancelled = false;
-    const path = assetPath(modelPath);
-    useGLTF.preload(path, true)
-      .then(() => { if (!cancelled) onLoaded?.(); })
-      .catch(() => { if (!cancelled) onLoaded?.(); }); // show fallback even on error
-    return () => { cancelled = true; };
-  }, [modelPath, onLoaded]);
+    useGLTF.preload(assetPath(modelPath), true);
+  }, [modelPath]);
 
   return (
     <>
@@ -167,7 +166,7 @@ function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb
       <group ref={groupRef} position={position} scale={1.5}>
         <Suspense fallback={<LoadingFallback />}>
           <ErrorBoundary fallback={<SceneModelPlaceholder />}>
-            <SceneModel modelPath={modelPath} />
+            <SceneModel modelPath={modelPath} onReady={handleSceneReady} />
           </ErrorBoundary>
         </Suspense>
       </group>
