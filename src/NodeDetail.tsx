@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiInfo } from "react-icons/fi";
 import { Image } from "lucide-react";
+import { useGLTF } from "@react-three/drei";
+import { assetPath } from "./utils/baseUrl";
 import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
 import ConstructionKnowledgePanel from "./components/viewer/ConstructionKnowledgePanel";
@@ -60,6 +62,16 @@ function NodeDetail() {
       .then(setData)
       .finally(() => setLoading(false));
   }, [nodeId]);
+
+  /* ── preload GLB models ── */
+  useEffect(() => {
+    if (!data?.layers) return;
+    data.layers.forEach((layer: any) => {
+      if (layer.modelPath) {
+        useGLTF.preload(assetPath(layer.modelPath), true);
+      }
+    });
+  }, [data]);
 
   useEffect(() => {
     if (controlsRef.current) {

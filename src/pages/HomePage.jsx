@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Library,
@@ -323,6 +324,12 @@ function HomePage() {
     setBgLoading(true);
   }, [sceneIndex]);
 
+  /* preload background models */
+  useEffect(() => {
+    const paths = backgroundScenes.map((s: any) => s.modelPath).filter(Boolean);
+    paths.forEach((p: string) => useGLTF.preload(p, true));
+  }, []);
+
   const handleBgLoaded = useCallback(() => setBgLoading(false), []);
 
   return (
@@ -338,6 +345,7 @@ function HomePage() {
       <div className="hidden md:block flex-1 h-full relative">
         <Canvas
           camera={{ near: 1, far: 100, position: [0, 0.5, 4.0], fov: 40 }}
+          dpr={[1, 1.5]}
           shadows
           gl={{ antialias: true, alpha: false }}
         >

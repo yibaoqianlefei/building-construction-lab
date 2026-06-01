@@ -35,7 +35,7 @@ function SceneModelPlaceholder() {
 
 /* ── model loader ── */
 function SceneModel({ modelPath }) {
-  const { scene } = useGLTF(assetPath(modelPath));
+  const { scene } = useGLTF(assetPath(modelPath), true);  /* Draco enabled */
 
   const fixed = useMemo(() => {
     if (!scene) return null;

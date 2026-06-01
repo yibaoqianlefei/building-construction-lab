@@ -14,7 +14,7 @@ const COLOR_OFF = new THREE.Color("#000000");
 
 /* ── Per-layer GLB loader ── */
 function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, onClick }) {
-  const { scene } = useGLTF(assetPath(modelPath));
+  const { scene } = useGLTF(assetPath(modelPath), true);  /* Draco enabled */
 
   const { model, edgeLines, hitBox } = useMemo(() => {
     let source;

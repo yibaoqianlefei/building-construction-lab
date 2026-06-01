@@ -48,7 +48,7 @@ function RendererSetup() {
 
   useEffect(() => {
     gl.shadowMap.enabled = true;
-    gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    gl.shadowMap.type = THREE.PCFShadowMap;  // faster than PCFSoft
     gl.toneMapping = THREE.CineonToneMapping;
     gl.toneMappingExposure = 0.9;
   }, [gl]);
@@ -242,8 +242,8 @@ function ShadowLight({ layers, explodeAxis, smoothExplodeRef }) {
       intensity={2.5}
       color="#fffdf7"
       castShadow
-      shadow-mapSize-width={4096}
-      shadow-mapSize-height={4096}
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
       shadow-camera-near={0.5}
       shadow-camera-far={30}
       shadow-camera-left={-8}
@@ -428,6 +428,7 @@ function ModelViewer({
     <div className="w-full h-full rounded-lg overflow-hidden">
       <Canvas
         camera={{ near: 1, far: 100, position: cameraPosition, fov: 40 }}
+        dpr={[1, 1.5]}
         shadows
         gl={{ preserveDrawingBuffer: true, antialias: true, alpha: false }}
         onPointerMissed={onBlankClick}
