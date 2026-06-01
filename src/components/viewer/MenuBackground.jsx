@@ -88,8 +88,8 @@ function ShadowLight() {
       intensity={2.4}
       color="#fffdf7"
       castShadow
-      shadow-mapSize-width={4096}
-      shadow-mapSize-height={4096}
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
       shadow-camera-near={0.5}
       shadow-camera-far={20}
       shadow-camera-left={-3}
@@ -106,7 +106,7 @@ function RendererSetup() {
   const { gl } = useThree();
   useEffect(() => {
     gl.shadowMap.enabled = true;
-    gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    gl.shadowMap.type = THREE.PCFShadowMap;  /* faster than PCFSoft */
     gl.toneMapping = THREE.ACESFilmicToneMapping;
     gl.toneMappingExposure = 1.0;
   }, [gl]);
