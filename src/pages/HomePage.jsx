@@ -326,8 +326,8 @@ function HomePage() {
 
   /* preload background models */
   useEffect(() => {
-    const paths = backgroundScenes.map((s: any) => s.modelPath).filter(Boolean);
-    paths.forEach((p: string) => useGLTF.preload(p, true));
+    const paths = backgroundScenes.map((s) => s.modelPath).filter(Boolean);
+    paths.forEach((p) => useGLTF.preload(p, true));
   }, []);
 
   const handleBgLoaded = useCallback(() => setBgLoading(false), []);
