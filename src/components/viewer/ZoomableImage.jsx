@@ -16,7 +16,7 @@ function useLatest(fn) {
   return ref;
 }
 
-export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotClick, onScaleChange, syncScale }) {
+export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotClick, onScaleChange, syncScale, onPositionChange }) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -71,6 +71,16 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
     [scale, position]
   );
 
+  /* ── notify parent on drag end ── */
+  const prevDragging = useRef(false);
+  useEffect(() => {
+    if (prevDragging.current && !dragging && onPositionChange && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      onPositionChange({ x: position.x, y: position.y }, { width: rect.width, height: rect.height });
+    }
+    prevDragging.current = dragging;
+  }, [dragging, position, onPositionChange]);
+
   useEffect(() => {
     if (!dragging) return;
 
@@ -101,7 +111,11 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
     setScale(1);
     setPosition({ x: 0, y: 0 });
     if (onScaleChange) onScaleChange(1);
-  }, [onScaleChange]);
+    if (onPositionChange && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      onPositionChange({ x: 0, y: 0 }, { width: rect.width, height: rect.height });
+    }
+  }, [onScaleChange, onPositionChange]);
 
   /* ── touch pinch zoom + single-finger drag ── */
   const getDist = (touches) => {
@@ -149,9 +163,13 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
   }, []);
 
   const handleTouchEnd = useCallback(() => {
+    if (dragRef.current.active && onPositionChange && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      onPositionChange({ x: position.x, y: position.y }, { width: rect.width, height: rect.height });
+    }
     dragRef.current.active = false;
     setDragging(false);
-  }, []);
+  }, [position, onPositionChange]);
 
   /* ── hotspot click ── */
   const handleHotspotClick = useCallback(

@@ -182,6 +182,7 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onC
     <OrbitControls
       ref={(el) => {
         controlsRef.current = el;
+        globalControls = el;  /* for PanSyncController */
         if (el && onControlsReady) onControlsReady(el);
       }}
       enableDamping
@@ -275,6 +276,47 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
   return <axesHelper args={[1.5]} />;
 }
 
+/* ── module-level ref so PanSyncController can reach OrbitControls ── */
+let globalControls = null;
+
+/* ── sync diagram pan to 3D camera rotation ── */
+const MAX_AZIMUTH = Math.PI / 3;   /* ±60° */
+const MAX_POLAR   = Math.PI / 6;   /* ±30° */
+
+function PanSyncController({ panOffset }) {
+  const { camera } = useThree();
+  const baseSph = useRef(null);
+
+  useFrame(() => {
+    if (!panOffset || !globalControls) return;
+    const ctrl = globalControls;
+    const { x, y, w, h } = panOffset;
+    if (!w || !h) return;
+
+    /* init on first frame */
+    if (!baseSph.current) {
+      const sph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(ctrl.target));
+      baseSph.current = { radius: sph.radius, phi: sph.phi, theta: sph.theta };
+      return;
+    }
+
+    const base = baseSph.current;
+    /* pan (+x drags image right) → camera rotates left (-theta) */
+    const targetTheta = base.theta - (x / w) * MAX_AZIMUTH;
+    const targetPhi   = base.phi   - (y / h) * MAX_POLAR;
+
+    const cur = new THREE.Spherical().setFromVector3(camera.position.clone().sub(ctrl.target));
+    const a = 0.12;
+    const newTheta = cur.theta + (targetTheta - cur.theta) * a;
+    const newPhi   = cur.phi   + (targetPhi   - cur.phi)   * a;
+    const pos = new THREE.Vector3().setFromSpherical(new THREE.Spherical(base.radius, newPhi, newTheta)).add(ctrl.target);
+    camera.position.lerp(pos, 0.3);
+    ctrl.update();
+  });
+
+  return null;
+}
+
 /* ── sync diagram scale to 3D camera distance ── */
 function SyncZoomAdjuster({ syncScale }) {
   const { camera } = useThree();
@@ -317,6 +359,7 @@ function Scene({
   onControlsReady,
   showLabels,
   syncScale,
+  panOffset,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -329,6 +372,8 @@ function Scene({
 
       {/* sync camera zoom with diagram scale */}
       {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} />}
+      {/* sync camera pan with diagram drag */}
+      {panOffset != null && <PanSyncController panOffset={panOffset} />}
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
@@ -423,6 +468,7 @@ function ModelViewer({
   onBlankClick,
   showLabels,
   syncScale,
+  panOffset,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -449,6 +495,7 @@ function ModelViewer({
           onLayerClick={onLayerClick}
           autoRotate={autoRotate}
           syncScale={syncScale}
+          panOffset={panOffset}
           showLabels={showLabels}
         />
       </Canvas>
