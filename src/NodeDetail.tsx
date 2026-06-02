@@ -44,7 +44,7 @@ function NodeDetail() {
   const [imageError, setImageError] = useState(false);
   const [syncZoom, setSyncZoom] = useState(false);
   const [diagramScale, setDiagramScale] = useState(1);
-  const [panOffset, setPanOffset] = useState<{x:number,y:number,w:number,h:number}|null>(null);
+  const [panOffset, setPanOffset] = useState<{x:number,y:number,w:number,h:number,scale:number}|null>(null);
 
   const viewerRef = useRef<HTMLDivElement>(null!);
   const controlsRef = useRef<any>(null);
@@ -193,7 +193,7 @@ function NodeDetail() {
               hotspots={hasHotspots ? data.diagramHotspots! : null}
               onHotspotClick={handleHotspotClick}
               onScaleChange={setDiagramScale}
-              onPositionChange={(pos, size) => setPanOffset({x:pos.x, y:pos.y, w:size.width, h:size.height})}
+              onPositionChange={(pos, size) => setPanOffset({x:pos.x, y:pos.y, w:size.width, h:size.height, scale: diagramScale})}
             />
           </aside>
         ) : (

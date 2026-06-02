@@ -305,9 +305,10 @@ function PanSyncController({ panOffset }) {
     /* skip when user is manually rotating/panning */
     if (ctrl._isDragging) return;
 
-    /* pan right on diagram → target left; pan down → target up */
-    const dx = -(x / w) * PAN_RANGE;
-    const dy =  (y / h) * PAN_RANGE;
+    /* pan pixels → world offset. Divide by scale: zoomed diagram needs smaller 3D movement */
+    const scale = panOffset.scale || 1;
+    const dx = -(x / w) * PAN_RANGE / scale;
+    const dy =  (y / h) * PAN_RANGE / scale;
 
     /* world-space offset using camera orientation */
     const forward = new THREE.Vector3();
