@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 export function useModelInteraction() {
   const [explodeValue, setExplodeValue] = useState(0);
-  const [autoRotate, setAutoRotate] = useState(true);
+  const [autoRotate, setAutoRotate] = useState(false);
   const [hoveredLayer, setHoveredLayer] = useState<number | null>(null);
   const [selectedLayer, setSelectedLayer] = useState<number | null>(null);
   const [screenshotMode, setScreenshotMode] = useState(false);
