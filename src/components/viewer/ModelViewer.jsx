@@ -279,13 +279,13 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
 /* ── module-level ref so PanSyncController can reach OrbitControls ── */
 let globalControls = null;
 
-/* ── sync diagram pan to 3D camera rotation ── */
-const MAX_AZIMUTH = Math.PI / 3;   /* ±60° */
-const MAX_POLAR   = Math.PI / 6;   /* ±30° */
+/* ── sync diagram pan to 3D view target (focus point) ── */
+const PAN_SENSITIVITY = 2.0;
 
 function PanSyncController({ panOffset }) {
   const { camera } = useThree();
-  const baseSph = useRef(null);
+  const defaultTarget = useRef(new THREE.Vector3());
+  const initDone = useRef(false);
 
   useFrame(() => {
     if (!panOffset || !globalControls) return;
@@ -293,24 +293,30 @@ function PanSyncController({ panOffset }) {
     const { x, y, w, h } = panOffset;
     if (!w || !h) return;
 
-    /* init on first frame */
-    if (!baseSph.current) {
-      const sph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(ctrl.target));
-      baseSph.current = { radius: sph.radius, phi: sph.phi, theta: sph.theta };
+    /* record the resting target on first frame */
+    if (!initDone.current) {
+      defaultTarget.current.copy(ctrl.target);
+      initDone.current = true;
       return;
     }
 
-    const base = baseSph.current;
-    /* pan (+x drags image right) → camera rotates left (-theta) */
-    const targetTheta = base.theta - (x / w) * MAX_AZIMUTH;
-    const targetPhi   = base.phi   - (y / h) * MAX_POLAR;
+    /* normalize pan offset — invert x (pan right on diagram → target shifts left in 3D) */
+    const dx = -(x / w) * PAN_SENSITIVITY;
+    const dy =  (y / h) * PAN_SENSITIVITY;
 
-    const cur = new THREE.Spherical().setFromVector3(camera.position.clone().sub(ctrl.target));
-    const a = 0.12;
-    const newTheta = cur.theta + (targetTheta - cur.theta) * a;
-    const newPhi   = cur.phi   + (targetPhi   - cur.phi)   * a;
-    const pos = new THREE.Vector3().setFromSpherical(new THREE.Spherical(base.radius, newPhi, newTheta)).add(ctrl.target);
-    camera.position.lerp(pos, 0.3);
+    /* get camera-local right & up for world-space offset */
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+    const up = camera.up.clone().normalize();
+
+    /* compute target: defaultTarget + right*dx + up*dy */
+    const goal = defaultTarget.current.clone()
+      .add(new THREE.Vector3().copy(right).multiplyScalar(dx))
+      .add(new THREE.Vector3().copy(up).multiplyScalar(dy));
+
+    /* lerp current target toward goal */
+    ctrl.target.lerp(goal, 0.15);
     ctrl.update();
   });
 
