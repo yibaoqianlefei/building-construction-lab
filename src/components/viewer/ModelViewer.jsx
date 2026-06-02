@@ -280,11 +280,12 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
 let globalControls = null;
 
 /* ── sync diagram pan to 3D view target (focus point) ── */
-const PAN_SENSITIVITY = 2.0;
+const PAN_RANGE = 2.0;
 
 function PanSyncController({ panOffset }) {
   const { camera } = useThree();
   const defaultTarget = useRef(new THREE.Vector3());
+  const currentGoal = useRef(new THREE.Vector3());
   const initDone = useRef(false);
 
   useFrame(() => {
@@ -293,31 +294,34 @@ function PanSyncController({ panOffset }) {
     const { x, y, w, h } = panOffset;
     if (!w || !h) return;
 
-    /* record the resting target on first frame */
+    /* record resting target on first frame */
     if (!initDone.current) {
       defaultTarget.current.copy(ctrl.target);
+      currentGoal.current.copy(ctrl.target);
       initDone.current = true;
       return;
     }
 
-    /* normalize pan offset — invert x (pan right on diagram → target shifts left in 3D) */
-    const dx = -(x / w) * PAN_SENSITIVITY;
-    const dy =  (y / h) * PAN_SENSITIVITY;
+    /* skip when user is manually rotating/panning */
+    if (ctrl._isDragging) return;
 
-    /* get camera-local right & up for world-space offset */
+    /* pan right on diagram → target left; pan down → target up */
+    const dx = -(x / w) * PAN_RANGE;
+    const dy =  (y / h) * PAN_RANGE;
+
+    /* world-space offset using camera orientation */
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
-    const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-    const up = camera.up.clone().normalize();
+    const camRight = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+    const camUp = camera.up.clone().normalize();
 
-    /* compute target: defaultTarget + right*dx + up*dy */
-    const goal = defaultTarget.current.clone()
-      .add(new THREE.Vector3().copy(right).multiplyScalar(dx))
-      .add(new THREE.Vector3().copy(up).multiplyScalar(dy));
+    /* goal = defaultTarget + right*dx + up*dy */
+    currentGoal.current.copy(defaultTarget.current)
+      .addScaledVector(camRight, dx)
+      .addScaledVector(camUp, dy);
 
-    /* lerp current target toward goal */
-    ctrl.target.lerp(goal, 0.15);
-    ctrl.update();
+    /* smoothly move controls target toward goal (OrbitControls handles camera) */
+    ctrl.target.lerp(currentGoal.current, 0.12);
   });
 
   return null;
