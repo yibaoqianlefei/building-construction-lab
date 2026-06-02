@@ -232,7 +232,7 @@ function NodeDetail() {
                 showLabels={showLabels}
                 onControlsReady={(ctrl: any) => { controlsRef.current = ctrl; }}
                 syncScale={syncZoom ? diagramScale : undefined}
-                panOffset={syncZoom ? panOffset : null}
+                panOffset={syncZoom && explodeValue === 0 ? panOffset : null}
               />
 
               <BottomControlBar

@@ -282,7 +282,7 @@ let globalControls = null;
 /* ── sync diagram pan to 3D view target (focus point) ── */
 const PAN_RANGE = 2.0;
 
-function PanSyncController({ panOffset }) {
+function PanSyncController({ panOffset, syncScale }) {
   const { camera } = useThree();
   const defaultTarget = useRef(new THREE.Vector3());
   const currentGoal = useRef(new THREE.Vector3());
@@ -305,8 +305,8 @@ function PanSyncController({ panOffset }) {
     /* skip when user is manually rotating/panning */
     if (ctrl._isDragging) return;
 
-    /* pan pixels → world offset. Divide by scale: zoomed diagram needs smaller 3D movement */
-    const scale = panOffset.scale || 1;
+    /* use live scale, not frozen-at-pan-time scale */
+    const scale = syncScale || 1;
     const dx = -(x / w) * PAN_RANGE / scale;
     const dy =  (y / h) * PAN_RANGE / scale;
 
@@ -384,7 +384,7 @@ function Scene({
       {/* sync camera zoom with diagram scale */}
       {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} />}
       {/* sync camera pan with diagram drag */}
-      {panOffset != null && <PanSyncController panOffset={panOffset} />}
+      {panOffset != null && <PanSyncController panOffset={panOffset} syncScale={syncScale} />}
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
