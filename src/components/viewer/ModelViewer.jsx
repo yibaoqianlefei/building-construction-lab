@@ -279,6 +279,62 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
 /* ── module-level ref so PanSyncController can reach OrbitControls ── */
 let globalControls = null;
 
+/* ── view preset switcher ── */
+const VIEW_DIRECTIONS = {
+  front:  new THREE.Vector3(0, 0, 1),
+  back:   new THREE.Vector3(0, 0, -1),
+  left:   new THREE.Vector3(-1, 0, 0),
+  right:  new THREE.Vector3(1, 0, 0),
+  top:    new THREE.Vector3(0, 1, 0),
+  bottom: new THREE.Vector3(0, -1, 0),
+};
+const DEFAULT_CAM = new THREE.Vector3(0, 1.2, 4.0);
+const DEFAULT_TARGET = new THREE.Vector3(0, 0.8, 0);
+
+function ViewSwitcher({ viewTarget, onDone }) {
+  const { camera } = useThree();
+  const goalPos = useRef(new THREE.Vector3());
+  const goalTarget = useRef(new THREE.Vector3());
+  const active = useRef(false);
+
+  useFrame(() => {
+    if (!viewTarget || !globalControls) return;
+    const ctrl = globalControls;
+
+    /* compute goal on first frame */
+    if (!active.current) {
+      const dist = camera.position.distanceTo(ctrl.target);
+      const dir = VIEW_DIRECTIONS[viewTarget];
+      if (dir) {
+        goalPos.current.copy(ctrl.target).addScaledVector(dir, dist);
+        goalTarget.current.copy(ctrl.target);
+      } else {
+        /* default perspective */
+        goalPos.current.copy(DEFAULT_CAM);
+        goalTarget.current.copy(DEFAULT_TARGET);
+      }
+      active.current = true;
+    }
+
+    /* lerp camera + target */
+    camera.position.lerp(goalPos.current, 0.12);
+    ctrl.target.lerp(goalTarget.current, 0.12);
+
+    /* done when close enough */
+    if (camera.position.distanceTo(goalPos.current) < 0.02 &&
+        ctrl.target.distanceTo(goalTarget.current) < 0.01) {
+      camera.position.copy(goalPos.current);
+      ctrl.target.copy(goalTarget.current);
+      active.current = false;
+      if (onDone) onDone();
+    }
+  });
+
+  useEffect(() => { active.current = false; }, [viewTarget]);
+
+  return null;
+}
+
 /* ── sync diagram pan to 3D view target (focus point) ── */
 const PAN_RANGE = 2.0;
 
@@ -371,6 +427,8 @@ function Scene({
   showLabels,
   syncScale,
   panOffset,
+  viewTarget,
+  onViewDone,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -385,6 +443,7 @@ function Scene({
       {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} />}
       {/* sync camera pan with diagram drag */}
       {panOffset != null && <PanSyncController panOffset={panOffset} syncScale={syncScale} />}
+      {viewTarget != null && <ViewSwitcher viewTarget={viewTarget} onDone={onViewDone} />}
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
@@ -480,6 +539,8 @@ function ModelViewer({
   showLabels,
   syncScale,
   panOffset,
+  viewTarget,
+  onViewDone,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -507,6 +568,8 @@ function ModelViewer({
           autoRotate={autoRotate}
           syncScale={syncScale}
           panOffset={panOffset}
+          viewTarget={viewTarget}
+          onViewDone={onViewDone}
           showLabels={showLabels}
         />
       </Canvas>

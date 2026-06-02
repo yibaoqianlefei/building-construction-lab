@@ -17,6 +17,8 @@ interface BottomControlBarProps {
   explodeAxis?: string | null;
   syncZoom?: boolean;
   onSyncZoomToggle?: () => void;
+  viewTarget?: string | null;
+  onViewChange?: (v: string) => void;
 }
 
 function BottomControlBar({
@@ -33,6 +35,8 @@ function BottomControlBar({
   explodeAxis,
   syncZoom,
   onSyncZoomToggle,
+  viewTarget,
+  onViewChange,
 }: BottomControlBarProps) {
   const sliderRef = useRef<HTMLInputElement>(null);
 
@@ -214,6 +218,31 @@ function BottomControlBar({
               strokeWidth={1.5}
             />
           </button>
+        </>
+      )}
+      {onViewChange && (
+        <>
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+          {[
+            { v: "front",  t: "前" },
+            { v: "back",   t: "后" },
+            { v: "left",   t: "左" },
+            { v: "right",  t: "右" },
+            { v: "top",    t: "俯" },
+            { v: "bottom", t: "仰" },
+            { v: "default", t: "⟳" },
+          ].map(({ v, t }) => (
+            <button
+              key={v}
+              onClick={() => onViewChange(v)}
+              className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md flex items-center justify-center
+                text-[10px] font-medium transition-all duration-200
+                ${viewTarget === v ? "bg-rose-100 text-rose-600 scale-110" : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"}`}
+              title={v === "default" ? "默认视角" : t + "视图"}
+            >
+              {t}
+            </button>
+          ))}
         </>
       )}
     </div>

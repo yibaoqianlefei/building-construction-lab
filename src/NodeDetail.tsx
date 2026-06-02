@@ -45,6 +45,7 @@ function NodeDetail() {
   const [syncZoom, setSyncZoom] = useState(false);
   const [diagramScale, setDiagramScale] = useState(1);
   const [panOffset, setPanOffset] = useState<{x:number,y:number,w:number,h:number,scale:number}|null>(null);
+  const [viewTarget, setViewTarget] = useState<string | null>(null);
 
   const viewerRef = useRef<HTMLDivElement>(null!);
   const controlsRef = useRef<any>(null);
@@ -233,6 +234,8 @@ function NodeDetail() {
                 onControlsReady={(ctrl: any) => { controlsRef.current = ctrl; }}
                 syncScale={syncZoom ? diagramScale : undefined}
                 panOffset={syncZoom && explodeValue === 0 ? panOffset : null}
+                viewTarget={viewTarget}
+                onViewDone={() => setViewTarget(null)}
               />
 
               <BottomControlBar
@@ -249,6 +252,8 @@ function NodeDetail() {
                 explodeAxis={data.explodeAxis}
                 syncZoom={syncZoom}
                 onSyncZoomToggle={() => setSyncZoom((v) => !v)}
+                viewTarget={viewTarget}
+                onViewChange={setViewTarget}
               />
 
               {screenshotMode && (
