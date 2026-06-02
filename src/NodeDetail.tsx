@@ -222,7 +222,7 @@ function NodeDetail() {
                 modelRotation={data.modelRotation || [0, 0, 0]}
                 nodeTitle={data.title}
                 layerOrderReverse={data.layerOrderReverse || false}
-                cameraPosition={data.cameraPosition || [1.2, 1.6, 2.8]}
+                cameraPosition={data.cameraPosition || [0, 1.2, 4.0]}
                 autoRotate={autoRotate}
                 hoveredLayer={hoveredLayer}
                 selectedLayer={selectedLayer}

@@ -190,7 +190,7 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onC
       minDistance={0.8}
       maxDistance={12}
       maxPolarAngle={Math.PI * 0.7}
-      target={[0, 0, 0]}
+      target={[0, 0.8, 0]}
       autoRotate={autoRotate}
       autoRotateSpeed={0.5}
       onStart={() => {
@@ -469,7 +469,7 @@ function ModelViewer({
   modelRotation = [0, 0, 0],
   nodeTitle,
   layerOrderReverse,
-  cameraPosition = [1.2, 1.6, 2.8],
+  cameraPosition = [0, 1.2, 4.0],
   onControlsReady,
   autoRotate,
   hoveredLayer,
