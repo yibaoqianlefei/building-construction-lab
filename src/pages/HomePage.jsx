@@ -72,21 +72,20 @@ function MenuItem({ item, onClick }) {
       <item.icon
         size={22}
         strokeWidth={1.5}
-        className="text-gray-400 group-hover:text-rose-600 transition-all duration-300 ease-out flex-shrink-0"
+        className="text-muted-soft group-hover:text-primary transition-all duration-300 ease-out flex-shrink-0"
       />
-      <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-all duration-300 ease-out">
+      <span className="text-base font-medium text-muted group-hover:text-ink transition-all duration-300 ease-out">
         {item.label}
       </span>
     </>
   );
 
   const baseClass =
-    "w-full flex items-center gap-3.5 px-5 py-3 rounded-xl" +
-    " border-l-4 border-transparent hover:border-l-rose-500" +
+    "w-full flex items-center gap-3.5 px-5 py-3 rounded-lg" +
+    " border-l-4 border-transparent hover:border-l-primary" +
     " transition-all duration-300 ease-out" +
-    " hover:bg-rose-50/70 hover:backdrop-blur-sm" +
+    " hover:bg-surface-card" +
     " hover:-translate-y-0.5" +
-    " hover:shadow-[0_4px_12px_rgba(255,61,88,0.12)]" +
     " cursor-pointer group text-left";
 
   if (onClick) {
@@ -116,8 +115,8 @@ function MenuContent({ onModalOpen }) {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show">
       <motion.h1
-        className="text-3xl font-bold text-gray-800 tracking-tight mb-1.5
-          hover:text-gray-900 hover:scale-[1.02] transition-all duration-300 cursor-default origin-left"
+        className="text-3xl font-normal font-serif tracking-tight text-ink mb-1.5
+          hover:text-ink hover:scale-[1.02] transition-all duration-300 cursor-default origin-left"
         variants={titleContainerVariants}
       >
         {"建筑构造".split("").map((ch, i) => (
@@ -127,8 +126,8 @@ function MenuContent({ onModalOpen }) {
         ))}
       </motion.h1>
       <motion.div
-        className="w-12 h-0.5 bg-rose-500 rounded-full my-5
-          hover:w-20 hover:bg-rose-400 transition-all duration-300 origin-left"
+        className="w-12 h-0.5 bg-primary rounded-full my-5
+          hover:w-20 hover:bg-primary-active transition-all duration-300 origin-left"
         variants={lineVariants}
       />
 
@@ -139,21 +138,21 @@ function MenuContent({ onModalOpen }) {
         <MenuItem item={{ icon: Hammer, label: "构建工坊", to: "/games" }} />
       </motion.div>
 
-      <div className="border-t border-gray-200/50 my-3" />
+      <div className="border-t border-hairline my-3" />
 
       {/* ── group 2: 个人中心 ── */}
       <motion.div variants={itemVariants}>
         {user ? (
           <div className="space-y-0.5">
             <div className="flex items-center gap-3 px-5 py-2">
-              <div className="w-9 h-9 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 text-sm font-semibold flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-hairline flex items-center justify-center text-primary text-sm font-semibold flex-shrink-0">
                 {(profile?.full_name || user.email || "?")[0]}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">
+                <p className="text-sm font-medium text-body-strong truncate">
                   {profile?.full_name || user.email}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-soft">
                   {profile?.role === "developer" ? "开发者" : "用户"}
                 </p>
               </div>
@@ -170,7 +169,7 @@ function MenuContent({ onModalOpen }) {
         )}
       </motion.div>
 
-      <div className="border-t border-gray-200/50 my-3" />
+      <div className="border-t border-hairline my-3" />
 
       {/* ── group 3: 项目与社区 ── */}
       <motion.div className="space-y-0.5" variants={itemVariants}>
@@ -191,23 +190,22 @@ function MenuContent({ onModalOpen }) {
       {/* ── bottom: 切换账号 / 退出登录 ── */}
       {user && (
         <motion.div variants={itemVariants}>
-          <div className="border-t border-gray-200/50 my-3" />
+          <div className="border-t border-hairline my-3" />
 
           <button
             onClick={handleSwitchAccount}
-            className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
+            className="w-full flex items-center gap-3.5 px-5 py-3 rounded-lg
               border-l-4 border-transparent
               transition-all duration-300 ease-out
-              hover:bg-rose-50/70 hover:border-l-rose-500 hover:-translate-y-0.5
-              hover:shadow-[0_4px_12px_rgba(255,61,88,0.12)]
+              hover:bg-surface-card hover:border-l-primary hover:-translate-y-0.5
               cursor-pointer group text-left"
           >
             <SwitchCamera
               size={22}
               strokeWidth={1.5}
-              className="text-gray-400 group-hover:text-rose-600 transition-all duration-300 ease-out flex-shrink-0"
+              className="text-muted-soft group-hover:text-primary transition-all duration-300 ease-out flex-shrink-0"
             />
-            <span className="text-base font-medium text-gray-600 group-hover:text-gray-900 transition-all duration-300 ease-out">
+            <span className="text-base font-medium text-muted group-hover:text-ink transition-all duration-300 ease-out">
               切换账号
             </span>
           </button>
@@ -217,15 +215,15 @@ function MenuContent({ onModalOpen }) {
             className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
               border-l-4 border-transparent
               transition-all duration-300 ease-out
-              hover:bg-red-50/50
+              hover:bg-surface-card
               cursor-pointer group text-left"
           >
             <LogOut
               size={22}
               strokeWidth={1.5}
-              className="text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out flex-shrink-0"
+              className="text-muted-soft group-hover:text-error transition-all duration-300 ease-out flex-shrink-0"
             />
-            <span className="text-base font-medium text-gray-400 group-hover:text-red-400 transition-all duration-300 ease-out">
+            <span className="text-base font-medium text-muted-soft group-hover:text-error transition-all duration-300 ease-out">
               退出登录
             </span>
           </button>
@@ -233,7 +231,7 @@ function MenuContent({ onModalOpen }) {
       )}
 
       <motion.p
-        className="text-xs text-gray-400 mt-8 tracking-wide"
+        className="text-xs text-muted-soft mt-8 tracking-wide"
         variants={itemVariants}
       >
         开源教育工具 · 探索建筑构造的空间逻辑
@@ -254,13 +252,13 @@ function AboutModal({ open, onClose }) {
           transition={{ duration: 0.2 }}
         >
           <div
-            className="absolute inset-0 bg-black/15 backdrop-blur-md"
+            className="absolute inset-0 bg-black/20"
             onClick={onClose}
           />
 
           <motion.div
-            className="relative bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.08)]
-              border border-gray-200/50 p-8 max-w-md w-full"
+            className="relative bg-canvas rounded-xl border border-hairline
+              shadow-[0_1px_3px_rgba(20,20,19,0.08)] p-8 max-w-md w-full"
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -270,22 +268,22 @@ function AboutModal({ open, onClose }) {
               onClick={onClose}
               className="absolute top-5 right-5 w-8 h-8 rounded-full
                 flex items-center justify-center
-                bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600
+                bg-surface-card hover:bg-surface-cream-strong text-muted-soft hover:text-body
                 transition-colors"
             >
               <X size={16} />
             </button>
 
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight mb-3">
+            <h2 className="text-xl font-normal font-serif text-ink tracking-tight mb-3">
               关于项目
             </h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-5">
+            <p className="text-muted text-sm leading-relaxed mb-5">
               建筑构造交互系统是一个面向建筑学教育的开源工具，通过三维可视化
               和交互式分解视图，帮助学生和从业者直观理解建筑构造的空间逻辑。
             </p>
-            <div className="space-y-2.5 text-sm text-gray-500">
+            <div className="space-y-2.5 text-sm text-muted">
               <div className="flex justify-between">
-                <span className="text-gray-400">版本</span>
+                <span className="text-muted-soft">版本</span>
                 <span className="tabular-nums">1.0.0</span>
               </div>
               <div className="flex justify-between">
@@ -296,14 +294,14 @@ function AboutModal({ open, onClose }) {
                 <span className="text-gray-400">GitHub</span>
                 <a
                   href="#"
-                  className="text-rose-600 hover:text-rose-700 underline underline-offset-2 transition-colors"
+                  className="text-primary hover:text-primary-active underline underline-offset-2 transition-colors"
                 >
                   项目地址（待添加）
                 </a>
               </div>
             </div>
 
-            <div className="mt-7 pt-5 border-t border-gray-100 text-center text-xs text-gray-400">
+            <div className="mt-7 pt-5 border-t border-hairline text-center text-xs text-muted-soft">
               开源教育工具 · 探索建筑构造的空间逻辑
             </div>
           </motion.div>
@@ -333,10 +331,10 @@ function HomePage() {
   const handleBgLoaded = useCallback(() => setBgLoading(false), []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f5f5f7]">
+    <div className="flex h-screen overflow-hidden bg-canvas">
       <aside
         className="hidden md:flex w-96 flex-shrink-0
-          bg-white/60 backdrop-blur-xl border-r border-gray-200/50
+          bg-canvas border-r border-hairline
           flex-col justify-center h-full px-10"
       >
         <MenuContent onModalOpen={() => setModalOpen(true)} />
@@ -364,21 +362,21 @@ function HomePage() {
           {/* scene switcher */}
           <button
             onClick={() => setSceneIndex((prev) => (prev + 1) % backgroundScenes.length)}
-            className="w-11 h-11 rounded-full bg-white/70 backdrop-blur-md border border-white/30 shadow-lg shadow-black/5 flex items-center justify-center cursor-pointer transition-all duration-300 hover:bg-white/90"
+            className="w-11 h-11 rounded-full bg-canvas border border-hairline flex items-center justify-center cursor-pointer transition-all duration-300 hover:bg-surface-card"
             title={`场景: ${currentScene.name} (点击切换)`}
           >
-            <SwitchCamera size={17} className="text-gray-400 hover:text-rose-500" />
+            <SwitchCamera size={17} className="text-muted-soft hover:text-primary" />
           </button>
           {/* auto-rotate toggle */}
           <button
             onClick={() => setAutoRotate((v) => !v)}
-            className="w-11 h-11 rounded-full bg-white/70 backdrop-blur-md border border-white/30 shadow-lg shadow-black/5 flex items-center justify-center cursor-pointer transition-all duration-300 hover:bg-white/90"
+            className="w-11 h-11 rounded-full bg-canvas border border-hairline flex items-center justify-center cursor-pointer transition-all duration-300 hover:bg-surface-card"
             title={autoRotate ? "暂停旋转" : "恢复旋转"}
           >
             {autoRotate ? (
-              <Pause size={17} className="text-rose-500" />
+              <Pause size={17} className="text-primary" />
             ) : (
-              <Play size={17} className="text-gray-400 hover:text-rose-500" />
+              <Play size={17} className="text-muted-soft hover:text-primary" />
             )}
           </button>
         </div>
@@ -386,7 +384,7 @@ function HomePage() {
 
       <div
         className="flex md:hidden w-full h-full
-          bg-gradient-to-b from-gray-50 to-white
+          bg-canvas
           flex-col justify-center px-8"
       >
         <MenuContent onModalOpen={() => setModalOpen(true)} />

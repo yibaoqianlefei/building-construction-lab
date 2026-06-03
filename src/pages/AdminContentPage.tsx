@@ -31,8 +31,8 @@ function AdminContentPage() {
 
   if (!profile || (profile as any).role !== "developer") {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500">仅开发者可访问此页面</p>
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <p className="text-muted">仅开发者可访问此页面</p>
       </div>
     );
   }
@@ -45,17 +45,17 @@ function AdminContentPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col h-screen">
+    <div className="min-h-screen bg-canvas flex flex-col h-screen">
       <Toaster position="top-right" richColors closeButton />
-      <div className="px-5 py-2.5 border-b border-gray-100 flex items-center gap-6 flex-shrink-0">
-        <h2 className="text-sm font-semibold text-gray-800">管理后台</h2>
+      <div className="px-5 py-2.5 border-b border-hairline flex items-center gap-6 flex-shrink-0">
+        <h2 className="text-sm font-semibold text-body-strong">管理后台</h2>
         <div className="flex gap-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => navigate(`/admin/${t.id}`)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
-                currentTab === t.id ? "bg-rose-100 text-rose-700" : "text-gray-500 hover:text-gray-700"
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                currentTab === t.id ? "bg-hairline text-primary" : "text-muted hover:text-body"
               }`}
             >
               {t.label}
@@ -299,7 +299,7 @@ function SectionsManager({ profile }: any) {
   return (
     <div className="flex h-full">
       {/* ── LEFT: Section Tree (w-64) ── */}
-      <div className="w-64 flex-shrink-0 border-r border-gray-100">
+      <div className="w-64 flex-shrink-0 border-r border-hairline">
         <AdminSectionTree
           sections={sections}
           selectedId={selected?.id}
@@ -314,30 +314,30 @@ function SectionsManager({ profile }: any) {
       {/* ── CENTER: Editor (flex-1) ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {!selected ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+          <div className="flex-1 flex items-center justify-center text-muted-soft text-sm">
             选择一个章节开始编辑
           </div>
         ) : (
           <>
             {/* restore banner */}
             {isDeleted && (
-              <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
-                <span className="text-sm text-amber-700 font-medium">已删除</span>
+              <div className="px-4 py-2.5 bg-warning/10 border-b border-warning/30 flex items-center justify-between">
+                <span className="text-sm text-warning font-medium">已删除</span>
                 <button onClick={() => handleRestore(selected.id)}
-                  className="px-3 py-1 text-xs rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer">
+                  className="px-3 py-1 text-xs rounded-lg bg-warning text-on-primary hover:bg-warning transition-colors cursor-pointer">
                   恢复章节
                 </button>
               </div>
             )}
 
             {/* ── toolbar ── */}
-            <div className="px-4 py-2.5 border-b border-gray-100 space-y-2 flex-shrink-0">
+            <div className="px-4 py-2.5 border-b border-hairline space-y-2 flex-shrink-0">
               <div className="flex gap-2">
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="章节标题"
-                  className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300"
+                  className="flex-1 text-sm px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary"
                   disabled={isDeleted} />
                 <select value={moduleId} onChange={(e) => setModuleId(e.target.value)}
-                  className="w-32 text-xs px-2 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300 bg-white"
+                  className="w-32 text-xs px-2 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary bg-canvas"
                   disabled={isDeleted}>
                   <option value="">无模块</option>
                   {courseModules.map((m) => (
@@ -347,24 +347,24 @@ function SectionsManager({ profile }: any) {
               </div>
               <div className="flex gap-2">
                 <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="描述"
-                  className="flex-1 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300"
+                  className="flex-1 text-xs px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary"
                   disabled={isDeleted} />
-                <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer flex-shrink-0">
+                <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer flex-shrink-0">
                   <input type="checkbox" checked={available} onChange={(e) => setAvailable(e.target.checked)}
-                    className="accent-rose-500" disabled={isDeleted} />
+                    className="accent-primary" disabled={isDeleted} />
                   可用
                 </label>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => doSave(false)} disabled={saving || isDeleted}
-                  className="px-4 py-1.5 text-xs rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors cursor-pointer">
+                  className="px-4 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-primary-active disabled:opacity-50 transition-colors cursor-pointer">
                   {saving ? "..." : "保存 ⌘S"}
                 </button>
-                <label className={`px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 transition-colors cursor-pointer ${isDeleted ? "opacity-50 pointer-events-none" : ""}`}>
+                <label className={`px-3 py-1.5 text-xs rounded-lg border border-hairline text-muted hover:text-primary transition-colors cursor-pointer ${isDeleted ? "opacity-50 pointer-events-none" : ""}`}>
                   {uploading ? "上传中..." : "上传图片"}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </label>
-                <span className="text-[10px] text-gray-400 ml-auto">
+                <span className="text-[10px] text-muted-soft ml-auto">
                   {saving ? "保存中..." : lastSaved ? `上次保存 ${formatTime(lastSaved)}` : "自动保存已启用"}
                 </span>
               </div>
@@ -373,8 +373,8 @@ function SectionsManager({ profile }: any) {
             {/* ── scrollable content area ── */}
             <div className="flex-1 overflow-y-auto">
               {/* Markdown editor */}
-              <div className="border-b border-gray-100">
-                <div className="px-4 py-1.5 text-[11px] text-gray-400 uppercase tracking-wider font-medium">
+              <div className="border-b border-hairline">
+                <div className="px-4 py-1.5 text-[11px] text-muted-soft uppercase tracking-wider font-medium">
                   教材内容 (Markdown) — 停止输入 2 秒后自动保存
                 </div>
                 <MDEditor value={content} onChange={(v) => setContent(v || "")}
@@ -382,18 +382,18 @@ function SectionsManager({ profile }: any) {
               </div>
 
               {/* diagram */}
-              <div className="px-4 py-3 border-b border-gray-100">
-                <div className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-2">剖面图</div>
+              <div className="px-4 py-3 border-b border-hairline">
+                <div className="text-[11px] text-muted-soft uppercase tracking-wider font-medium mb-2">剖面图</div>
                 <div className="flex items-center gap-3">
-                  <label className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 transition-colors cursor-pointer">
+                  <label className="px-3 py-1.5 text-xs rounded-lg border border-hairline text-muted hover:text-primary transition-colors cursor-pointer">
                     上传剖面图
                     <input ref={diagramInputRef} type="file" accept="image/*" className="hidden" onChange={handleDiagramUpload} />
                   </label>
                   {diagramUrl && (
                     <div className="flex items-center gap-2">
-                      <img src={diagramUrl} alt="剖面图" className="h-10 w-auto rounded border border-gray-200 object-contain" />
+                      <img src={diagramUrl} alt="剖面图" className="h-10 w-auto rounded border border-hairline object-contain" />
                       <button onClick={() => setDiagramUrl("")}
-                        className="text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer">清除</button>
+                        className="text-xs text-error hover:text-error transition-colors cursor-pointer">清除</button>
                     </div>
                   )}
                 </div>
@@ -401,13 +401,13 @@ function SectionsManager({ profile }: any) {
 
               {/* model association */}
               <div className="px-4 py-3">
-                <div className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-2">关联模型节点</div>
+                <div className="text-[11px] text-muted-soft uppercase tracking-wider font-medium mb-2">关联模型节点</div>
                 <div className="grid grid-cols-2 gap-1 max-h-36 overflow-y-auto">
                   {nodesIndex.map((n) => {
                     const checked = nodeIds.includes(n.id);
                     return (
-                      <label key={n.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] cursor-pointer transition-colors ${checked ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-500"}`}>
-                        <input type="checkbox" checked={checked} onChange={() => toggleNodeId(n.id)} className="accent-rose-500 w-3 h-3" />
+                      <label key={n.id} className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] cursor-pointer transition-colors ${checked ? "bg-hairline text-primary" : "hover:bg-surface-card text-muted"}`}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleNodeId(n.id)} className="accent-primary w-3 h-3" />
                         <span className="truncate">{n.title}</span>
                       </label>
                     );
@@ -420,37 +420,37 @@ function SectionsManager({ profile }: any) {
       </div>
 
       {/* ── RIGHT: Properties Panel (w-64) ── */}
-      <div className="w-64 flex-shrink-0 border-l border-gray-100 bg-gray-50/50 p-4 overflow-y-auto">
-        <h3 className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-3">属性</h3>
+      <div className="w-64 flex-shrink-0 border-l border-hairline bg-surface-soft p-4 overflow-y-auto">
+        <h3 className="text-[11px] text-muted-soft uppercase tracking-wider font-medium mb-3">属性</h3>
         {selected ? (
           <div className="space-y-3 text-xs">
             <div>
-              <span className="text-gray-400">子章节</span>
-              <span className="float-right text-gray-700 font-medium">{childCount}</span>
+              <span className="text-muted-soft">子章节</span>
+              <span className="float-right text-body font-medium">{childCount}</span>
             </div>
             <div>
-              <span className="text-gray-400">关联模型</span>
-              <span className="float-right text-gray-700 font-medium">{associatedNodes}</span>
+              <span className="text-muted-soft">关联模型</span>
+              <span className="float-right text-body font-medium">{associatedNodes}</span>
             </div>
-            <div className="border-t border-gray-200 pt-2">
-              <span className="text-gray-400 block">创建时间</span>
-              <span className="text-gray-600">{formatTime(selected.created_at)}</span>
-            </div>
-            <div>
-              <span className="text-gray-400 block">更新时间</span>
-              <span className="text-gray-600">{formatTime(selected.updated_at)}</span>
+            <div className="border-t border-hairline pt-2">
+              <span className="text-muted-soft block">创建时间</span>
+              <span className="text-body">{formatTime(selected.created_at)}</span>
             </div>
             <div>
-              <span className="text-gray-400 block">Slug</span>
-              <code className="text-[10px] text-gray-500 bg-gray-100 px-1 rounded">{selected.slug || "(自动生成)"}</code>
+              <span className="text-muted-soft block">更新时间</span>
+              <span className="text-body">{formatTime(selected.updated_at)}</span>
+            </div>
+            <div>
+              <span className="text-muted-soft block">Slug</span>
+              <code className="text-[10px] text-muted bg-hairline px-1 rounded">{selected.slug || "(自动生成)"}</code>
             </div>
             {isDeleted && (
-              <div className="border-t border-red-200 pt-2 mt-2">
-                <span className="text-red-400 block">删除时间</span>
-                <span className="text-red-500">{formatTime(selected.deleted_at)}</span>
+              <div className="border-t border-error/30 pt-2 mt-2">
+                <span className="text-error block">删除时间</span>
+                <span className="text-error">{formatTime(selected.deleted_at)}</span>
               </div>
             )}
-            <div className="border-t border-gray-200 pt-2">
+            <div className="border-t border-hairline pt-2">
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(selected.slug
@@ -458,14 +458,14 @@ function SectionsManager({ profile }: any) {
                     : `${window.location.origin}/node/${selected.node_ids?.[0] || ""}`);
                   toast.success("链接已复制");
                 }}
-                className="w-full py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 hover:border-rose-300 transition-colors cursor-pointer"
+                className="w-full py-1.5 text-xs rounded-lg border border-hairline text-muted hover:text-primary hover:border-primary/30 transition-colors cursor-pointer"
               >
                 复制链接
               </button>
               {selected.slug && (
                 <button
                   onClick={() => window.open(`/textbook/${selected.slug}`, "_blank")}
-                  className="w-full mt-1 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 hover:border-rose-300 transition-colors cursor-pointer"
+                  className="w-full mt-1 py-1.5 text-xs rounded-lg border border-hairline text-muted hover:text-primary hover:border-primary/30 transition-colors cursor-pointer"
                 >
                   前端预览 →
                 </button>
@@ -473,7 +473,7 @@ function SectionsManager({ profile }: any) {
             </div>
           </div>
         ) : (
-          <p className="text-xs text-gray-400">选择章节查看属性</p>
+          <p className="text-xs text-muted-soft">选择章节查看属性</p>
         )}
       </div>
     </div>
@@ -511,31 +511,31 @@ function NodeEditor() {
 
   return (
     <div className="flex h-full">
-      <div className="w-56 border-r border-gray-100 overflow-y-auto p-2 flex flex-col gap-0.5">
+      <div className="w-56 border-r border-hairline overflow-y-auto p-2 flex flex-col gap-0.5">
         <button onClick={() => { const id = prompt("node_id:"); if (id) { setSelectedId(id); setTitle(""); setCategory(""); setDesc(""); setNodeData("{}"); } }}
-          className="w-full py-1.5 text-xs rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer">+ 新建</button>
+          className="w-full py-1.5 text-xs rounded-lg bg-hairline text-primary hover:bg-surface-cream-strong transition-colors cursor-pointer">+ 新建</button>
         {nodes.map((n) => (
           <button key={n.node_id} onClick={() => loadNode(n.node_id)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedId === n.node_id ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-600"}`}>
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedId === n.node_id ? "bg-hairline text-primary" : "hover:bg-surface-card text-body"}`}>
             <div className="font-medium truncate">{n.title || n.node_id}</div>
-            <div className="text-[10px] text-gray-400">{n.node_id}</div>
+            <div className="text-[10px] text-muted-soft">{n.node_id}</div>
           </button>
         ))}
       </div>
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedId ? (
           <>
-            <div className="px-4 py-2 border-b border-gray-100 space-y-1.5">
+            <div className="px-4 py-2 border-b border-hairline space-y-1.5">
               <div className="flex gap-2">
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题"
-                  className="flex-1 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+                  className="flex-1 text-xs px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary" />
                 <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="分类"
-                  className="w-24 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+                  className="w-24 text-xs px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary" />
               </div>
               <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="描述"
-                className="w-full text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+                className="w-full text-xs px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary" />
               <button onClick={handleSave} disabled={saving}
-                className="px-4 py-1.5 text-xs rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors cursor-pointer">
+                className="px-4 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-primary-active disabled:opacity-50 transition-colors cursor-pointer">
                 {saving ? "..." : "保存"}
               </button>
             </div>
@@ -543,7 +543,7 @@ function NodeEditor() {
               placeholder="JSON 数据" className="flex-1 p-4 text-xs font-mono outline-none resize-none" />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">选择节点编辑</div>
+          <div className="flex-1 flex items-center justify-center text-muted-soft text-sm">选择节点编辑</div>
         )}
       </div>
     </div>
@@ -576,25 +576,25 @@ function TextbookEditor() {
 
   return (
     <div className="flex h-full">
-      <div className="w-56 border-r border-gray-100 overflow-y-auto p-2 flex flex-col gap-0.5">
+      <div className="w-56 border-r border-hairline overflow-y-auto p-2 flex flex-col gap-0.5">
         <button onClick={() => { const id = prompt("section_id:"); if (id) { setSelectedId(id); setTitle(""); setContent(""); } }}
-          className="w-full py-1.5 text-xs rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer">+ 新建</button>
+          className="w-full py-1.5 text-xs rounded-lg bg-hairline text-primary hover:bg-surface-cream-strong transition-colors cursor-pointer">+ 新建</button>
         {sections.map((s) => (
           <button key={s.section_id} onClick={() => loadSection(s.section_id)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedId === s.section_id ? "bg-rose-50 text-rose-700" : "hover:bg-gray-50 text-gray-600"}`}>
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedId === s.section_id ? "bg-hairline text-primary" : "hover:bg-surface-card text-body"}`}>
             <div className="font-medium truncate">{s.title || s.section_id}</div>
-            <div className="text-[10px] text-gray-400">{s.section_id}</div>
+            <div className="text-[10px] text-muted-soft">{s.section_id}</div>
           </button>
         ))}
       </div>
       <div className="flex-1 flex flex-col">
         {selectedId ? (
           <>
-            <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
+            <div className="px-4 py-2 border-b border-hairline flex items-center gap-2">
               <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题"
-                className="flex-1 text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300" />
+                className="flex-1 text-xs px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary" />
               <button onClick={handleSave} disabled={saving}
-                className="px-4 py-1.5 text-xs rounded-lg bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50 transition-colors cursor-pointer">
+                className="px-4 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-primary-active disabled:opacity-50 transition-colors cursor-pointer">
                 {saving ? "..." : "保存"}
               </button>
             </div>
@@ -603,7 +603,7 @@ function TextbookEditor() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">选择章节编辑</div>
+          <div className="flex-1 flex items-center justify-center text-muted-soft text-sm">选择章节编辑</div>
         )}
       </div>
     </div>
@@ -635,20 +635,20 @@ function MediaLibrary() {
   return (
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
-        <label className="px-4 py-1.5 text-sm rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer">
+        <label className="px-4 py-1.5 text-sm rounded-lg bg-hairline text-primary hover:bg-surface-cream-strong transition-colors cursor-pointer">
           {uploading ? "上传中..." : "上传文件"}
           <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
         </label>
-        <span className="text-xs text-gray-400">上传到 Supabase Storage media bucket</span>
+        <span className="text-xs text-muted-soft">上传到 Supabase Storage media bucket</span>
       </div>
       <div className="grid grid-cols-4 gap-4">
         {files.map((f: any, i: number) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-xl p-3 text-sm">
-            <p className="font-medium truncate text-gray-700 text-xs">{f.name}</p>
-            <button onClick={() => copyUrl(f.url)} className="text-xs text-rose-500 hover:underline mt-1 cursor-pointer">复制链接</button>
+          <div key={i} className="bg-canvas border border-hairline rounded-lg p-3 text-sm">
+            <p className="font-medium truncate text-body text-xs">{f.name}</p>
+            <button onClick={() => copyUrl(f.url)} className="text-xs text-primary hover:underline mt-1 cursor-pointer">复制链接</button>
           </div>
         ))}
-        {files.length === 0 && <p className="col-span-4 text-gray-400 text-sm">暂无文件</p>}
+        {files.length === 0 && <p className="col-span-4 text-muted-soft text-sm">暂无文件</p>}
       </div>
     </div>
   );

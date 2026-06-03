@@ -55,7 +55,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-canvas flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -63,23 +63,22 @@ function AuthPage() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <Link to="/" className="text-2xl font-bold text-gray-800 tracking-tight">
+          <Link to="/" className="text-2xl font-normal font-serif text-ink tracking-tight">
             建筑构造交互系统
           </Link>
-          <p className="text-gray-400 text-sm mt-2">
+          <p className="text-muted-soft text-sm mt-2">
             {isLogin ? "欢迎回来" : "创建新账号"}
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8
-          border border-gray-200/50 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="flex mb-6 bg-gray-100 rounded-xl p-1">
+        <div className="bg-canvas rounded-xl border border-hairline p-8">
+          <div className="flex mb-6 bg-hairline rounded-lg p-1">
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                 isLogin
-                  ? "bg-white text-gray-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-canvas text-ink shadow-sm"
+                  : "text-muted hover:text-body"
               }`}
             >
               登录
@@ -88,8 +87,8 @@ function AuthPage() {
               onClick={() => setIsLogin(false)}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                 !isLogin
-                  ? "bg-white text-gray-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-canvas text-ink shadow-sm"
+                  : "text-muted hover:text-body"
               }`}
             >
               注册
@@ -100,17 +99,17 @@ function AuthPage() {
             {!isLogin && (
               <>
                 <div className="relative">
-                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-soft" />
                   <input
                     type="text"
                     placeholder="姓名"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required={!isLogin}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
-                      text-sm text-gray-700 placeholder-gray-400
-                      focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
-                      transition-colors bg-white/80"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-hairline
+                      text-sm text-body placeholder-muted-soft
+                      focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20
+                      transition-colors bg-canvas"
                   />
                 </div>
 
@@ -118,22 +117,22 @@ function AuthPage() {
             )}
 
             <div className="relative">
-              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-soft" />
               <input
                 type="email"
                 placeholder="邮箱"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
-                  text-sm text-gray-700 placeholder-gray-400
-                  focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
-                  transition-colors bg-white/80"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-hairline
+                  text-sm text-body placeholder-muted-soft
+                  focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20
+                  transition-colors bg-canvas"
               />
             </div>
 
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-soft" />
               <input
                 type="password"
                 placeholder="密码"
@@ -141,22 +140,22 @@ function AuthPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
-                  text-sm text-gray-700 placeholder-gray-400
-                  focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-200
-                  transition-colors bg-white/80"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-hairline
+                  text-sm text-body placeholder-muted-soft
+                  focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20
+                  transition-colors bg-canvas"
               />
             </div>
 
             {error && (
-              <p className="text-red-500 text-xs text-center">{error}</p>
+              <p className="text-error text-xs text-center">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-rose-500 text-white text-sm font-medium
-                hover:bg-rose-600 transition-colors disabled:opacity-50 cursor-pointer"
+              className="w-full py-2.5 rounded-lg bg-primary text-on-primary text-sm font-medium
+                hover:bg-primary-active transition-colors disabled:opacity-50 cursor-pointer"
             >
               {loading ? "请稍候..." : isLogin ? "登录" : "注册"}
             </button>

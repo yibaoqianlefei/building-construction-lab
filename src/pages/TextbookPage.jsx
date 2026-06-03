@@ -14,27 +14,26 @@ function ModelCard({ nodeId }) {
   return (
     <Link
       to={`/node/${node.id}`}
-      className="block bg-white/80 backdrop-blur-sm border border-gray-200/60
-        rounded-2xl p-5
-        shadow-[0_2px_8px_rgba(0,0,0,0.04)]
-        hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_8px_20px_rgba(255,61,88,0.08)]
+      className="block bg-surface-card border border-hairline
+        rounded-xl p-5
+        hover:shadow-[0_1px_3px_rgba(20,20,19,0.08)]
         hover:-translate-y-1 hover:scale-[1.01]
-        hover:bg-white hover:border-rose-200
+        hover:border-primary/30
         transition-all duration-300 ease-out
         cursor-pointer group max-w-md"
     >
       <div className="flex items-center gap-3">
         <span className="text-2xl">🏠</span>
         <div className="min-w-0">
-          <h4 className="text-base font-semibold text-gray-900 group-hover:text-rose-600 transition-colors">
+          <h4 className="text-base font-normal font-serif text-ink group-hover:text-primary transition-colors">
             {node.title}
           </h4>
-          <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+          <p className="text-sm text-muted mt-0.5 line-clamp-2">
             {node.description}
           </p>
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-1 text-xs text-rose-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="mt-3 flex items-center gap-1 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
         打开交互模型
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -51,22 +50,21 @@ function ModelCardSmall({ nodeId }) {
   return (
     <Link
       to={`/node/${node.id}`}
-      className="flex-1 min-w-0 max-w-[45%] bg-white/80 backdrop-blur-sm border border-gray-200/60
+      className="flex-1 min-w-0 max-w-[45%] bg-surface-card border border-hairline
         rounded-xl p-4
-        shadow-[0_2px_6px_rgba(0,0,0,0.04)]
-        hover:shadow-[0_8px_16px_rgba(0,0,0,0.05),0_4px_12px_rgba(255,61,88,0.08)]
-        hover:-translate-y-0.5 hover:border-rose-200
+        hover:shadow-[0_1px_3px_rgba(20,20,19,0.08)]
+        hover:-translate-y-0.5 hover:border-primary/30
         transition-all duration-300 ease-out
         cursor-pointer group"
     >
       <div className="text-2xl mb-2">🏠</div>
-      <h4 className="text-sm font-semibold text-gray-900 group-hover:text-rose-600 transition-colors">
+      <h4 className="text-sm font-normal font-serif text-ink group-hover:text-primary transition-colors">
         {node.title}
       </h4>
-      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+      <p className="text-xs text-muted mt-1 line-clamp-2">
         {node.description}
       </p>
-      <div className="mt-2 text-xs text-rose-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="mt-2 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
         打开模型 →
       </div>
     </Link>
@@ -130,22 +128,22 @@ const markdownComponents = {
     />
   ),
   table: ({ children }) => (
-    <div className="overflow-x-auto my-6 rounded-xl border border-gray-200">
+    <div className="overflow-x-auto my-6 rounded-lg border border-hairline">
       <table className="table-auto w-full text-sm text-left border-collapse">
         {children}
       </table>
     </div>
   ),
   thead: ({ children }) => (
-    <thead className="bg-gray-50">{children}</thead>
+    <thead className="bg-surface-soft">{children}</thead>
   ),
   th: ({ children }) => (
-    <th className="text-gray-700 font-medium px-4 py-2.5 border-b border-gray-200 first:pl-5 last:pr-5">
+    <th className="text-body font-medium px-4 py-2.5 border-b border-hairline first:pl-5 last:pr-5">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="px-4 py-2.5 border-b border-gray-100 text-gray-600 first:pl-5 last:pr-5">
+    <td className="px-4 py-2.5 border-b border-hairline-soft text-body first:pl-5 last:pr-5">
       {children}
     </td>
   ),
@@ -246,10 +244,10 @@ function TextbookPage() {
 
   if (!section) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 text-lg">章节不存在</p>
-          <Link to="/curriculum/roof" className="text-rose-600 hover:text-rose-700 text-sm mt-2 inline-block">
+          <p className="text-muted text-lg">章节不存在</p>
+          <Link to="/curriculum/roof" className="text-primary hover:text-primary-active text-sm mt-2 inline-block">
             返回屋顶章节
           </Link>
         </div>
@@ -259,18 +257,18 @@ function TextbookPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-400">教材加载中...</p>
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <p className="text-muted-soft">教材加载中...</p>
       </div>
     );
   }
 
   if (!content) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 text-lg">教材内容尚未编写</p>
-          <Link to="/curriculum/roof" className="text-rose-600 hover:text-rose-700 text-sm mt-2 inline-block">
+          <p className="text-muted text-lg">教材内容尚未编写</p>
+          <Link to="/curriculum/roof" className="text-primary hover:text-primary-active text-sm mt-2 inline-block">
             返回屋顶章节
           </Link>
         </div>
@@ -281,34 +279,34 @@ function TextbookPage() {
   const contentParts = parseContent(content);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
       <main className="flex-1 px-6 md:px-10 py-10 max-w-4xl mx-auto w-full">
         {/* breadcrumb */}
         <div className="mb-2">
-          <span className="text-sm text-gray-400">
-            <Link to="/curriculum" className="text-rose-600 hover:text-rose-700 transition-colors">
+          <span className="text-sm text-muted-soft">
+            <Link to="/curriculum" className="text-primary hover:text-primary-active transition-colors">
               课程目录
             </Link>
-            <span className="mx-1.5 text-gray-300">›</span>
-            <Link to="/curriculum/roof" className="text-rose-600 hover:text-rose-700 transition-colors">
+            <span className="mx-1.5 text-muted-soft">›</span>
+            <Link to="/curriculum/roof" className="text-primary hover:text-primary-active transition-colors">
               屋顶
             </Link>
-            <span className="mx-1.5 text-gray-300">›</span>
-            <span className="text-gray-500">{section.title}</span>
+            <span className="mx-1.5 text-muted-soft">›</span>
+            <span className="text-muted">{section.title}</span>
           </span>
         </div>
 
         {/* content */}
-        <article className="mt-6 prose prose-gray max-w-none
-          prose-headings:font-serif prose-headings:text-gray-900
+        <article className="mt-6 prose max-w-none
+          prose-headings:font-normal prose-headings:text-ink
           prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4
           prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
-          prose-p:text-gray-600 prose-p:leading-relaxed
-          prose-li:text-gray-600
-          prose-th:text-gray-700 prose-td:text-gray-600
+          prose-p:text-body prose-p:leading-relaxed
+          prose-li:text-body
+          prose-th:text-body prose-td:text-body
           prose-table:border-collapse
-          prose-blockquote:border-l-rose-400 prose-blockquote:text-gray-500
-          prose-strong:text-gray-800">
+          prose-blockquote:border-l-primary prose-blockquote:text-muted
+          prose-strong:text-body-strong">
           {contentParts.map((part, i) => {
             if (part.type === "side-by-side") {
               return <SideBySide key={`ss-${i}`} content={part.inner} />;
@@ -329,10 +327,10 @@ function TextbookPage() {
         </article>
 
         {/* back link */}
-        <div className="mt-12 pt-6 border-t border-gray-100">
+        <div className="mt-12 pt-6 border-t border-hairline">
           <Link
             to="/curriculum/roof"
-            className="text-sm text-rose-600 hover:text-rose-700 transition-colors"
+            className="text-sm text-primary hover:text-primary-active transition-colors"
           >
             ← 返回屋顶章节
           </Link>

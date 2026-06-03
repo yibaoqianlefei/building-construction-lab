@@ -17,8 +17,8 @@ function LayerCard({ layer, index, isActive, onToggle, nodeId }) {
       layout
       className={`rounded-xl border transition-all duration-300 ${
         isExpanded
-          ? "bg-white border-rose-200 shadow-md"
-          : "bg-white/60 backdrop-blur-sm border-gray-200/50 hover:bg-rose-50/50"
+          ? "bg-canvas border-primary/30"
+          : "bg-surface-card border-hairline-soft hover:bg-hairline"
       }`}
     >
       <button
@@ -29,10 +29,10 @@ function LayerCard({ layer, index, isActive, onToggle, nodeId }) {
           className="w-1.5 h-6 rounded-full flex-shrink-0"
           style={{ backgroundColor: layer.color }}
         />
-        <span className={`text-sm font-semibold flex-1 ${isExpanded ? "text-rose-600" : "text-gray-800"}`}>
+        <span className={`text-sm font-semibold flex-1 ${isExpanded ? "text-primary" : "text-body-strong"}`}>
           {layer.name}
         </span>
-        <span className="text-xs text-rose-500 font-mono tabular-nums">
+        <span className="text-xs text-primary font-mono tabular-nums">
           {(layer.thickness * 1000).toFixed(0)} mm
         </span>
       </button>
@@ -47,18 +47,18 @@ function LayerCard({ layer, index, isActive, onToggle, nodeId }) {
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-0 space-y-1.5">
-              <p className="text-sm text-gray-500">
-                <span className="text-gray-400">材料：</span>
+              <p className="text-sm text-muted">
+                <span className="text-muted-soft">材料：</span>
                 {layer.material}
               </p>
-              <p className="text-xs text-gray-400 leading-relaxed">
+              <p className="text-xs text-muted-soft leading-relaxed">
                 {layer.description}
               </p>
               {nodeId && (
                 <button
                   onClick={handleGameClick}
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
-                    border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                    border border-primary/30 text-primary hover:bg-hairline hover:border-primary/50
                     transition-all duration-200 cursor-pointer"
                 >
                   <Play size={11} />
@@ -109,12 +109,12 @@ function ConstructionKnowledgePanel({
   return (
     <>
       {/* ── desktop sidebar ── */}
-      <div className="hidden md:block bg-white/85 backdrop-blur-md rounded-2xl shadow-sm h-full overflow-y-auto border border-gray-200/30">
+      <div className="hidden md:block bg-canvas rounded-xl h-full overflow-y-auto border border-hairline">
         <div className="px-4 pt-4 pb-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+          <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">
             构造层次
           </h3>
-          <p className="text-xs text-gray-400 mt-0.5">从室内到室外</p>
+          <p className="text-xs text-muted-soft mt-0.5">从室内到室外</p>
         </div>
         <div className="p-4 pt-2">{cardList}</div>
       </div>
@@ -123,9 +123,9 @@ function ConstructionKnowledgePanel({
       <button
         onClick={() => setMobileOpen(true)}
         className="md:hidden fixed bottom-20 right-4 z-30 w-12 h-12 rounded-full
-          bg-rose-500 text-white shadow-lg shadow-rose-500/30
+          bg-primary text-on-primary shadow-lg
           flex items-center justify-center
-          hover:bg-rose-600 active:scale-95 transition-all duration-200 cursor-pointer"
+          hover:bg-primary-active active:scale-95 transition-all duration-200 cursor-pointer"
         aria-label="构造层次"
       >
         <Layers size={20} />
@@ -136,7 +136,7 @@ function ConstructionKnowledgePanel({
         {mobileOpen && (
           <>
             <motion.div
-              className="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 z-40 bg-black/20"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -144,8 +144,8 @@ function ConstructionKnowledgePanel({
             />
             <motion.div
               className="md:hidden fixed bottom-0 left-0 right-0 z-50
-                bg-white/95 backdrop-blur-md rounded-t-2xl
-                border-t border-gray-200/50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]
+                bg-canvas rounded-t-xl
+                border-t border-hairline shadow-[0_-4px_20px_rgba(0,0,0,0.08)]
                 max-h-[50vh] overflow-y-auto"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -153,13 +153,13 @@ function ConstructionKnowledgePanel({
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
               <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">
                   构造层次
                 </h3>
                 <button
                   onClick={() => setMobileOpen(false)}
                   className="w-8 h-8 rounded-full flex items-center justify-center
-                    bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600
+                    bg-hairline hover:bg-surface-cream-strong text-muted-soft hover:text-body
                     transition-colors cursor-pointer"
                 >
                   <X size={16} />

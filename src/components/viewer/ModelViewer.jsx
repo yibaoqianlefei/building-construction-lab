@@ -4,6 +4,7 @@ import { OrbitControls, Grid } from "@react-three/drei";
 import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 import ExplosionLabels from "./ExplosionLabels";
+import SpatialLabel from "./SpatialLabel";
 
 const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
@@ -220,9 +221,10 @@ function WallAssembly({
             onPointerOut={() => onHoverLayer(null)}
             onClick={(e) => {
               const grp = groupRefs.current[i];
-              const wp = new THREE.Vector3();
-              if (grp) grp.getWorldPosition(wp);
-              onLayerClick(i, layer, e, wp.toArray());
+              const box = new THREE.Box3().setFromObject(grp);
+              const center = new THREE.Vector3();
+              box.getCenter(center);
+              onLayerClick(i, layer, e, center.toArray());
             }}
           />
         </group>
@@ -367,7 +369,7 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
   useEffect(() => {
     console.log(
       `%c[节点加载] %c${nodeTitle || "(未命名)"}`,
-      "font-weight:bold;color:#ff3d58",
+      "font-weight:bold;color:#cc785c",
       "font-weight:bold;color:#333"
     );
     console.log(`  modelRotation: [${(modelRotation || [0, 0, 0]).join(", ")}]`);
@@ -386,15 +388,37 @@ let globalControls = null;
 const savedCameraPos = new THREE.Vector3();
 const savedTarget = new THREE.Vector3(0, 0.8, 0); // default target for initial load
 
+/* saved perspective state — captured while active, restored when switching back */
+const perspState = {
+  pos: new THREE.Vector3(),
+  target: new THREE.Vector3(),
+  fov: 40,
+  zoom: 1,
+  near: 1,
+  far: 100,
+};
+let perspStateValid = false;
+
 const PERSP_FOV = 40;
 
 /* ── Camera type switcher: creates and swaps Perspective/OrthographicCamera ── */
 function CameraSwitcher({ isOrthographic }) {
   const { set, camera, size } = useThree();
   const camRef = useRef(null);
-  const frustumRef = useRef(5); // dynamic frustum size, updated on switch
+  const frustumRef = useRef(5);
 
-  /* save camera state on every render (before OrbitControls unmounts on toggle) */
+  /* continuously save perspective state while perspective camera is active */
+  if (camera.isPerspectiveCamera && globalControls) {
+    perspState.pos.copy(camera.position);
+    perspState.target.copy(globalControls.target);
+    perspState.fov = camera.fov || PERSP_FOV;
+    perspState.zoom = camera.zoom || 1;
+    perspState.near = camera.near || 1;
+    perspState.far = camera.far || 100;
+    perspStateValid = true;
+  }
+
+  /* save target every render (for OrbitControls restore on remount) */
   if (globalControls) {
     savedTarget.copy(globalControls.target);
   }
@@ -402,29 +426,39 @@ function CameraSwitcher({ isOrthographic }) {
 
   useEffect(() => {
     const aspect = size.width / size.height;
-    const oldPos = savedCameraPos.clone();
 
     let newCam;
     if (isOrthographic) {
-      /* calculate frustum size matching perspective view at current distance */
-      const dist = oldPos.distanceTo(savedTarget);
+      /* use saved perspective state for accurate frustum match */
+      const refTarget = perspStateValid ? perspState.target : savedTarget;
+      const refPos = perspStateValid ? perspState.pos : savedCameraPos;
+      const dist = refPos.distanceTo(refTarget);
       const fovRad = (PERSP_FOV / 2) * Math.PI / 180;
       const visibleHeight = 2 * dist * Math.tan(fovRad);
-      const fs = Math.max(visibleHeight, 2); // min 2 units to avoid extreme zoom
+      const fs = Math.max(visibleHeight, 2);
       frustumRef.current = fs;
 
       newCam = new THREE.OrthographicCamera(
-        -fs * aspect / 2,
-        fs * aspect / 2,
-        fs / 2,
-        -fs / 2,
-        0.1,
-        100
+        -fs * aspect / 2, fs * aspect / 2,
+        fs / 2, -fs / 2,
+        0.1, 100
       );
+      newCam.position.copy(refPos);
+      savedTarget.copy(refTarget);
     } else {
-      newCam = new THREE.PerspectiveCamera(PERSP_FOV, aspect, 1, 100);
+      /* restore perspective camera from saved state */
+      if (perspStateValid) {
+        newCam = new THREE.PerspectiveCamera(
+          perspState.fov, aspect, perspState.near, perspState.far
+        );
+        newCam.position.copy(perspState.pos);
+        newCam.zoom = perspState.zoom;
+        savedTarget.copy(perspState.target);
+      } else {
+        newCam = new THREE.PerspectiveCamera(PERSP_FOV, aspect, 1, 100);
+        newCam.position.copy(savedCameraPos);
+      }
     }
-    newCam.position.copy(oldPos);
     camRef.current = newCam;
     set({ camera: newCam });
   }, [isOrthographic]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -635,6 +669,8 @@ function Scene({
   viewTarget,
   onViewDone,
   isOrthographic,
+  spatialCard,
+  onSpatialCardClose,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -643,6 +679,15 @@ function Scene({
     <>
       <RendererSetup />
       <CameraSwitcher isOrthographic={isOrthographic} />
+
+      {spatialCard && (
+        <SpatialLabel
+          layer={spatialCard.layer}
+          position={spatialCard.worldPosition}
+          explodeAxis={explodeAxis}
+          onClose={onSpatialCardClose}
+        />
+      )}
 
       <color attach="background" args={["#f5f5f7"]} />
 
@@ -750,6 +795,8 @@ function ModelViewer({
   viewTarget,
   onViewDone,
   isOrthographic = false,
+  spatialCard,
+  onSpatialCardClose,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -781,6 +828,8 @@ function ModelViewer({
           onViewDone={onViewDone}
           showLabels={showLabels}
           isOrthographic={isOrthographic}
+          spatialCard={spatialCard}
+          onSpatialCardClose={onSpatialCardClose}
         />
       </Canvas>
     </div>

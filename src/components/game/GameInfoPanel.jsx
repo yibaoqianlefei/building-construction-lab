@@ -36,29 +36,29 @@ function GameInfoPanel({
 
   return (
     <div className="w-full lg:w-72 flex-shrink-0">
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-gray-200/60 shadow-sm p-5 h-full flex flex-col">
-        <h2 className="text-lg font-semibold text-gray-800 tracking-tight mb-4">
+      <div className="bg-canvas rounded-xl border border-hairline shadow-sm p-5 h-full flex flex-col">
+        <h2 className="text-lg font-medium font-sans text-ink tracking-tight mb-4">
           自由拼装
         </h2>
 
         {/* progress */}
         <div className="space-y-3 mb-4">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500">进度</span>
-            <span className="font-semibold text-gray-800 tabular-nums">
+            <span className="text-muted">进度</span>
+            <span className="font-semibold text-body-strong tabular-nums">
               {lockedCount} / {totalCount}
             </span>
           </div>
-          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-hairline rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{
                 width: `${totalCount > 0 ? (lockedCount / totalCount) * 100 : 0}%`,
                 background: validationDone
                   ? allCorrect
-                    ? "#22C55E"
-                    : `linear-gradient(90deg, #22C55E ${(correctCount / totalCount) * 100}%, #EF4444 ${(correctCount / totalCount) * 100}%)`
-                  : "#ff3d58",
+                    ? "#5db872"
+                    : `linear-gradient(90deg, #5db872 ${(correctCount / totalCount) * 100}%, #c64545 ${(correctCount / totalCount) * 100}%)`
+                  : "#cc785c",
               }}
             />
           </div>
@@ -68,19 +68,19 @@ function GameInfoPanel({
         <div
           className={`rounded-xl p-3 mb-4 text-xs ${
             validationDone && allCorrect
-              ? "bg-green-50/60 text-green-700"
+              ? "bg-success/10 text-success"
               : validationDone && wrongCount > 0
-                ? "bg-red-50/60 text-red-600"
-                : "bg-rose-50/60 text-gray-700"
+                ? "bg-error/10 text-error"
+                : "bg-hairline/60 text-body"
           }`}
         >
           <div className="flex items-start gap-1.5">
             {validationDone && allCorrect ? (
-              <CheckCircle2 size={14} className="text-green-500 flex-shrink-0 mt-0.5" />
+              <CheckCircle2 size={14} className="text-success flex-shrink-0 mt-0.5" />
             ) : validationDone && wrongCount > 0 ? (
-              <AlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
+              <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
             ) : !firstPieceLocked ? (
-              <GripHorizontal size={14} className="text-rose-500 flex-shrink-0 mt-0.5 animate-pulse" />
+              <GripHorizontal size={14} className="text-primary flex-shrink-0 mt-0.5 animate-pulse" />
             ) : null}
             <span className="leading-relaxed">{statusMessage}</span>
           </div>
@@ -91,14 +91,14 @@ function GameInfoPanel({
           <div className="flex gap-2 mb-4">
             <button
               onClick={onRetryWrong}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-500 text-white text-xs font-medium hover:bg-rose-600 transition-colors cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium hover:bg-primary-active transition-colors cursor-pointer"
             >
               <RotateCcw size={13} />
               调整
             </button>
             <button
               onClick={onResetAll}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-canvas border border-hairline text-body text-xs font-medium hover:bg-surface-soft transition-colors cursor-pointer"
             >
               <RefreshCw size={13} />
               全部重来
@@ -107,7 +107,7 @@ function GameInfoPanel({
         )}
 
         {/* layer list */}
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+        <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
           构造层次
         </h3>
         <div className="space-y-1 flex-1 overflow-auto">
@@ -123,16 +123,16 @@ function GameInfoPanel({
               let iconClass;
               if (isCorrect) {
                 Icon = CheckCircle2;
-                iconClass = "text-green-500";
+                iconClass = "text-success";
               } else if (isWrong) {
                 Icon = XCircle;
-                iconClass = "text-red-500";
+                iconClass = "text-error";
               } else if (isPlaced) {
                 Icon = CheckCircle2;
-                iconClass = "text-gray-400";
+                iconClass = "text-muted-soft";
               } else {
                 Icon = Circle;
-                iconClass = "text-gray-300";
+                iconClass = "text-muted-soft";
               }
 
               return (
@@ -142,10 +142,10 @@ function GameInfoPanel({
                 >
                   <Icon size={13} className={`${iconClass} flex-shrink-0`} />
                   <div className="min-w-0 flex-1">
-                    <span className="block truncate text-gray-700">
+                    <span className="block truncate text-body">
                       {layer.name}
                     </span>
-                    <span className="text-rose-600 tabular-nums">
+                    <span className="text-primary tabular-nums">
                       {(layer.thickness * 1000).toFixed(0)} mm
                     </span>
                   </div>

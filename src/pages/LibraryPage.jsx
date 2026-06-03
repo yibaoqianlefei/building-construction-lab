@@ -21,27 +21,26 @@ function NodeCard({ node, index }) {
     >
       <Link
         to={`/node/${node.id}`}
-        className="block bg-white/80 backdrop-blur-sm border border-gray-200/60
-          rounded-2xl p-6
-          shadow-[0_2px_8px_rgba(0,0,0,0.04)]
-          hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_8px_20px_rgba(255,61,88,0.08)]
+        className="block bg-surface-card border border-hairline
+          rounded-xl p-6
+          hover:shadow-[0_1px_3px_rgba(20,20,19,0.08)]
           hover:-translate-y-1.5 hover:scale-[1.01]
-          hover:bg-white hover:border-rose-200
+          hover:border-primary/30
           transition-all duration-300 ease-out
           cursor-pointer group"
       >
-        <div className="w-full h-24 bg-gray-50 rounded-xl mb-4 flex items-center justify-center overflow-hidden group-hover:bg-gray-100/70 transition-colors">
+        <div className="w-full h-24 bg-surface-soft rounded-xl mb-4 flex items-center justify-center overflow-hidden group-hover:bg-hairline/70 transition-colors">
           <span className="text-4xl">{categoryIcons[node.category] || "📦"}</span>
         </div>
 
-        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-rose-600 transition-colors tracking-tight">
+        <h3 className="text-lg font-normal font-serif text-ink group-hover:text-primary transition-colors tracking-tight">
           {node.title}
         </h3>
-        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed line-clamp-2">
+        <p className="text-sm text-muted mt-1.5 leading-relaxed line-clamp-2">
           {node.description}
         </p>
 
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-rose-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
           进入节点
           <svg
             className="w-3 h-3"
@@ -62,10 +61,10 @@ function LibraryPage() {
   const categories = [...new Set(nodesIndex.map((n) => n.category))];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
       <header className="pt-12 pb-8 md:pt-16 md:pb-10 px-6 text-center">
         <motion.h1
-          className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight"
+          className="text-3xl md:text-4xl font-normal font-serif text-ink tracking-tight"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
@@ -73,7 +72,7 @@ function LibraryPage() {
           节点库
         </motion.h1>
         <motion.p
-          className="mt-2 text-gray-500 text-base max-w-lg mx-auto"
+          className="mt-2 text-muted text-base max-w-lg mx-auto"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
@@ -88,8 +87,8 @@ function LibraryPage() {
           return (
             <section key={category} className="mb-14">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-6 bg-rose-500 rounded-full flex-shrink-0" />
-                <h2 className="text-xl text-gray-600 font-medium tracking-tight">
+                <div className="w-1 h-6 bg-primary rounded-full flex-shrink-0" />
+                <h2 className="text-xl text-body font-medium tracking-tight">
                   {category}
                 </h2>
               </div>
@@ -104,29 +103,29 @@ function LibraryPage() {
         })}
       </main>
 
-      <footer className="border-t border-gray-100 py-10 px-6">
+      <footer className="border-t border-hairline py-10 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-muted-soft">
             © 2026 建筑构造交互系统
           </span>
           <nav className="flex items-center gap-8">
             <a
               href="#"
-              className="text-sm text-gray-400 hover:text-rose-600 transition-colors flex items-center gap-1.5"
+              className="text-sm text-muted-soft hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <FiBookOpen size={14} />
               关于项目
             </a>
             <a
               href="#"
-              className="text-sm text-gray-400 hover:text-rose-600 transition-colors flex items-center gap-1.5"
+              className="text-sm text-muted-soft hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <FiHelpCircle size={14} />
               使用说明
             </a>
             <a
               href="#"
-              className="text-sm text-gray-400 hover:text-rose-600 transition-colors flex items-center gap-1.5"
+              className="text-sm text-muted-soft hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <FiGithub size={14} />
               GitHub

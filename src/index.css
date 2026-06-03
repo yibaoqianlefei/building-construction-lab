@@ -1,16 +1,49 @@
 @import "tailwindcss";
 
 @theme {
-  --color-rose-50: #fff0f2;
-  --color-rose-100: #ffe0e4;
-  --color-rose-200: #ffc2c9;
-  --color-rose-300: #ff9cab;
-  --color-rose-400: #ff6b7f;
-  --color-rose-500: #ff3d58;
-  --color-rose-600: #e6354f;
-  --color-rose-700: #cc2f46;
-  --color-rose-800: #b3283d;
-  --color-rose-900: #801c2b;
+  /* ── Claude Surface Colors ── */
+  --color-canvas: #faf9f5;
+  --color-surface-soft: #f5f0e8;
+  --color-surface-card: #efe9de;
+  --color-surface-cream-strong: #e8e0d2;
+  --color-surface-dark: #181715;
+  --color-surface-dark-elevated: #252320;
+  --color-surface-dark-soft: #1f1e1b;
+
+  /* ── Primary / Coral ── */
+  --color-primary: #cc785c;
+  --color-primary-active: #a9583e;
+  --color-primary-disabled: #e6dfd8;
+
+  /* ── Text / Ink ── */
+  --color-ink: #141413;
+  --color-body-strong: #252523;
+  --color-body: #3d3d3a;
+  --color-muted: #6c6a64;
+  --color-muted-soft: #8e8b82;
+
+  /* ── Borders (hairlines) ── */
+  --color-hairline: #e6dfd8;
+  --color-hairline-soft: #ebe6df;
+
+  /* ── On-color tokens ── */
+  --color-on-primary: #ffffff;
+  --color-on-dark: #faf9f5;
+  --color-on-dark-soft: #a09d96;
+
+  /* ── Accent colors ── */
+  --color-accent-teal: #5db8a6;
+  --color-accent-amber: #e8a55a;
+
+  /* ── Semantic ── */
+  --color-success: #5db872;
+  --color-warning: #d4a017;
+  --color-error: #c64545;
+
+  /* ── Font families ── */
+  --font-serif: "Cormorant Garamond", "Noto Serif SC", "Times New Roman", serif;
+  --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
@@ -24,9 +57,15 @@
 
   body {
     margin: 0;
-    background: #ffffff;
-    color: #374151;
+    background: #faf9f5;
+    color: #3d3d3a;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3 {
+    font-family: "Cormorant Garamond", "Noto Serif SC", "Times New Roman", serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
   }
 }
 

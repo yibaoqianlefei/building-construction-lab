@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 
 const BAR_COLORS = [
-  "bg-gray-200",
-  "bg-gray-300",
-  "bg-rose-200",
-  "bg-rose-300",
-  "bg-rose-400",
+  "bg-hairline",
+  "bg-surface-cream-strong",
+  "bg-primary/20",
+  "bg-primary/40",
+  "bg-primary",
 ];
 
 const BAR_WIDTHS = ["32%", "40%", "50%", "58%", "62%"];
@@ -46,7 +46,7 @@ function LoadingOverlay({ isLoading }) {
     <AnimatePresence>
       {isLoading && (
         <motion.div
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#FAFAFA]/75 backdrop-blur-md"
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-canvas/90"
           variants={containerVariants}
           exit="exit"
         >
@@ -59,7 +59,7 @@ function LoadingOverlay({ isLoading }) {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className={`h-1 rounded-full ${color} ${i === BAR_COLORS.length - 1 ? "shadow-[0_0_10px_rgba(255,61,88,0.25)]" : ""}`}
+                className={`h-1 rounded-full ${color} ${i === BAR_COLORS.length - 1 ? "shadow-[0_0_10px_rgba(204,120,92,0.15)]" : ""}`}
                 style={{ width: BAR_WIDTHS[i] }}
               />
             ))}
@@ -70,8 +70,8 @@ function LoadingOverlay({ isLoading }) {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
-            <div className="w-8 h-8 rounded-full border-2 border-rose-300 border-t-transparent animate-spin" />
-            <p className="text-xs text-rose-400/60 font-light tracking-wider">
+            <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-transparent animate-spin" />
+            <p className="text-xs text-primary/60 font-light tracking-wider">
               模型加载中...
             </p>
           </motion.div>

@@ -9,12 +9,12 @@ const Slot = memo(function Slot({ index, occupant, layer, verified }) {
     "w-5 h-5 rounded-full border transition-all duration-300";
   const ring =
     verified === true
-      ? "border-rose-400 bg-rose-400"
+      ? "border-primary/60 bg-primary"
       : verified === false
-        ? "border-red-400 bg-red-400"
+        ? "border-error/60 bg-error"
         : isOver
-          ? "border-rose-400 bg-rose-100/50"
-          : "border-rose-300/40 bg-transparent";
+          ? "border-primary/60 bg-primary/15"
+          : "border-primary/20 bg-transparent";
 
   return (
     <div ref={setNodeRef} className="flex-shrink-0 flex flex-col items-center">
@@ -56,9 +56,9 @@ const AssemblyLine = memo(function AssemblyLine({
       <div className={`relative flex ${isX ? "flex-row w-full items-center" : "flex-col items-center"} ${isX ? "" : "h-72"}`}>
         {/* gradient ray */}
         {isX ? (
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-rose-400/40 to-transparent" />
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         ) : (
-          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-rose-400/40 to-transparent" />
+          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-primary/30 to-transparent" />
         )}
         {/* slot markers */}
         <div className={`relative z-10 flex ${isX ? "flex-row justify-around w-full" : "flex-col justify-around h-full"}`}>

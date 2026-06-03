@@ -19,7 +19,7 @@ import { useModelInteraction } from "./hooks/useModelInteraction";
 import { getNodeDefinition } from "./services/contentService";
 import type { NodeData } from "./types";
 
-const ACCENT = "#e6354f";
+const ACCENT = "#cc785c";
 
 function NodeDetail() {
   const { nodeId } = useParams<{ nodeId: string }>();
@@ -49,6 +49,9 @@ function NodeDetail() {
   const [diagramScale, setDiagramScale] = useState(1);
   const [panOffset, setPanOffset] = useState<{x:number,y:number,w:number,h:number,scale:number}|null>(null);
   const [viewTarget, setViewTarget] = useState<string | null>("front");
+  const [spatialCard, setSpatialCard] = useState<{
+    layer: any; worldPosition: number[]; layerIndex: number;
+  } | null>(null);
 
   const viewerRef = useRef<HTMLDivElement>(null!);
   const controlsRef = useRef<any>(null);
@@ -107,9 +110,28 @@ function NodeDetail() {
     setIsOrthographic((v) => !v);
   }, [setIsOrthographic]);
 
-  const clearSelection = useCallback(() => {
+  const handleLayerClickWithCard = useCallback(
+    (index: number, layer: any, e: any, worldPos?: number[]) => {
+      handleLayerClick(index, layer, e);
+      if (worldPos) {
+        setSpatialCard({ layer, worldPosition: worldPos, layerIndex: index });
+      }
+    },
+    [handleLayerClick]
+  );
+
+  const handleBlankClickWithCard = useCallback(() => {
     handleBlankClick();
+    setSpatialCard(null);
   }, [handleBlankClick]);
+
+  const handleSpatialCardClose = useCallback(() => {
+    setSpatialCard(null);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    handleBlankClickWithCard();
+  }, [handleBlankClickWithCard]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -152,18 +174,18 @@ function NodeDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white text-gray-600 flex flex-col h-screen">
-        <div className="px-6 md:px-10 py-2.5 bg-white border-b border-gray-100/50 flex-shrink-0">
-          <span className="text-sm text-gray-400">加载中…</span>
+      <div className="min-h-screen bg-canvas text-body flex flex-col h-screen">
+        <div className="px-6 md:px-10 py-2.5 bg-canvas border-b border-hairline flex-shrink-0">
+          <span className="text-sm text-muted-soft">加载中…</span>
         </div>
         <main className="flex-1 flex flex-col lg:flex-row min-h-0">
-          <aside className="hidden lg:flex flex-[2] bg-white/60 backdrop-blur-md border-r border-gray-200/30 flex-col items-center justify-center rounded-r-2xl m-4 mr-0 p-8">
-            <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline flex-col items-center justify-center rounded-r-2xl m-4 mr-0 p-8">
+            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </aside>
           <ModelViewerSkeleton />
-          <aside className="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200/50 bg-white/60 backdrop-blur-md overflow-y-auto">
+          <aside className="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-hairline bg-canvas overflow-y-auto">
             <div className="p-4 md:p-5 flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             </div>
           </aside>
         </main>
@@ -173,9 +195,9 @@ function NodeDetail() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 text-lg">未找到该构造节点</p>
+          <p className="text-muted text-lg">未找到该构造节点</p>
         </div>
       </div>
     );
@@ -185,18 +207,18 @@ function NodeDetail() {
   const hasHotspots = data.diagramHotspots && data.diagramHotspots.length > 0;
 
   return (
-    <div className="min-h-screen bg-white text-gray-600 flex flex-col h-screen">
-      <div className="px-6 md:px-10 py-2.5 bg-white border-b border-gray-100/50 flex-shrink-0">
-        <span className="text-sm text-gray-400">
-          <Link to="/library" className="text-rose-600 hover:text-rose-700 transition-colors">节点库</Link>
-          <span className="mx-1.5 text-gray-300">›</span>
-          <span className="text-gray-500">{data.title}</span>
+    <div className="min-h-screen bg-canvas text-body flex flex-col h-screen">
+      <div className="px-6 md:px-10 py-2.5 bg-canvas border-b border-hairline flex-shrink-0">
+        <span className="text-sm text-muted-soft">
+          <Link to="/library" className="text-primary hover:text-primary-active transition-colors">节点库</Link>
+          <span className="mx-1.5 text-muted-soft">›</span>
+          <span className="text-muted">{data.title}</span>
         </span>
       </div>
 
       <main className="flex-1 flex flex-col lg:flex-row min-h-0">
         {hasImage ? (
-          <aside className="hidden lg:flex flex-[2] bg-white/60 backdrop-blur-md border-r border-gray-200/30 rounded-r-2xl m-4 mr-0 overflow-hidden p-8">
+          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline rounded-r-2xl m-4 mr-0 overflow-hidden p-8">
             <ZoomableImage
               src={data.diagramImage!}
               alt={`${data.title} 剖面图`}
@@ -208,10 +230,10 @@ function NodeDetail() {
             />
           </aside>
         ) : (
-          <aside className="hidden lg:flex flex-[2] bg-white/60 backdrop-blur-md border-r border-gray-200/30 flex-col items-center justify-center rounded-r-2xl m-4 mr-0 p-8">
-            <Image size={40} className="text-gray-300 mb-3" strokeWidth={1} />
-            <p className="text-sm text-gray-400 font-light">剖面图</p>
-            <p className="text-xs text-gray-300 mt-1">即将上线</p>
+          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline flex-col items-center justify-center rounded-r-2xl m-4 mr-0 p-8">
+            <Image size={40} className="text-muted-soft mb-3" strokeWidth={1} />
+            <p className="text-sm text-muted font-light">剖面图</p>
+            <p className="text-xs text-muted-soft mt-1">即将上线</p>
           </aside>
         )}
 
@@ -219,7 +241,7 @@ function NodeDetail() {
           <ModelErrorBoundary key={nodeId}>
             <motion.div
               ref={viewerRef}
-              className="flex-1 relative rounded-2xl overflow-hidden border border-gray-200/60 bg-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] m-4 md:m-6 md:mx-3"
+              className="flex-1 relative rounded-2xl overflow-hidden border border-hairline bg-canvas m-4 md:m-6 md:mx-3"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
@@ -238,8 +260,10 @@ function NodeDetail() {
                 hoveredLayer={hoveredLayer}
                 selectedLayer={selectedLayer}
                 onHoverLayer={setHoveredLayer}
-                onLayerClick={handleLayerClick}
-                onBlankClick={handleBlankClick}
+                onLayerClick={handleLayerClickWithCard}
+                onBlankClick={handleBlankClickWithCard}
+                spatialCard={spatialCard}
+                onSpatialCardClose={handleSpatialCardClose}
                 showLabels={showLabels}
                 onControlsReady={(ctrl: any) => { controlsRef.current = ctrl; }}
                 syncScale={syncZoom ? diagramScale : undefined}
@@ -287,23 +311,23 @@ function NodeDetail() {
           </ModelErrorBoundary>
         </div>
 
-        <aside className="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-200/50 bg-white/60 backdrop-blur-md overflow-y-auto">
+        <aside className="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-hairline bg-canvas overflow-y-auto">
           <motion.div
             className="p-4 md:p-5"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
           >
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-4">
-              <h2 className="text-gray-900 font-bold text-base flex items-center gap-2 mb-2 tracking-tight">
+            <div className="bg-canvas rounded-xl p-4 border border-hairline mb-4">
+              <h2 className="text-ink font-medium text-base flex items-center gap-2 mb-2 tracking-tight">
                 <FiInfo style={{ color: ACCENT }} />
                 {data.title}
               </h2>
-              <p className="text-gray-500 text-sm leading-relaxed">
+              <p className="text-muted text-sm leading-relaxed">
                 {data.description}
               </p>
               {data.directionLabel && (
-                <p className="text-gray-400 text-xs mt-2">
+                <p className="text-muted-soft text-xs mt-2">
                   方向：{data.directionLabel}
                 </p>
               )}

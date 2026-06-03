@@ -20,7 +20,7 @@ function ViewGizmo({ viewTarget, onViewChange }: ViewGizmoProps) {
       className="absolute top-3 right-3 z-20 select-none"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div className="bg-white/80 backdrop-blur-md border border-white/40 rounded-xl px-1.5 py-1.5 shadow-md shadow-black/5">
+      <div className="bg-canvas border border-hairline rounded-xl px-1.5 py-1.5">
         {/* 3-row grid with spatial layout */}
         <div className="flex flex-col items-center gap-0.5">
           {/* Row 0: top */}
@@ -67,10 +67,10 @@ const FaceButton = memo(function FaceButton({
       className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md flex items-center justify-center
         text-[10px] sm:text-xs font-medium transition-all duration-200
         ${active
-          ? "bg-rose-100 text-rose-600 scale-110 shadow-sm"
+          ? "bg-hairline text-primary scale-110 shadow-sm"
           : primary
-            ? "text-gray-600 hover:text-rose-500 hover:bg-rose-50/70 border border-gray-200/50"
-            : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/80"}`}
+            ? "text-body-strong hover:text-primary hover:bg-hairline border border-hairline"
+            : "text-muted-soft hover:text-body hover:bg-surface-soft"}`}
       title={face.title}
     >
       {face.label}
@@ -86,8 +86,8 @@ function ResetButton({ active, onClick }: { active: boolean; onClick: () => void
       className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md flex items-center justify-center
         text-[10px] font-medium transition-all duration-200
         ${active
-          ? "bg-rose-100 text-rose-600 scale-110 shadow-sm"
-          : "text-gray-400 hover:text-rose-500 hover:bg-rose-50/70"}`}
+          ? "bg-hairline text-primary scale-110 shadow-sm"
+          : "text-muted-soft hover:text-primary hover:bg-hairline"}`}
       title="默认透视图"
     >
       <svg

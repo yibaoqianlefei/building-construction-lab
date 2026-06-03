@@ -34,18 +34,18 @@ function PlaceholderPage() {
   const { Icon } = info;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <Icon
             size={48}
-            className="text-gray-300 mx-auto mb-4"
+            className="text-muted-soft mx-auto mb-4"
             strokeWidth={1.5}
           />
-          <h1 className="text-xl font-semibold text-gray-700 mb-2">
+          <h1 className="text-xl font-semibold text-body-strong mb-2">
             {info.title}
           </h1>
-          <p className="text-gray-400">{info.description}</p>
+          <p className="text-muted-soft">{info.description}</p>
         </div>
       </main>
     </div>

@@ -219,7 +219,7 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
           <button
             key={idx}
             onClick={(e) => handleHotspotClick(e, hs.layerIndex)}
-            className="absolute bg-transparent hover:bg-rose-500/10 border border-transparent hover:border-rose-400/40 rounded transition-colors cursor-pointer z-10"
+            className="absolute bg-transparent hover:bg-primary/10 border border-transparent hover:border-primary/30 rounded transition-colors cursor-pointer z-10"
             style={{
               left: `${hs.x}%`,
               top: `${hs.y}%`,

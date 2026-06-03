@@ -23,7 +23,7 @@ function ReturnZone({ children }) {
     <div
       ref={setNodeRef}
       className={`flex-1 min-h-0 rounded-2xl transition-colors duration-300 p-6 ${
-        isOver ? "bg-rose-50/40" : "bg-transparent"
+        isOver ? "bg-primary/15" : "bg-transparent"
       }`}
       style={{ touchAction: "none" }}
     >
@@ -147,8 +147,8 @@ function GamesPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-[#FAFAFA] flex items-center justify-center">
-        <div className="w-5 h-5 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+      <div className="h-screen bg-canvas flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -158,7 +158,7 @@ function GamesPage() {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
-      <div className="h-screen bg-[#FAFAFA] flex flex-col relative overflow-hidden">
+      <div className="h-screen bg-canvas flex flex-col relative overflow-hidden">
         {/* ── top bar ── */}
         <div className="flex-shrink-0 flex items-center justify-between px-8 py-4 z-20">
           <div className="flex items-center gap-2">
@@ -166,10 +166,10 @@ function GamesPage() {
               <button
                 key={n.id}
                 onClick={() => handleNodeChange(n.id)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer ${
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
                   nodeId === n.id
-                    ? "bg-rose-500 text-white shadow-[0_2px_8px_rgba(255,61,88,0.25)]"
-                    : "bg-white/70 backdrop-blur-sm text-gray-500 border border-gray-200/60 hover:border-rose-300 hover:text-gray-700"
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-card text-muted border border-hairline hover:border-primary/30 hover:text-body"
                 }`}
               >
                 {n.title}
@@ -178,7 +178,7 @@ function GamesPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 tabular-nums tracking-wide mr-2">
+            <span className="text-xs text-muted-soft tabular-nums tracking-wide mr-2">
               {slotOccupants.size} / {layerCount}
             </span>
           </div>
@@ -187,7 +187,7 @@ function GamesPage() {
         {/* ── main ── */}
         <div className="flex-1 flex flex-col gap-8 px-10 pb-10 min-h-0 overflow-auto">
           {/* ray area */}
-          <div className="flex-shrink-0 bg-white rounded-3xl border border-gray-100/60 shadow-[0_1px_3px_rgba(0,0,0,0.03)] p-8">
+          <div className="flex-shrink-0 bg-canvas rounded-xl border border-hairline shadow-[0_1px_3px_rgba(0,0,0,0.03)] p-8">
             {nodeData && (
               <AssemblyLine
                 explodeAxis={nodeData.explodeAxis || "x"}
@@ -212,7 +212,7 @@ function GamesPage() {
                 })}
             </div>
             {allFilled && (
-              <p className="text-center text-gray-300 text-sm mt-8 select-none">&mdash;</p>
+              <p className="text-center text-muted-soft text-sm mt-8 select-none">&mdash;</p>
             )}
           </ReturnZone>
 
@@ -221,12 +221,12 @@ function GamesPage() {
             <button
               onClick={handleValidate}
               disabled={done}
-              className={`rounded-full px-10 py-3 text-base font-medium transition-all duration-300 cursor-pointer ${
+              className={`rounded-lg px-10 py-3 text-base font-medium transition-all duration-300 cursor-pointer ${
                 done
-                  ? "bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.2)]"
+                  ? "bg-success text-white"
                   : !allFilled
-                    ? "bg-gray-200 text-gray-400 shadow-none cursor-not-allowed"
-                    : "bg-rose-500 text-white shadow-[0_2px_8px_rgba(255,61,88,0.2)] hover:bg-rose-600 hover:shadow-[0_4px_16px_rgba(255,61,88,0.3)]"
+                    ? "bg-hairline text-muted-soft shadow-none cursor-not-allowed"
+                    : "bg-primary text-on-primary hover:bg-primary-active"
               }`}
             >
               {done ? (
@@ -237,23 +237,23 @@ function GamesPage() {
             </button>
             <button
               onClick={handleReset}
-              className="rounded-full px-8 py-3 text-sm font-medium border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-all duration-300 cursor-pointer"
+              className="rounded-lg px-8 py-3 text-sm font-medium border border-hairline text-muted hover:border-hairline hover:text-body hover:bg-surface-soft transition-all duration-300 cursor-pointer"
             >
               <span className="flex items-center gap-2"><RefreshCw size={15} /> 全部重来</span>
             </button>
           </div>
 
           {verifiedSlots.size > 0 && wrongCount > 0 && (
-            <p className="text-xs text-gray-400 text-center -mt-6">{wrongCount} 个位置不正确</p>
+            <p className="text-xs text-muted-soft text-center -mt-6">{wrongCount} 个位置不正确</p>
           )}
         </div>
 
         {/* ── DragOverlay ── */}
         <DragOverlay dropAnimation={null}>
           {draggedLayer && activeLayerIdx >= 0 && (
-            <div className="w-52 flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border border-rose-400/50 shadow-[0_8px_24px_rgba(0,0,0,0.10)]">
-              <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: draggedLayer.color || "#ff3d58" }} />
-              <p className="text-sm font-normal text-gray-700 tracking-wide truncate">{draggedLayer.name}</p>
+            <div className="w-52 flex items-center gap-3 bg-canvas rounded-xl px-4 py-3 border border-primary/50 shadow-[0_8px_24px_rgba(0,0,0,0.10)]">
+              <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: draggedLayer.color || "#cc785c" }} />
+              <p className="text-sm font-normal text-body tracking-wide truncate">{draggedLayer.name}</p>
             </div>
           )}
         </DragOverlay>
@@ -262,22 +262,22 @@ function GamesPage() {
         <AnimatePresence>
           {done && (
             <motion.div className="absolute inset-0 z-50 flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="absolute inset-0 bg-black/5 backdrop-blur-[2px]" onClick={handleReset} />
+              <div className="absolute inset-0 bg-black/5" onClick={handleReset} />
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ type: "spring", stiffness: 160, damping: 20 }}
-                className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-10 text-center max-w-sm w-full mx-4"
+                className="relative bg-canvas rounded-xl shadow-2xl p-10 text-center max-w-sm w-full mx-4"
               >
                 <div className="mb-6 flex justify-center">
-                  <CheckCircle2 size={56} className="text-rose-500" strokeWidth={1.5} />
+                  <CheckCircle2 size={56} className="text-primary" strokeWidth={1.5} />
                 </div>
-                <h2 className="text-2xl font-light text-gray-800 tracking-wide mb-2">拼装完成</h2>
-                <p className="text-sm text-gray-400 font-light mb-8">{nodeData?.title}</p>
+                <h2 className="text-2xl font-normal font-serif text-ink tracking-wide mb-2">拼装完成</h2>
+                <p className="text-sm text-muted-soft font-light mb-8">{nodeData?.title}</p>
                 <button
                   onClick={handleReset}
-                  className="inline-flex items-center gap-2 rounded-full px-8 py-2.5 border border-gray-200 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-all duration-300 cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-lg px-8 py-2.5 border border-hairline text-sm font-medium text-muted hover:border-hairline hover:text-body hover:bg-surface-soft transition-all duration-300 cursor-pointer"
                 >
                   <RefreshCw size={15} /> 再来一局
                 </button>

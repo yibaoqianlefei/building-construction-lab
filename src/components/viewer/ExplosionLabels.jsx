@@ -3,6 +3,7 @@ import { Html, Line } from "@react-three/drei";
 import { motion } from "framer-motion";
 
 const EXPLODE_STEP = 0.003;
+const LABEL_SCALE = 0.55;
 const OPACITY_LERP = 0.2;
 const LABEL_DISTANCE = 0.7;
 const STATE_SKIP = 3; // update React state every N frames
@@ -103,16 +104,16 @@ const LabelButton = memo(function LabelButton({ layer, i, isActive, visible, onL
       type="button"
       onClick={(e) => { if (visible) { e.stopPropagation(); onLabelClick?.(i); } }}
       onPointerDown={(e) => e.stopPropagation()}
-      className={`flex items-center gap-1.5 backdrop-blur-md rounded-full border select-none whitespace-nowrap transition-colors duration-200 min-w-[6rem] ${
+      className={`flex items-center gap-1.5 rounded-full border select-none whitespace-nowrap transition-colors duration-200 min-w-[6rem] ${
         isActive
-          ? "bg-rose-50/95 border-rose-300/80 shadow-md text-rose-600"
-          : "bg-white/80 border-white/40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:bg-white/95 text-gray-700"
+          ? "bg-hairline/90 border-primary/30 text-primary"
+          : "bg-canvas border-hairline hover:bg-canvas text-body"
       }`}
       style={{ height: 28, padding: "0 10px", fontSize: 10, fontWeight: 500, cursor: visible ? "pointer" : "default" }}
     >
-      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: layer.color || "#ff3d58" }} />
+      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: layer.color || "#cc785c" }} />
       <span>{layer.name}</span>
-      <span className="text-rose-500/60 font-normal tabular-nums" style={{ fontSize: 10 }}>
+      <span className="text-primary/60 font-normal tabular-nums" style={{ fontSize: 10 }}>
         {(layer.thickness * 1000).toFixed(0)}mm
       </span>
     </motion.button>
@@ -189,8 +190,8 @@ function ExplosionLabels({ layers, explodeValue, explodeAxis = "x", activeLayer,
 
         return (
           <group key={layer.name}>
-            <Line points={linePoints} color="#ff9cab" lineWidth={isActive ? 1.2 : 0.8} transparent opacity={isActive ? 0.6 * fade : lineBaseOpacity} depthWrite={false} />
-            <Html center position={[anchor[0], anchor[1], anchor[2]]} distanceFactor={8} occlude={false} style={{ pointerEvents: visible ? "auto" : "none", opacity: fade }}>
+            <Line points={linePoints} color="#cc785c" lineWidth={isActive ? 1.2 : 0.8} transparent opacity={isActive ? 0.6 * fade : lineBaseOpacity} depthWrite={false} />
+            <Html center position={[anchor[0], anchor[1], anchor[2]]} scale={LABEL_SCALE} style={{ pointerEvents: visible ? "auto" : "none", opacity: fade }}>
               <LabelButton layer={layer} i={i} isActive={isActive} visible={visible} onLabelClick={onLabelClick} />
             </Html>
           </group>

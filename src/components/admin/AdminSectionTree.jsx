@@ -15,14 +15,14 @@ function TreeNode({ node, depth, selectedId, modules, onSelect, onAddChild, onDe
       <div
         onClick={() => onSelect(node)}
         className={`flex items-center gap-1 py-1.5 px-2 rounded-lg cursor-pointer transition-colors group text-sm
-          ${isSelected ? "bg-rose-100 text-rose-700" : "hover:bg-gray-50 text-gray-600"}
+          ${isSelected ? "bg-hairline text-primary" : "hover:bg-surface-card text-body"}
           ${node.deleted_at ? "opacity-50 line-through" : ""}`}
         style={{ paddingLeft: `${depth * 14 + 6}px` }}
       >
         {hasChildren ? (
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
-            className="p-0.5 rounded hover:bg-gray-200 transition-colors flex-shrink-0"
+            className="p-0.5 rounded hover:bg-surface-cream-strong transition-colors flex-shrink-0"
           >
             {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>
@@ -33,32 +33,32 @@ function TreeNode({ node, depth, selectedId, modules, onSelect, onAddChild, onDe
           {mod ? mod.icon + " " : ""}{node.title || "(未命名)"}
         </span>
         {!node.available && !node.deleted_at && (
-          <span className="text-[9px] text-gray-400 bg-gray-100 px-1 py-0.5 rounded-full flex-shrink-0">草稿</span>
+          <span className="text-[9px] text-muted-soft bg-hairline px-1 py-0.5 rounded-full flex-shrink-0">草稿</span>
         )}
         {node.deleted_at && (
-          <span className="text-[9px] text-red-400 bg-red-50 px-1 py-0.5 rounded-full flex-shrink-0">已删</span>
+          <span className="text-[9px] text-error bg-error/10 px-1 py-0.5 rounded-full flex-shrink-0">已删</span>
         )}
         {/* more menu */}
         <div className="relative flex-shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-            className="p-0.5 rounded hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-all"
+            className="p-0.5 rounded hover:bg-surface-cream-strong opacity-0 group-hover:opacity-100 transition-all"
           >
             <MoreHorizontal size={11} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[100px]"
+            <div className="absolute right-0 top-full mt-0.5 bg-canvas border border-hairline rounded-lg shadow-[0_1px_3px_rgba(20,20,19,0.08)] py-1 z-20 min-w-[100px]"
               onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => { setMenuOpen(false); onAddChild(node); }}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-rose-50 text-gray-600 flex items-center gap-1.5 cursor-pointer"
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-hairline text-body flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus size={11} /> 添加子章节
               </button>
               <button
                 onClick={() => { setMenuOpen(false);
                   if (confirm("删除此章节？")) onDelete(node.id); }}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-red-50 text-gray-600 flex items-center gap-1.5 cursor-pointer"
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-error/10 text-body flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 size={11} /> 删除
               </button>
@@ -67,7 +67,7 @@ function TreeNode({ node, depth, selectedId, modules, onSelect, onAddChild, onDe
         </div>
       </div>
       {expanded && hasChildren && (
-        <div className="border-l border-gray-150 ml-3">
+        <div className="border-l border-hairline ml-3">
           {children.map((child) => (
             <TreeNode
               key={child.id}
@@ -117,11 +117,11 @@ function AdminSectionTree({ sections, selectedId, onSelect, onAddChild, onDelete
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-2 border-b border-gray-100 space-y-1.5">
+      <div className="p-2 border-b border-hairline space-y-1.5">
         <select
           value={filterModule}
           onChange={(e) => setFilterModule(e.target.value)}
-          className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-rose-300 bg-white cursor-pointer"
+          className="w-full text-xs px-2 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary bg-canvas cursor-pointer"
         >
           <option value="all">全部模块</option>
           {courseModules.map((m) => (
@@ -131,20 +131,20 @@ function AdminSectionTree({ sections, selectedId, onSelect, onAddChild, onDelete
         <div className="flex gap-1">
           <button
             onClick={() => onAddChild(null)}
-            className="flex-1 py-1 text-xs rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer"
+            className="flex-1 py-1 text-xs rounded-lg bg-hairline text-primary hover:bg-surface-cream-strong transition-colors cursor-pointer"
           >
             + 新建
           </button>
           <button
             onClick={onImport} disabled={loading}
-            className="flex-1 py-1 text-[11px] rounded-lg border border-gray-200 text-gray-500 hover:text-rose-600 hover:border-rose-300 transition-colors cursor-pointer"
+            className="flex-1 py-1 text-[11px] rounded-lg border border-hairline text-muted hover:text-primary hover:border-primary/30 transition-colors cursor-pointer"
           >
             导入
           </button>
           {onReimport && (
             <button
               onClick={onReimport} disabled={loading}
-              className="flex-1 py-1 text-[11px] rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+              className="flex-1 py-1 text-[11px] rounded-lg border border-warning/30 text-warning hover:bg-warning/10 transition-colors cursor-pointer"
             >
               修复
             </button>
@@ -154,10 +154,10 @@ function AdminSectionTree({ sections, selectedId, onSelect, onAddChild, onDelete
       <div className="flex-1 overflow-y-auto py-1">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="w-4 h-4 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
         ) : treeNodes.length === 0 ? (
-          <p className="text-[11px] text-gray-400 text-center py-8 px-3">
+          <p className="text-[11px] text-muted-soft text-center py-8 px-3">
             {filterModule === "all"
               ? "暂无章节，点击「导入」初始化数据"
               : "该模块暂无章节"}

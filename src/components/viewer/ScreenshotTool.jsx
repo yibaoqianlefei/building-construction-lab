@@ -107,14 +107,14 @@ function ScreenshotTool({ containerRef, onScreenshot, onClose }) {
       className="absolute inset-0 z-[100] cursor-crosshair rounded-2xl overflow-hidden"
       style={{ background: "rgba(0,0,0,0.15)" }}
     >
-      <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm rounded-full px-3 py-1 text-xs text-gray-600 shadow-sm pointer-events-none select-none">
+      <div className="absolute top-3 left-3 bg-canvas rounded-full px-3 py-1 text-xs text-body shadow-sm pointer-events-none select-none">
         拖动框选截图区域，按 ESC 取消
       </div>
 
       {sel && (
         <div
-          className="absolute border-2 border-dashed border-rose-500 bg-rose-50/10
-            shadow-[0_0_0_4px_rgba(255,61,88,0.2)] pointer-events-none"
+          className="absolute border-2 border-dashed border-primary bg-primary/5
+            shadow-[0_0_0_4px_rgba(204,120,92,0.2)] pointer-events-none"
           style={{
             left: sel.x,
             top: sel.y,

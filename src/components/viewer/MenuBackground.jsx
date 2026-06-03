@@ -28,7 +28,7 @@ function SceneModelPlaceholder() {
   return (
     <mesh>
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#e5e7eb" wireframe />
+      <meshStandardMaterial color="#e6dfd8" wireframe />
     </mesh>
   );
 }
@@ -126,7 +126,7 @@ function LoadingFallback() {
   return (
     <mesh>
       <boxGeometry args={[1.2, 1.2, 0.6]} />
-      <meshStandardMaterial color="#ff3d58" wireframe transparent opacity={0.3} depthWrite={false} />
+      <meshStandardMaterial color="#cc785c" wireframe transparent opacity={0.3} depthWrite={false} />
     </mesh>
   );
 }
@@ -144,7 +144,7 @@ function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb
   return (
     <>
       <RendererSetup />
-      <color attach="background" args={["#f5f5f7"]} />
+      <color attach="background" args={["#faf9f5"]} />
 
       <ambientLight intensity={1.2} color="#ffffff" />
       <ShadowLight />

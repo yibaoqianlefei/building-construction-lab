@@ -18,9 +18,9 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
   /* verified border — thin line, no bg change */
   const verifiedRing =
     verified === true
-      ? "border-rose-400"
+      ? "border-primary"
       : verified === false
-        ? "border-red-300"
+        ? "border-error/60"
         : "border-transparent";
 
   /* ── slot variant (compact card in ray) ── */
@@ -31,7 +31,7 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
         style={dragStyle}
         {...listeners}
         {...attributes}
-        className={`flex items-center gap-2 bg-white rounded-xl px-3 py-1.5 border shadow-[0_1px_3px_rgba(0,0,0,0.04)] select-none transition-all duration-300 ease-out cursor-grab hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${
+        className={`flex items-center gap-2 bg-canvas rounded-xl px-3 py-1.5 border shadow-[0_1px_3px_rgba(0,0,0,0.04)] select-none transition-all duration-300 ease-out cursor-grab hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${
           isDragging
             ? "scale-105 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-grabbing"
             : ""
@@ -39,9 +39,9 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
       >
         <div
           className="w-1.5 h-4 rounded-full flex-shrink-0"
-          style={{ backgroundColor: layer.color || "#ff3d58" }}
+          style={{ backgroundColor: layer.color || "#cc785c" }}
         />
-        <span className="text-xs font-normal text-gray-600 tracking-wide truncate max-w-16">
+        <span className="text-xs font-normal text-body tracking-wide truncate max-w-16">
           {layer.name}
         </span>
       </div>
@@ -55,7 +55,7 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
       style={dragStyle}
       {...listeners}
       {...attributes}
-      className={`flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border shadow-[0_1px_3px_rgba(0,0,0,0.04)] select-none transition-all duration-300 ease-out cursor-grab hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${
+      className={`flex items-center gap-3 bg-canvas rounded-xl px-4 py-3 border shadow-[0_1px_3px_rgba(0,0,0,0.04)] select-none transition-all duration-300 ease-out cursor-grab hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${
         isDragging
           ? "scale-105 shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-grabbing"
           : ""
@@ -63,20 +63,20 @@ function LayerCard({ layer, layerIndex, variant = "bottom", verified = null }) {
     >
       <div
         className="w-1.5 h-8 rounded-full flex-shrink-0"
-        style={{ backgroundColor: layer.color || "#ff3d58" }}
+        style={{ backgroundColor: layer.color || "#cc785c" }}
       />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-normal text-gray-700 tracking-wide truncate">
+        <p className="text-sm font-normal text-body tracking-wide truncate">
           {layer.name}
         </p>
         {!isDragging && (
-          <p className="text-xs text-rose-600/70 font-light tabular-nums mt-0.5">
+          <p className="text-xs text-primary/70 font-light tabular-nums mt-0.5">
             {(layer.thickness * 1000).toFixed(0)} mm
           </p>
         )}
       </div>
       {!isDragging && (
-        <div className="text-gray-300 flex-shrink-0 opacity-50">
+        <div className="text-muted-soft flex-shrink-0 opacity-50">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <circle cx="9" cy="5" r="2" />
             <circle cx="15" cy="5" r="2" />
