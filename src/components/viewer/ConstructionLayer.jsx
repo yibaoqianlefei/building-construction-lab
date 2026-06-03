@@ -8,13 +8,34 @@ const DEFAULT_LIFT = 0.14;
 const LIFT_LERP = 0.06;
 const GLOW_LERP = 0.25;
 
-const COLOR_HOVER = new THREE.Color("#FFE8C0");
-const COLOR_SELECT = new THREE.Color("#F5D68A");
+const COLOR_HOVER = new THREE.Color("#FFF8E7"); // warm white
+const COLOR_SELECT = new THREE.Color("#FFF8E7"); // warm white-gold
 const COLOR_OFF = new THREE.Color("#000000");
+const PULSE_DURATION = 2.0; // seconds of initial pulse
 
 /* ── Per-layer GLB loader ── */
-function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, onClick }) {
+function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = true, onPointerOver, onPointerOut, onClick }) {
   const { scene } = useGLTF(assetPath(modelPath), true);  /* Draco enabled */
+
+  /* ── debug: dump all named objects in the GLB (dev only) ── */
+  useMemo(() => {
+    if (typeof window !== "undefined" && !window._glbDebugged?.[modelPath]) {
+      const allNames = [];
+      scene.traverse((child) => {
+        if (child.name) allNames.push(`"${child.name}" (${child.type})`);
+      });
+      console.log(
+        `%c[GLB Debug] %c${modelPath} %c— ${allNames.length} named objects`,
+        "color:#ff3d58;font-weight:bold",
+        "color:#333",
+        "color:#666"
+      );
+      console.log(allNames.join("\n"));
+      if (!window._glbDebugged) window._glbDebugged = {};
+      window._glbDebugged[modelPath] = true;
+    }
+    return null;
+  }, [scene, modelPath]);
 
   const { model, edgeLines, hitBox } = useMemo(() => {
     let source;
@@ -34,6 +55,16 @@ function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, 
       source = scene;
     }
     const cloned = source.clone(true);
+
+    /* hide excluded objects (for "rest of model" non-interactive layer) */
+    if (!objectName && excludeNames?.length) {
+      cloned.traverse((child) => {
+        if (child.name && excludeNames.includes(child.name)) {
+          child.visible = false;
+        }
+      });
+    }
+
     const lines = [];
     cloned.traverse((child) => {
       if (child.isMesh) {
@@ -57,25 +88,28 @@ function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, 
       }
     });
 
-    /* hit zone from bounding box, expanded for thin layers */
-    const box = new THREE.Box3().setFromObject(cloned);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const center = new THREE.Vector3();
-    box.getCenter(center);
-    const minDim = 0.03;
-    const expand = 0.02;
-    const hb = {
-      center: [center.x, center.y, center.z],
-      size: [
-        Math.max(size.x + expand, minDim),
-        Math.max(size.y + expand, minDim),
-        Math.max(size.z + expand, minDim),
-      ],
-    };
+    /* hit zone only for interactive layers */
+    let hb = null;
+    if (interactive) {
+      const box = new THREE.Box3().setFromObject(cloned);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      const minDim = 0.03;
+      const expand = 0.02;
+      hb = {
+        center: [center.x, center.y, center.z],
+        size: [
+          Math.max(size.x + expand, minDim),
+          Math.max(size.y + expand, minDim),
+          Math.max(size.z + expand, minDim),
+        ],
+      };
+    }
 
     return { model: cloned, edgeLines: lines, hitBox: hb };
-  }, [scene, objectName, modelPath]);
+  }, [scene, objectName, excludeNames, interactive, modelPath]);
 
   if (!model) return null;
 
@@ -89,15 +123,43 @@ function GLBModelRenderer({ modelPath, objectName, onPointerOver, onPointerOut, 
         <mesh
           name="hitZone"
           position={hitBox.center}
-          onPointerOver={onPointerOver}
-          onPointerOut={onPointerOut}
-          onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
+          onPointerOver={interactive ? onPointerOver : undefined}
+          onPointerOut={interactive ? onPointerOut : undefined}
+          onClick={interactive ? (e) => { e.stopPropagation(); onClick?.(e); } : undefined}
         >
           <boxGeometry args={hitBox.size} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
       )}
     </group>
+  );
+}
+
+{/* ── Loading placeholder shown while GLB downloads/decodes ── */}
+function PlaceholderLayer({ thickness, color }) {
+  const ref = useRef();
+  const time = useRef(0);
+  useFrame((_, delta) => {
+    time.current += delta;
+    if (ref.current) {
+      ref.current.material.opacity = 0.25 + Math.sin(time.current * 1.8) * 0.1;
+    }
+  });
+  return (
+    <mesh ref={ref} castShadow receiveShadow>
+      <boxGeometry args={[thickness, 1.5, 0.8]} />
+      <meshStandardMaterial
+        color={color}
+        roughness={0.6}
+        metalness={0.05}
+        transparent
+        opacity={0.35}
+        depthWrite
+      />
+      <Edges scale={1}>
+        <lineBasicMaterial color="#9CA3AF" transparent opacity={0.3} />
+      </Edges>
+    </mesh>
   );
 }
 
@@ -113,6 +175,8 @@ function ConstructionLayer({
   explodeValue,
   floatDirection = "y",
   floatDistance = DEFAULT_LIFT,
+  interactive = true,
+  excludeNames,
   onPointerOver,
   onPointerOut,
   onClick,
@@ -128,13 +192,19 @@ function ConstructionLayer({
   const currentLineOpacity = useRef(0.45);
   const currentLineColor = useRef(new THREE.Color("#4B5563"));
   const pulseTime = useRef(0);
+  const selectedAt = useRef(0);
   const hasGLB = !!layer.modelPath;
   const layerObjectName = layer.layerObjectName;
 
-  const isLocked = isPlaced || isCorrect || isWrong;
+  const isLocked = !interactive || isPlaced || isCorrect || isWrong;
 
   useFrame((_, delta) => {
     pulseTime.current += delta;
+    /* restart pulse timer when selection changes */
+    if (isSelected && selectedAt.current === 0) selectedAt.current = pulseTime.current;
+    if (!isSelected) selectedAt.current = 0;
+    const selectedElapsed = isSelected ? pulseTime.current - selectedAt.current : 0;
+
     /* ---- lift ---- */
     const canLift = explodeValue > 0;
     const liftTarget = isSelected && canLift ? 1 : 0;
@@ -171,12 +241,15 @@ function ConstructionLayer({
       targetRoughness = 0.45;
       targetEmissive = COLOR_OFF;
     } else if (isHovered) {
-      targetIntensity = 0.6;
-      targetRoughness = 0.3;
+      targetIntensity = 0.8;
+      targetRoughness = 0.28;
       targetEmissive = COLOR_HOVER;
     } else if (isSelected) {
-      targetIntensity = 0.5;
-      targetRoughness = 0.35;
+      /* warm gold glow — strong pulse for 2s, then stable at 1.2 */
+      const fade = Math.max(0, 1 - selectedElapsed / PULSE_DURATION);
+      const wave = Math.sin(selectedElapsed * Math.PI * 3.2) * 0.15 * fade;
+      targetIntensity = 1.2 + wave;
+      targetRoughness = 0.2;
       targetEmissive = COLOR_SELECT;
     } else {
       targetIntensity = 0;
@@ -185,7 +258,7 @@ function ConstructionLayer({
     }
 
     /* ---- dim / highlight opacity targets ---- */
-    const DIM_LERP = 0.2;
+    const DIM_LERP = 0.25;
     let opacityTarget, lineOpacityTarget;
     const lineColorTarget = new THREE.Color();
 
@@ -207,8 +280,8 @@ function ConstructionLayer({
       lineColorTarget.set("#4B5563");
     } else if (isSelected) {
       opacityTarget = 1;
-      lineOpacityTarget = 0.9;
-      lineColorTarget.set("#ff3d58");
+      lineOpacityTarget = 0.95;
+      lineColorTarget.set("#FFD700"); // gold edge lines
     } else if (isDimmed) {
       if (isHovered) {
         opacityTarget = 0.7;
@@ -266,10 +339,12 @@ function ConstructionLayer({
     <group ref={groupRef}>
       {hasGLB ? (
         <group ref={modelGroupRef}>
-          <Suspense fallback={null}>
+          <Suspense fallback={<PlaceholderLayer thickness={layer.thickness} color={layer.color} />}>
             <GLBModelRenderer
               modelPath={layer.modelPath}
               objectName={layerObjectName}
+              excludeNames={excludeNames}
+              interactive={interactive}
               onPointerOver={isLocked ? undefined : onPointerOver}
               onPointerOut={isLocked ? undefined : onPointerOut}
               onClick={isLocked ? undefined : onClick}

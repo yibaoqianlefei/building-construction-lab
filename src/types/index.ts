@@ -8,6 +8,10 @@ export interface LayerData {
   description: string;
   modelPath?: string;      // GLB file path
   layerObjectName?: string; // object name inside shared GLB
+  excludeNames?: string[];  // hide these named objects (for non-interactive "rest" layer)
+  interactive?: boolean;    // false → no hover/click/lift (default true)
+  explodeDirection?: string; // "auto" or specific axis for per-layer explosion
+  explodeDistance?: number;  // explosion move distance in metres (per-layer)
 }
 
 export interface NodeData {

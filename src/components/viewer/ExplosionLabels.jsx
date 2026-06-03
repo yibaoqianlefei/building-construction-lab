@@ -7,13 +7,34 @@ const OPACITY_LERP = 0.2;
 const LABEL_DISTANCE = 0.7;
 const STATE_SKIP = 3; // update React state every N frames
 
+const CANDIDATE_DIRS_L = [
+  [1, 0, 0], [-1, 0, 0],
+  [0, 1, 0], [0, -1, 0],
+  [0, 0, 1], [0, 0, -1],
+];
+
 /* ── piece centre positions ── */
 function usePiecePositions(layers, explodeValue, explodeAxis) {
-  const dir = explodeAxis.startsWith("-") ? -1 : 1;
-  const clean = explodeAxis.replace("-", "");
-  const isX = clean === "x";
+  const hasExplosion = explodeAxis != null;
+  const isIndividual = hasExplosion && (explodeAxis === "individual" || layers.some(l => l.explodeDirection != null));
   const useModel = layers[0]?.layerObjectName != null;
+
   return useMemo(() => {
+    if (isIndividual) {
+      // per-layer explosion: each interactive layer moves along its own direction
+      return layers.map((layer, i) => {
+        if (!layer.explodeDirection || !layer.explodeDistance) return [0, 0, 0];
+        const d = CANDIDATE_DIRS_L[i % 6];
+        const t = explodeValue / 100;
+        const dist = layer.explodeDistance;
+        return [d[0] * dist * t, d[1] * dist * t, d[2] * dist * t];
+      });
+    }
+
+    const dir = explodeAxis.startsWith("-") ? -1 : 1;
+    const clean = explodeAxis.replace("-", "");
+    const isX = clean === "x";
+
     if (useModel) {
       return layers.map((_, i) => {
         const off = i * dir * explodeValue * EXPLODE_STEP;
@@ -28,7 +49,7 @@ function usePiecePositions(layers, explodeValue, explodeAxis) {
       offset += layer.thickness;
       return isX ? [base + off, 0, 0] : [0, base + off, 0];
     });
-  }, [layers, explodeValue, dir, isX, useModel]);
+  }, [layers, explodeValue, explodeAxis, isIndividual, useModel]);
 }
 
 /* ── bounding box ── */

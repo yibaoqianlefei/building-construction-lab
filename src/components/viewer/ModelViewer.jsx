@@ -56,6 +56,12 @@ function RendererSetup() {
   return null;
 }
 
+const CANDIDATE_DIRS = [
+  [1, 0, 0], [-1, 0, 0],
+  [0, 1, 0], [0, -1, 0],
+  [0, 0, 1], [0, 0, -1],
+];
+
 function WallAssembly({
   layers,
   explodeValue,
@@ -70,13 +76,15 @@ function WallAssembly({
   smoothExplodeRef,
 }) {
   const groupRefs = useRef([]);
+  const computedDirs = useRef(null); // cached per-layer direction vectors
+  const dirsReady = useRef(false);
 
   const useModelPositions = layers[0]?.layerObjectName != null;
   const hasExplosion = explodeAxis != null;
+  const isIndividual = hasExplosion && (explodeAxis === "individual" || layers.some(l => l.explodeDirection != null));
 
   const initialPositions = useMemo(() => {
-    if (useModelPositions) return layers.map(() => 0);
-
+    if (useModelPositions || isIndividual) return layers.map(() => 0);
     let offset = 0;
     const total = layers.reduce((sum, l) => sum + l.thickness, 0);
     return layers.map((layer) => {
@@ -84,21 +92,100 @@ function WallAssembly({
       offset += layer.thickness;
       return pos;
     });
-  }, [layers, useModelPositions]);
+  }, [layers, useModelPositions, isIndividual]);
 
-  const explodeDir = hasExplosion ? (explodeAxis.startsWith("-") ? -1 : 1) : 1;
-  const cleanAxis = hasExplosion ? explodeAxis.replace("-", "") : "x";
+  const explodeDir = hasExplosion && !isIndividual ? (explodeAxis.startsWith("-") ? -1 : 1) : 1;
+  const cleanAxis = hasExplosion && !isIndividual ? explodeAxis.replace("-", "") : "x";
   const isX = cleanAxis === "x";
   const hasSelection = selectedLayer !== null && selectedLayer !== undefined;
+
+  /* ── auto direction computation (one-time, delayed until models load) ── */
+  const tryComputeAutoDirs = () => {
+    if (dirsReady.current || !isIndividual) return;
+    // wait until all interactive layer refs have children (models loaded)
+    const interactiveIndices = layers
+      .map((l, i) => (l.explodeDirection != null && l.interactive !== false ? i : -1))
+      .filter(i => i >= 0);
+    const allReady = interactiveIndices.every(i => {
+      const grp = groupRefs.current[i];
+      return grp && grp.children.length > 0;
+    });
+    if (!allReady || interactiveIndices.length === 0) return;
+
+    // compute static bounding box (non-interactive layer)
+    const staticBox = new THREE.Box3();
+    layers.forEach((l, i) => {
+      if (l.explodeDirection != null && l.interactive !== false) return;
+      const grp = groupRefs.current[i];
+      if (grp) staticBox.expandByObject(grp);
+    });
+
+    // for each interactive layer, test directions
+    const dirs = new Array(layers.length).fill(null);
+    interactiveIndices.forEach(i => {
+      const grp = groupRefs.current[i];
+      if (!grp) return;
+      const myBox = new THREE.Box3().setFromObject(grp);
+      const testBox = myBox.clone();
+      const dist = layers[i].explodeDistance || 0.25;
+
+      let bestDir = [0, 1, 0]; // default: up
+      let bestOverlap = Infinity;
+
+      for (const d of CANDIDATE_DIRS) {
+        const vec = new THREE.Vector3(d[0], d[1], d[2]);
+        testBox.copy(myBox).translate(vec.clone().multiplyScalar(dist));
+        if (!testBox.intersectsBox(staticBox)) {
+          bestDir = d;
+          break; // first non-overlapping direction wins
+        }
+        // track best partial overlap
+        const overlapBox = testBox.clone().intersect(staticBox);
+        const overlapVol = overlapBox.isEmpty() ? 0 :
+          (overlapBox.max.x - overlapBox.min.x) *
+          (overlapBox.max.y - overlapBox.min.y) *
+          (overlapBox.max.z - overlapBox.min.z);
+        if (overlapVol < bestOverlap) {
+          bestOverlap = overlapVol;
+          bestDir = d;
+        }
+      }
+      dirs[i] = new THREE.Vector3(bestDir[0], bestDir[1], bestDir[2]);
+    });
+
+    computedDirs.current = dirs;
+    dirsReady.current = true;
+  };
 
   useFrame((_, delta) => {
     const target = hasExplosion ? explodeValue : 0;
     const alpha = 1 - Math.exp(-EXPLODE_LERP * delta);
     smoothExplodeRef.current += (target - smoothExplodeRef.current) * alpha;
 
+    // try compute auto dirs once models are loaded
+    if (!dirsReady.current) tryComputeAutoDirs();
+
+    const t = smoothExplodeRef.current / 100;
+
     layers.forEach((layer, i) => {
       const grp = groupRefs.current[i];
-      if (grp) {
+      if (!grp) return;
+
+      if (isIndividual) {
+        // per-layer explosion
+        const dir = computedDirs.current?.[i];
+        const dist = layer.explodeDistance || 0;
+        if (dir && dist > 0) {
+          grp.position.set(
+            initialPositions[i] + dir.x * dist * t,
+            initialPositions[i] + dir.y * dist * t,
+            initialPositions[i] + dir.z * dist * t
+          );
+        } else {
+          grp.position.set(0, 0, 0);
+        }
+      } else {
+        // uniform explosion (backward compatible)
         const off = i * explodeDir * smoothExplodeRef.current * EXPLODE_STEP;
         if (isX) {
           grp.position.x = initialPositions[i] + off;
@@ -117,7 +204,7 @@ function WallAssembly({
         <group
           key={layer.name}
           ref={(el) => (groupRefs.current[i] = el)}
-          position={[isX ? initialPositions[i] : 0, isX ? 0 : initialPositions[i], 0]}
+          position={[isX && !isIndividual ? initialPositions[i] : 0, isX || isIndividual ? 0 : initialPositions[i], 0]}
         >
           <ConstructionLayer
             layer={layer}
@@ -127,9 +214,16 @@ function WallAssembly({
             explodeValue={explodeValue}
             floatDirection={floatDirection}
             floatDistance={floatDistance}
+            interactive={layer.interactive !== false}
+            excludeNames={layer.excludeNames}
             onPointerOver={() => onHoverLayer(i)}
             onPointerOut={() => onHoverLayer(null)}
-            onClick={(e) => onLayerClick(i, layer, e)}
+            onClick={(e) => {
+              const grp = groupRefs.current[i];
+              const wp = new THREE.Vector3();
+              if (grp) grp.getWorldPosition(wp);
+              onLayerClick(i, layer, e, wp.toArray());
+            }}
           />
         </group>
       ))}
@@ -137,7 +231,7 @@ function WallAssembly({
   );
 }
 
-function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onControlsReady }) {
+function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onControlsReady, isOrthographic }) {
   const { camera } = useThree();
   const controlsRef = useRef(null);
   const userInteracting = useRef(false);
@@ -146,12 +240,13 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onC
   const defaultTarget = useRef(new THREE.Vector3());
   const cacheReady = useRef(false);
   const hasExplosion = explodeAxis != null;
+  const isIndividualExp = explodeAxis === "individual";
 
   /* set up on first frame */
   if (!cacheReady.current && controlsRef.current) {
     defaultTarget.current.copy(controlsRef.current.target);
 
-    if (hasExplosion) {
+    if (hasExplosion && !isIndividualExp) {
       const { center, isX } = getExplodedBounds(layers, explodeAxis);
       explodedTarget.current.set(isX ? center : 0, isX ? 0 : center, 0);
     }
@@ -163,9 +258,14 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onC
      without any direction change. */
   useFrame((_, delta) => {
     const ctrl = controlsRef.current;
-    if (!ctrl || !cacheReady.current || userInteracting.current) return;
+    if (!ctrl || !cacheReady.current) return;
 
-    if (!hasExplosion) return; // no explosion → keep default target
+    /* persist target so pan/orbit is preserved across camera type switches */
+    if (!userInteracting.current) {
+      savedTarget.copy(ctrl.target);
+    }
+
+    if (!hasExplosion || userInteracting.current || isIndividualExp) return;
 
     const t = smoothExplodeRef.current / 100;
     const goal = new THREE.Vector3().lerpVectors(
@@ -178,27 +278,31 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onC
     ctrl.target.lerp(goal, alpha);
   });
 
+  /* ── conditional props per camera type ── */
+  const baseProps = {
+    enableDamping: true,
+    dampingFactor: 0.08,
+    maxPolarAngle: Math.PI * 0.7,
+    target: savedTarget.toArray(),
+    autoRotate,
+    autoRotateSpeed: 0.5,
+    onStart: () => { userInteracting.current = true; },
+    onEnd: () => { userInteracting.current = false; },
+  };
+
+  const perspProps = { minDistance: 0.8, maxDistance: 12 };
+  const orthoProps = { minZoom: 0.3, maxZoom: 8 };
+
   return (
     <OrbitControls
+      key={isOrthographic ? "ortho" : "persp"}
       ref={(el) => {
         controlsRef.current = el;
         globalControls = el;  /* for PanSyncController */
         if (el && onControlsReady) onControlsReady(el);
       }}
-      enableDamping
-      dampingFactor={0.08}
-      minDistance={0.8}
-      maxDistance={12}
-      maxPolarAngle={Math.PI * 0.7}
-      target={[0, 0.8, 0]}
-      autoRotate={autoRotate}
-      autoRotateSpeed={0.5}
-      onStart={() => {
-        userInteracting.current = true;
-      }}
-      onEnd={() => {
-        userInteracting.current = false;
-      }}
+      {...baseProps}
+      {...(isOrthographic ? orthoProps : perspProps)}
     />
   );
 }
@@ -207,11 +311,12 @@ function ShadowLight({ layers, explodeAxis, smoothExplodeRef }) {
   const lightRef = useRef();
   const lastTRef = useRef(-1);
   const hasExplosion = explodeAxis != null;
+  const isIndividualExp = explodeAxis === "individual";
 
   useFrame(() => {
     const light = lightRef.current;
     if (!light || !layers?.length) return;
-    if (!hasExplosion) return; // no explosion → keep default shadow camera
+    if (!hasExplosion || isIndividualExp) return; // keep default shadow camera
 
     const t = smoothExplodeRef.current / 100;
     if (Math.abs(t - lastTRef.current) < 0.005) return;
@@ -276,8 +381,68 @@ function DebugInfo({ nodeTitle, modelRotation, layerOrderReverse }) {
   return <axesHelper args={[1.5]} />;
 }
 
-/* ── module-level ref so PanSyncController can reach OrbitControls ── */
+/* ── module-level refs for cross-component camera access ── */
 let globalControls = null;
+const savedCameraPos = new THREE.Vector3();
+const savedTarget = new THREE.Vector3(0, 0.8, 0); // default target for initial load
+
+const PERSP_FOV = 40;
+
+/* ── Camera type switcher: creates and swaps Perspective/OrthographicCamera ── */
+function CameraSwitcher({ isOrthographic }) {
+  const { set, camera, size } = useThree();
+  const camRef = useRef(null);
+  const frustumRef = useRef(5); // dynamic frustum size, updated on switch
+
+  /* save camera state on every render (before OrbitControls unmounts on toggle) */
+  if (globalControls) {
+    savedTarget.copy(globalControls.target);
+  }
+  savedCameraPos.copy(camera.position);
+
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    const oldPos = savedCameraPos.clone();
+
+    let newCam;
+    if (isOrthographic) {
+      /* calculate frustum size matching perspective view at current distance */
+      const dist = oldPos.distanceTo(savedTarget);
+      const fovRad = (PERSP_FOV / 2) * Math.PI / 180;
+      const visibleHeight = 2 * dist * Math.tan(fovRad);
+      const fs = Math.max(visibleHeight, 2); // min 2 units to avoid extreme zoom
+      frustumRef.current = fs;
+
+      newCam = new THREE.OrthographicCamera(
+        -fs * aspect / 2,
+        fs * aspect / 2,
+        fs / 2,
+        -fs / 2,
+        0.1,
+        100
+      );
+    } else {
+      newCam = new THREE.PerspectiveCamera(PERSP_FOV, aspect, 1, 100);
+    }
+    newCam.position.copy(oldPos);
+    camRef.current = newCam;
+    set({ camera: newCam });
+  }, [isOrthographic]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* keep ortho frustum in sync with window resize */
+  useEffect(() => {
+    if (!camRef.current?.isOrthographicCamera) return;
+    const aspect = size.width / size.height;
+    const fs = frustumRef.current;
+    camRef.current.left = -fs * aspect / 2;
+    camRef.current.right = fs * aspect / 2;
+    camRef.current.top = fs / 2;
+    camRef.current.bottom = -fs / 2;
+    camRef.current.updateProjectionMatrix();
+  }, [size.width, size.height]);
+
+  return null;
+}
 
 /* ── view preset switcher ── */
 const VIEW_DIRECTIONS = {
@@ -291,7 +456,7 @@ const VIEW_DIRECTIONS = {
 const DEFAULT_CAM = new THREE.Vector3(0, 1.2, 4.0);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0.8, 0);
 
-function ViewSwitcher({ viewTarget, onDone }) {
+function ViewSwitcher({ viewTarget, onDone, isOrthographic }) {
   const { camera } = useThree();
   const goalPos = useRef(new THREE.Vector3());
   const goalTarget = useRef(new THREE.Vector3());
@@ -303,11 +468,18 @@ function ViewSwitcher({ viewTarget, onDone }) {
 
     /* compute goal on first frame */
     if (!active.current) {
-      const dist = camera.position.distanceTo(ctrl.target);
       const dir = VIEW_DIRECTIONS[viewTarget];
       if (dir) {
-        goalPos.current.copy(ctrl.target).addScaledVector(dir, dist);
-        goalTarget.current.copy(ctrl.target);
+        if (isOrthographic) {
+          /* orthographic: position at fixed distance along view axis */
+          goalTarget.current.set(0, 0.8, 0);
+          goalPos.current.copy(goalTarget.current).addScaledVector(dir, 10);
+        } else {
+          /* perspective: preserve current distance to target */
+          const dist = camera.position.distanceTo(ctrl.target);
+          goalPos.current.copy(ctrl.target).addScaledVector(dir, dist);
+          goalTarget.current.copy(ctrl.target);
+        }
       } else {
         /* default perspective */
         goalPos.current.copy(DEFAULT_CAM);
@@ -336,13 +508,20 @@ function ViewSwitcher({ viewTarget, onDone }) {
 }
 
 /* ── sync diagram pan to 3D view target (focus point) ── */
-const PAN_RANGE = 2.0;
+const PAN_RANGE_PERSP = 2.0; // perspective: world units at default distance
 
 function PanSyncController({ panOffset, syncScale }) {
   const { camera } = useThree();
   const defaultTarget = useRef(new THREE.Vector3());
   const currentGoal = useRef(new THREE.Vector3());
   const initDone = useRef(false);
+  const lastCam = useRef(null);
+
+  /* reset when camera changes (ortho↔persp switch) */
+  if (lastCam.current !== camera) {
+    lastCam.current = camera;
+    initDone.current = false;
+  }
 
   useFrame(() => {
     if (!panOffset || !globalControls) return;
@@ -363,8 +542,18 @@ function PanSyncController({ panOffset, syncScale }) {
 
     /* use live scale, not frozen-at-pan-time scale */
     const scale = syncScale || 1;
-    const dx = -(x / w) * PAN_RANGE / scale;
-    const dy =  (y / h) * PAN_RANGE / scale;
+
+    /* pan range: match visible world width to diagram width */
+    let panRange;
+    if (camera.isOrthographicCamera) {
+      const visW = (camera.right - camera.left) / camera.zoom;
+      panRange = visW;
+    } else {
+      panRange = PAN_RANGE_PERSP;
+    }
+
+    const dx = -(x / w) * panRange / scale;
+    const dy =  (y / h) * panRange / scale;
 
     /* world-space offset using camera orientation */
     const forward = new THREE.Vector3();
@@ -377,33 +566,49 @@ function PanSyncController({ panOffset, syncScale }) {
       .addScaledVector(camRight, dx)
       .addScaledVector(camUp, dy);
 
-    /* smoothly move controls target toward goal (OrbitControls handles camera) */
+    /* smoothly move controls target toward goal */
     ctrl.target.lerp(currentGoal.current, 0.12);
   });
 
   return null;
 }
 
-/* ── sync diagram scale to 3D camera distance ── */
-function SyncZoomAdjuster({ syncScale }) {
+/* ── sync diagram scale to 3D camera ── */
+function SyncZoomAdjuster({ syncScale, isOrthographic }) {
   const { camera } = useThree();
   const baseDist = useRef(0);
+  const baseZoom = useRef(1);
   const init = useRef(false);
+  const lastCam = useRef(null);
+
+  /* reset when camera changes (ortho↔persp switch) */
+  if (lastCam.current !== camera) {
+    lastCam.current = camera;
+    init.current = false;
+  }
 
   useFrame(() => {
     if (!init.current) {
       baseDist.current = camera.position.length();
+      baseZoom.current = camera.zoom;
       init.current = true;
       return;
     }
-    const targetDist = baseDist.current / syncScale;
-    /* lerp for smooth transition */
-    const alpha = 0.15;
-    const currentDist = camera.position.length();
-    const ratio = targetDist / currentDist;
-    const lerped = currentDist + (targetDist - currentDist) * alpha;
-    const newRatio = lerped / currentDist;
-    camera.position.multiplyScalar(newRatio);
+
+    if (isOrthographic) {
+      /* ortho: scale by adjusting camera.zoom */
+      const targetZoom = baseZoom.current * syncScale;
+      camera.zoom += (targetZoom - camera.zoom) * 0.15;
+      camera.updateProjectionMatrix();
+    } else {
+      /* perspective: scale by moving camera toward/away from target */
+      const targetDist = baseDist.current / syncScale;
+      const alpha = 0.15;
+      const currentDist = camera.position.length();
+      const lerped = currentDist + (targetDist - currentDist) * alpha;
+      const newRatio = lerped / currentDist;
+      camera.position.multiplyScalar(newRatio);
+    }
   });
 
   return null;
@@ -429,6 +634,7 @@ function Scene({
   panOffset,
   viewTarget,
   onViewDone,
+  isOrthographic,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -436,14 +642,15 @@ function Scene({
   return (
     <>
       <RendererSetup />
+      <CameraSwitcher isOrthographic={isOrthographic} />
 
       <color attach="background" args={["#f5f5f7"]} />
 
       {/* sync camera zoom with diagram scale */}
-      {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} />}
+      {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} isOrthographic={isOrthographic} />}
       {/* sync camera pan with diagram drag */}
       {panOffset != null && <PanSyncController panOffset={panOffset} syncScale={syncScale} />}
-      {viewTarget != null && <ViewSwitcher viewTarget={viewTarget} onDone={onViewDone} />}
+      {viewTarget != null && <ViewSwitcher viewTarget={viewTarget} onDone={onViewDone} isOrthographic={isOrthographic} />}
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
@@ -514,6 +721,7 @@ function Scene({
         explodeAxis={explodeAxis}
         smoothExplodeRef={smoothExplodeRef}
         onControlsReady={onControlsReady}
+        isOrthographic={isOrthographic}
       />
     </>
   );
@@ -541,6 +749,7 @@ function ModelViewer({
   panOffset,
   viewTarget,
   onViewDone,
+  isOrthographic = false,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -571,6 +780,7 @@ function ModelViewer({
           viewTarget={viewTarget}
           onViewDone={onViewDone}
           showLabels={showLabels}
+          isOrthographic={isOrthographic}
         />
       </Canvas>
     </div>

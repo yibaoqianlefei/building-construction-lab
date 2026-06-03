@@ -7,6 +7,7 @@ import { useGLTF } from "@react-three/drei";
 import { assetPath } from "./utils/baseUrl";
 import ModelViewer from "./components/viewer/ModelViewer";
 import BottomControlBar from "./components/viewer/BottomControlBar";
+import ViewGizmo from "./components/viewer/ViewGizmo";
 import ConstructionKnowledgePanel from "./components/viewer/ConstructionKnowledgePanel";
 import ScreenshotTool from "./components/viewer/ScreenshotTool";
 import ZoomableImage from "./components/viewer/ZoomableImage";
@@ -30,6 +31,8 @@ function NodeDetail() {
     setExplodeValue,
     autoRotate,
     setAutoRotate,
+    isOrthographic,
+    setIsOrthographic,
     hoveredLayer,
     setHoveredLayer,
     selectedLayer,
@@ -45,7 +48,7 @@ function NodeDetail() {
   const [syncZoom, setSyncZoom] = useState(false);
   const [diagramScale, setDiagramScale] = useState(1);
   const [panOffset, setPanOffset] = useState<{x:number,y:number,w:number,h:number,scale:number}|null>(null);
-  const [viewTarget, setViewTarget] = useState<string | null>(null);
+  const [viewTarget, setViewTarget] = useState<string | null>("front");
 
   const viewerRef = useRef<HTMLDivElement>(null!);
   const controlsRef = useRef<any>(null);
@@ -100,6 +103,10 @@ function NodeDetail() {
     setScreenshotMode((v) => !v);
   }, [setScreenshotMode]);
 
+  const toggleOrthographic = useCallback(() => {
+    setIsOrthographic((v) => !v);
+  }, [setIsOrthographic]);
+
   const clearSelection = useCallback(() => {
     handleBlankClick();
   }, [handleBlankClick]);
@@ -118,6 +125,9 @@ function NodeDetail() {
       } else if (e.key === "l" || e.key === "L") {
         e.preventDefault();
         toggleLabels();
+      } else if (e.key === "o" || e.key === "O") {
+        e.preventDefault();
+        toggleOrthographic();
       } else if (e.key === "Escape") {
         clearSelection();
       } else if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
@@ -128,7 +138,7 @@ function NodeDetail() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [toggleExplode, toggleAutoRotate, toggleLabels, clearSelection, toggleScreenshot]);
+  }, [toggleExplode, toggleAutoRotate, toggleLabels, clearSelection, toggleScreenshot, toggleOrthographic]);
 
   /* ── hotspot click → select layer ── */
   const handleHotspotClick = useCallback(
@@ -236,7 +246,11 @@ function NodeDetail() {
                 panOffset={syncZoom && explodeValue === 0 ? panOffset : null}
                 viewTarget={viewTarget}
                 onViewDone={() => setViewTarget(null)}
+                isOrthographic={isOrthographic}
               />
+
+              {/* Blender-style view gizmo — top-right overlay */}
+              <ViewGizmo viewTarget={viewTarget} onViewChange={setViewTarget} />
 
               <BottomControlBar
                 explodeValue={explodeValue}
@@ -252,8 +266,8 @@ function NodeDetail() {
                 explodeAxis={data.explodeAxis}
                 syncZoom={syncZoom}
                 onSyncZoomToggle={() => setSyncZoom((v) => !v)}
-                viewTarget={viewTarget}
-                onViewChange={setViewTarget}
+                isOrthographic={isOrthographic}
+                onOrthographicToggle={toggleOrthographic}
               />
 
               {screenshotMode && (

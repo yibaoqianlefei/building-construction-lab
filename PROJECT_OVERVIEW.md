@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.0.0 | 更新: 2026-05-30 后台第一阶段：三栏布局 + 自动保存 + Toast + 活动日志
+> 生成日期: 2026-05-23 | 版本: 1.1.0 | 更新: 2026-06-02 模型性能优化 + 透视/正交切换 + UI 重构
 
 ---
 
@@ -21,6 +21,7 @@
 | 前端框架 | React 19 + React Router DOM v7 (`createBrowserRouter`) | 组件化 UI 与路由 |
 | 构建工具 | Vite 8 | 开发服务器与生产构建 |
 | 3D 渲染 | Three.js v0.184 + `@react-three/fiber` + `@react-three/drei` | 3D 模型加载、场景渲染、交互控制 |
+| 3D 压缩 | `@gltf-transform/functions` (Draco + textureCompress) + `draco3d` + `sharp` | GLB 模型网格压缩 + 纹理 WebP 转换 |
 | 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 rose-* 色板 |
 | 字体 | Noto Serif SC (Google Fonts) | 中文字体 |
 | 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
@@ -42,10 +43,18 @@
 ├── tsconfig.json                  # TypeScript 配置（strict, ES2020, bundler）
 ├── PROJECT_OVERVIEW.md            # 本文件
 ├── vite.config.js                 # Vite 配置 (Tailwind CSS 插件)
+├── scripts/
+│   └── compress-models.cjs       # GLB 优化脚本：纹理压缩(sharp→WebP 1024px) + Draco 网格压缩
 ├── public/
 │   ├── favicon.svg
+│   ├── draco/gltf/               # Draco 解码器 WASM/JS（客户端解码，替代 Google CDN）
+│   │   ├── draco_decoder.wasm
+│   │   ├── draco_decoder.js
+│   │   └── draco_wasm_wrapper.js
 │   ├── images/                    # 教材插图
-│   ├── models/                    # GLB 3D 模型文件
+│   ├── models/                    # GLB 3D 模型文件（已 Draco 压缩 + 纹理 WebP）
+│   │   ├── wall-model.glb         # 外墙整体模型 (154MB→5.8MB，55纹理+172网格)
+│   │   ├── yuncheng-c-01/         # 郓城C地块案例 (2.1MB→225KB)
 │   │   ├── flat-roof-01/          # 平屋面：每层独立 GLB (6 个)
 │   │   ├── membrane-roof-01/      # 卷材防水屋面：单 GLB + layerObjectName
 │   │   └── roof-insulation-01/    # 卷材平面屋顶保温：单 GLB + layerObjectName
@@ -77,11 +86,12 @@
     │   ├── ProtectedRoute.jsx     # 认证守卫：未登录重定向 /auth
     │   ├── DeveloperRoute.tsx     # 开发者守卫：检查 role === 'developer'
     │   ├── viewer/                # 3D 查看器组件
-    │   │   ├── ModelViewer.jsx    # Three.js Canvas 包装，含 WallAssembly/CameraAdjuster/ShadowLight
-    │   │   ├── ConstructionLayer.jsx  # 单层渲染：GLB 模型 / 程序化 Box
+    │   │   ├── ModelViewer.jsx    # Three.js Canvas 包装，含 WallAssembly/CameraAdjuster/CameraSwitcher/ViewSwitcher
+    │   │   ├── ConstructionLayer.jsx  # 单层渲染：GLB 模型 / 程序化 Box + PlaceholderLayer 加载占位
     │   │   ├── MenuBackground.jsx # 主菜单 3D 背景（GLB + OrbitControls + autoRotate + 场景切换 + 加载回调）
     │   │   ├── LoadingOverlay.jsx # 加载动画覆盖层（Framer Motion 构造层堆叠动画）
-    │   │   ├── BottomControlBar.tsx   # 底部控制栏：爆炸滑块(含移动端+/-)/旋转/截图/标注（带快捷键提示）
+    │   │   ├── BottomControlBar.tsx   # 底部控制栏：爆炸滑块/旋转/标签/⋮更多菜单(截图+同步缩放+正交切换)
+	    │   │   ├── ViewGizmo.tsx     # Blender 风格视角导航小部件（右上角覆盖层，十字布局 6 方向 + 透视复位）
     │   │   ├── ConstructionKnowledgePanel.jsx  # 右侧知识卡面板
     │   │   ├── ScreenshotTool.jsx # 框选截图工具（保存到笔记）
     │   │   ├── ExplodeControls.jsx    # 爆炸控制（独立组件）
@@ -307,8 +317,11 @@
 | **教材阅读**（含交互模型引用） | `/textbook/:sectionId` | TextbookPage | public/textbook/*/content.md |
 | **3D 模型查看器**（核心） | `/node/:nodeId` | NodeDetail, ModelViewer, ConstructionLayer | nodesIndex.getNodeData() 异步加载 |
 | **图层爆炸/分解** | `/node/:nodeId` | BottomControlBar (滑块 0-100) | useModelInteraction hook |
+|**透视/正交切换**（Blender 风格小部件） | `/node/:nodeId` | ViewGizmo, CameraSwitcher, BottomControlBar | useModelInteraction hook（isOrthographic） |
 | **爆炸标注**（引导线+pill 标签） | `/node/:nodeId` | ExplosionLabels | 爆炸时显示引导线和极简 pill 标签，点击更新 activeLayer |
+|**透视/正交切换**（Blender 风格小部件） | `/node/:nodeId` | ViewGizmo, CameraSwitcher, BottomControlBar | useModelInteraction hook（isOrthographic） |
 | **图层高亮/选中** | `/node/:nodeId` | ConstructionLayer (hover/select) | useModelInteraction hook |
+| **透视/正交切换** + ViewGizmo | `/node/:nodeId` | CameraSwitcher, ViewGizmo, BottomControlBar | useModelInteraction (isOrthographic) |
 | **知识卡片**（右侧面板） | `/node/:nodeId` | ConstructionKnowledgePanel | 唯一知识展示区，手风琴卡片双向联动 activeLayer |
 | **框选截图**（保存笔记） | `/node/:nodeId` | ScreenshotTool | Canvas → dataURL |
 | **笔记管理**（查看/备注/对比/删除） | `/notes` | NotesPage | localStorage (max 30条) |
@@ -512,6 +525,8 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 ### 8.3 模型路径与命名
 
 - GLB 文件放在 `public/models/{nodeId}/` 目录下
+    │   │   ├── wall-model.glb         # 外墙整体模型 (154MB→5.8MB，55纹理+172网格)
+    │   │   ├── yuncheng-c-01/         # 郓城C地块案例 (2.1MB→225KB)
 - 独立层模型命名: `layer_{NN}_{name}.glb` (如 `layer_01_protection.glb`)
 - 共享模型命名: `{nodeId}.glb` 或描述性名称
 - 层内物体命名: `"01"`, `"02"`, ... 从下到上/从内到外编号
@@ -584,3 +599,17 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | 墙体子章节 4/5 | wallSections.js | available: false |
 | 案例子章节 3/4 | caseSections.js | available: false（砖混/幕墙/坡屋顶 → 01 已实现） |
 | TypeScript 全量迁移 | src/ 全部 .jsx → .tsx | 进行中（4 文件已迁移） |
+
+### 2026-06-02 模型性能优化 + 透视/正交切换 + UI 重构
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **P0 压缩** | `scripts/compress-models.cjs` | Draco 网格压缩 + sharp 纹理压缩（resize→1024, WebP）。wall-model 154MB→5.8MB |
+| **解码器** | `public/draco/gltf/` + `main.jsx` | 本地 Draco 解码器（替代 Google CDN），`useGLTF.setDecoderPath()` |
+| **加载指示** | `ConstructionLayer.jsx` | PlaceholderLayer：加载中显示脉动半透明方块（颜色继承图层色），替代空 fallback |
+| **透视/正交** | `ModelViewer.jsx` | CameraSwitcher 组件（`useThree().set()` 替换相机）+ CameraAdjuster 条件化 OrbitControls + ViewSwitcher/SyncZoomAdjuster 正交适配 |
+| **视角小部件** | `ViewGizmo.tsx` | 新建 Blender 风格方向轴覆盖层（右上角，十字布局6方向+透视复位⟳） |
+| **UI 重构** | `BottomControlBar.tsx` | 移除视角按钮至 ViewGizmo；⋮更多菜单整合次要工具（截图/同步缩放/正交切换），活跃指示圆点 |
+| **状态** | `useModelInteraction.ts` | 新增 `isOrthographic` 状态 |
+| **透传** | `NodeDetail.tsx` | 快捷键 O 切换正交/透视；ViewGizmo 覆盖层；BottomControlBar 精简 props |
+| **清理** | `.gitattributes` | 移除 `*.glb filter=lfs`，压缩后文件直接存 git |

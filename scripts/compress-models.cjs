@@ -1,16 +1,29 @@
-/* Compress GLB models with Draco, keep binary format.
+/* Compress GLB models with Draco + texture optimization.
    Usage: node scripts/compress-models.cjs
 
-   Uses registerDependencies() to inject the draco3d encoder module,
-   which is required by @gltf-transform/functions for KHR_draco_mesh_compression. */
+   Two passes:
+   1. Texture compression (resize → 1024, convert → WebP) via sharp
+   2. Draco mesh compression (encodeSpeed=1, decodeSpeed=1)
+
+   Only wall-model.glb gets texture compression (other models are already small). */
 const fs = require("fs");
 const path = require("path");
+const sharp = require("sharp");
 const { NodeIO } = require("@gltf-transform/core");
-const { draco } = require("@gltf-transform/functions");
+const { draco, textureCompress } = require("@gltf-transform/functions");
 const { KHRONOS_EXTENSIONS } = require("@gltf-transform/extensions");
 const draco3d = require("draco3d");
 
-async function compressGLB(filePath, io) {
+const TEXTURE_OPTS = {
+  encoder: sharp,
+  resize: [1024, 1024],
+  targetFormat: "webp",
+  quality: 85,
+  /* exclude normal maps from lossy format conversion */
+  slots: /^(?!normalTexture).*$/,
+};
+
+async function compressGLB(filePath, io, doTextures) {
   const originalSize = fs.statSync(filePath).size;
 
   /* skip tiny files (LFS pointers or already compressed) */
@@ -20,6 +33,14 @@ async function compressGLB(filePath, io) {
   }
 
   const doc = await io.read(filePath);
+
+  /* ── Pass 1: texture compression ── */
+  if (doTextures) {
+    console.log(`  Textures: resizing → ${TEXTURE_OPTS.resize[0]}px, converting → ${TEXTURE_OPTS.targetFormat} (q=${TEXTURE_OPTS.quality})...`);
+    await doc.transform(textureCompress(TEXTURE_OPTS));
+  }
+
+  /* ── Pass 2: Draco mesh compression ── */
   await doc.transform(draco({ encodeSpeed: 1, decodeSpeed: 1 }));
 
   /* temp file MUST end in .glb so io.write() detects binary format */
@@ -62,7 +83,10 @@ async function main() {
   console.log(`Compressing ${files.length} models...\n`);
   for (const f of files) {
     try {
-      await compressGLB(f, io);
+      /* Only run texture compress on wall-model (55 textures, 19MB).
+         Other models are small and textureCompress is slow with sharp. */
+      const doTextures = path.basename(f) === "wall-model.glb";
+      await compressGLB(f, io, doTextures);
     } catch (e) {
       console.error(`  FAILED: ${path.basename(f)} — ${e.message}`);
     }
