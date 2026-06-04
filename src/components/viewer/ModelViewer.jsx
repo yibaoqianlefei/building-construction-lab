@@ -262,12 +262,18 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onC
     const ctrl = controlsRef.current;
     if (!ctrl || !cacheReady.current) return;
 
+    /* suppress target drift briefly after perspective restore */
+    if (justRestoredPersp && restoreFrameCount > 0) {
+      restoreFrameCount--;
+      if (restoreFrameCount <= 0) justRestoredPersp = false;
+    }
+
     /* persist target so pan/orbit is preserved across camera type switches */
-    if (!userInteracting.current) {
+    if (!userInteracting.current && !justRestoredPersp) {
       savedTarget.copy(ctrl.target);
     }
 
-    if (!hasExplosion || userInteracting.current || isIndividualExp) return;
+    if (!hasExplosion || userInteracting.current || isIndividualExp || justRestoredPersp) return;
 
     const t = smoothExplodeRef.current / 100;
     const goal = new THREE.Vector3().lerpVectors(
@@ -388,7 +394,10 @@ let globalControls = null;
 const savedCameraPos = new THREE.Vector3();
 const savedTarget = new THREE.Vector3(0, 0.8, 0); // default target for initial load
 
-/* saved perspective state — captured while active, restored when switching back */
+/* track whether we just restored perspective to suppress one-frame target drift */
+let justRestoredPersp = false;
+let restoreFrameCount = 0;
+
 const perspState = {
   pos: new THREE.Vector3(),
   target: new THREE.Vector3(),
@@ -402,13 +411,14 @@ let perspStateValid = false;
 const PERSP_FOV = 40;
 
 /* ── Camera type switcher: creates and swaps Perspective/OrthographicCamera ── */
-function CameraSwitcher({ isOrthographic }) {
+function CameraSwitcher({ isOrthographic, wallRef }) {
   const { set, camera, size } = useThree();
   const camRef = useRef(null);
   const frustumRef = useRef(5);
+  const prevIsOrtho = useRef(isOrthographic);
 
   /* continuously save perspective state while perspective camera is active */
-  if (camera.isPerspectiveCamera && globalControls) {
+  if (camera.isPerspectiveCamera && globalControls && !justRestoredPersp) {
     perspState.pos.copy(camera.position);
     perspState.target.copy(globalControls.target);
     perspState.fov = camera.fov || PERSP_FOV;
@@ -426,16 +436,37 @@ function CameraSwitcher({ isOrthographic }) {
 
   useEffect(() => {
     const aspect = size.width / size.height;
+    const wasOrtho = prevIsOrtho.current;
+    prevIsOrtho.current = isOrthographic;
 
     let newCam;
     if (isOrthographic) {
-      /* use saved perspective state for accurate frustum match */
-      const refTarget = perspStateValid ? perspState.target : savedTarget;
-      const refPos = perspStateValid ? perspState.pos : savedCameraPos;
-      const dist = refPos.distanceTo(refTarget);
-      const fovRad = (PERSP_FOV / 2) * Math.PI / 180;
-      const visibleHeight = 2 * dist * Math.tan(fovRad);
-      const fs = Math.max(visibleHeight, 2);
+      /* ── switching TO orthographic ── */
+      /* save perspective state from current camera before leaving it */
+      if (!wasOrtho && camera.isPerspectiveCamera) {
+        perspState.pos.copy(camera.position);
+        perspState.target.copy(savedTarget);
+        perspState.fov = camera.fov || PERSP_FOV;
+        perspState.zoom = camera.zoom || 1;
+        perspState.near = camera.near || 1;
+        perspState.far = camera.far || 100;
+        perspStateValid = true;
+      }
+
+      /* compute frustum: prefer model bounding box, fallback to perspective match */
+      let fs;
+      if (wallRef?.current) {
+        const box = new THREE.Box3().setFromObject(wallRef.current);
+        const sz = new THREE.Vector3();
+        box.getSize(sz);
+        fs = Math.max(Math.max(sz.x, sz.y, sz.z) * 1.4, 3);
+      } else {
+        const refTarget = perspStateValid ? perspState.target : savedTarget;
+        const refPos = perspStateValid ? perspState.pos : savedCameraPos;
+        const dist = refPos.distanceTo(refTarget);
+        const fovRad = (PERSP_FOV / 2) * Math.PI / 180;
+        fs = Math.max(2 * dist * Math.tan(fovRad), 3);
+      }
       frustumRef.current = fs;
 
       newCam = new THREE.OrthographicCamera(
@@ -443,21 +474,32 @@ function CameraSwitcher({ isOrthographic }) {
         fs / 2, -fs / 2,
         0.1, 100
       );
+      /* keep current camera position (orbit position) */
+      const refPos = perspStateValid ? perspState.pos : savedCameraPos;
       newCam.position.copy(refPos);
-      savedTarget.copy(refTarget);
+      savedTarget.copy(perspStateValid ? perspState.target : savedTarget);
     } else {
-      /* restore perspective camera from saved state */
-      if (perspStateValid) {
-        newCam = new THREE.PerspectiveCamera(
-          perspState.fov, aspect, perspState.near, perspState.far
-        );
-        newCam.position.copy(perspState.pos);
-        newCam.zoom = perspState.zoom;
-        savedTarget.copy(perspState.target);
-      } else {
-        newCam = new THREE.PerspectiveCamera(PERSP_FOV, aspect, 1, 100);
-        newCam.position.copy(savedCameraPos);
-      }
+      /* ── switching TO perspective: compute position from ortho frustum ── */
+      justRestoredPersp = true;
+      restoreFrameCount = 3;
+
+      /* dynamically calculate distance so model size matches ortho view */
+      const orthoHeight = camera.isOrthographicCamera
+        ? camera.top - camera.bottom
+        : frustumRef.current;
+      const fov = perspStateValid ? perspState.fov : PERSP_FOV;
+      const fovHalfRad = (fov / 2) * Math.PI / 180;
+      const distance = (orthoHeight / 2) / Math.tan(fovHalfRad);
+
+      /* compute position: move back from target along camera direction */
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      const target = savedTarget.clone();
+      const newPos = target.clone().addScaledVector(forward, -distance);
+
+      newCam = new THREE.PerspectiveCamera(fov, aspect, 1, 100);
+      newCam.position.copy(newPos);
+      /* keep savedTarget as-is (already has correct value) */
     }
     camRef.current = newCam;
     set({ camera: newCam });
@@ -678,7 +720,7 @@ function Scene({
   return (
     <>
       <RendererSetup />
-      <CameraSwitcher isOrthographic={isOrthographic} />
+      <CameraSwitcher isOrthographic={isOrthographic} wallRef={wallRef} />
 
       {spatialCard && (
         <SpatialLabel

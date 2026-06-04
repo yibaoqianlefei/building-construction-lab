@@ -37,9 +37,9 @@ function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = t
     return null;
   }, [scene, modelPath]);
 
-  const { model, edgeLines, hitBox, worldOffset } = useMemo(() => {
+  const { model, hitBox, worldOffset } = useMemo(() => {
     let source;
-    let worldOffset = new THREE.Vector3(); // preserve world position of extracted object
+    let worldOffset = new THREE.Vector3();
     if (objectName) {
       const found = scene.getObjectByName(objectName);
       if (!found) {
@@ -49,9 +49,8 @@ function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = t
           `[GLBModelRenderer] object "${objectName}" not found in "${modelPath}". Available names:`,
           names
         );
-        return { model: null, edgeLines: [], hitBox: null };
+        return { model: null, hitBox: null, worldOffset };
       }
-      /* compute world position within the GLB scene */
       found.getWorldPosition(worldOffset);
       source = found;
     } else {
@@ -73,7 +72,7 @@ function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = t
       });
     }
 
-    const lines = [];
+    /* attach edge lines as children of each mesh — guarantees alignment */
     cloned.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -87,11 +86,7 @@ function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = t
             edgesGeo,
             new THREE.LineBasicMaterial({ color: "#4B5563", transparent: true, opacity: 0.45 })
           );
-          /* match child transform so edge lines align with the mesh */
-          line.position.copy(child.position);
-          line.rotation.copy(child.rotation);
-          line.scale.copy(child.scale);
-          lines.push(line);
+          child.add(line); // edge line inherits mesh transform automatically
         }
       }
     });
@@ -116,7 +111,7 @@ function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = t
       };
     }
 
-    return { model: cloned, edgeLines: lines, hitBox: hb, worldOffset };
+    return { model: cloned, hitBox: hb, worldOffset };
   }, [scene, objectName, excludeNames, interactive, modelPath]);
 
   if (!model) return null;
@@ -124,9 +119,6 @@ function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = t
   return (
     <group position={worldOffset.toArray()}>
       <primitive object={model} />
-      {edgeLines.map((line, i) => (
-        <primitive key={i} object={line} />
-      ))}
       {hitBox && (
         <mesh
           name="hitZone"
