@@ -586,7 +586,7 @@ function ViewSwitcher({ viewTarget, onDone, isOrthographic }) {
 /* ── sync diagram pan to 3D view target (focus point) ── */
 const PAN_RANGE_PERSP = 2.0; // perspective: world units at default distance
 
-function PanSyncController({ panOffset, syncScale }) {
+function PanSyncController({ panOffset, syncScale, isOrthographic }) {
   const { camera } = useThree();
   const defaultTarget = useRef(new THREE.Vector3());
   const currentGoal = useRef(new THREE.Vector3());
@@ -621,7 +621,8 @@ function PanSyncController({ panOffset, syncScale }) {
 
     /* pan range: match visible world width to diagram width */
     let panRange;
-    if (camera.isOrthographicCamera) {
+    const isOrtho = isOrthographic || camera.isOrthographicCamera;
+    if (isOrtho) {
       const visW = (camera.right - camera.left) / camera.zoom;
       panRange = visW;
     } else {
@@ -631,11 +632,19 @@ function PanSyncController({ panOffset, syncScale }) {
     const dx = -(x / w) * panRange / scale;
     const dy =  (y / h) * panRange / scale;
 
-    /* world-space offset using camera orientation */
-    const forward = new THREE.Vector3();
-    camera.getWorldDirection(forward);
-    const camRight = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-    const camUp = camera.up.clone().normalize();
+    /* direction vectors */
+    let camRight, camUp;
+    if (isOrtho) {
+      /* ortho: use fixed world axes — keeps view locked to front */
+      camRight = new THREE.Vector3(1, 0, 0);
+      camUp = new THREE.Vector3(0, 1, 0);
+    } else {
+      /* perspective: use camera-relative directions */
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      camRight = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+      camUp = camera.up.clone().normalize();
+    }
 
     /* goal = defaultTarget + right*dx + up*dy */
     currentGoal.current.copy(defaultTarget.current)
@@ -736,7 +745,7 @@ function Scene({
       {/* sync camera zoom with diagram scale */}
       {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} isOrthographic={isOrthographic} />}
       {/* sync camera pan with diagram drag */}
-      {panOffset != null && <PanSyncController panOffset={panOffset} syncScale={syncScale} />}
+      {panOffset != null && <PanSyncController panOffset={panOffset} syncScale={syncScale} isOrthographic={isOrthographic} />}
       {viewTarget != null && <ViewSwitcher viewTarget={viewTarget} onDone={onViewDone} isOrthographic={isOrthographic} />}
 
       <ambientLight intensity={1.2} color="#ffffff" />

@@ -5,7 +5,7 @@ const courseModules = [
     icon: "📖",
     description: "建筑构造概述、建筑分类与等级",
     nodeIds: [],
-    available: false,
+    available: true,
   },
   {
     id: "structures",
@@ -13,7 +13,7 @@ const courseModules = [
     icon: "🏗️",
     description: "构筑物的组成与结构体系",
     nodeIds: [],
-    available: false,
+    available: true,
   },
   {
     id: "foundation",
@@ -21,7 +21,7 @@ const courseModules = [
     icon: "🏛️",
     description: "地基处理与基础类型构造",
     nodeIds: [],
-    available: false,
+    available: true,
   },
   {
     id: "wall",
@@ -37,7 +37,7 @@ const courseModules = [
     icon: "🪜",
     description: "楼板与地坪构造",
     nodeIds: [],
-    available: false,
+    available: true,
   },
   {
     id: "stairs",
@@ -53,7 +53,7 @@ const courseModules = [
     icon: "🪟",
     description: "门窗安装节点与密封构造",
     nodeIds: [],
-    available: false,
+    available: true,
   },
   {
     id: "roof",
