@@ -21,6 +21,13 @@ const caseSections = [
         nodeIds: ["yuncheng-c-02"],
         available: true,
       },
+      {
+        id: "case-yuncheng-c-03",
+        title: "03",
+        description: "屋面、花岗岩外墙及地面构造节点",
+        nodeIds: ["yuncheng-c-03"],
+        available: true,
+      },
     ],
   },
 ];
