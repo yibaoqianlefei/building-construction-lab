@@ -30,28 +30,35 @@ function NodeDetail() {
     explodeValue,
     setExplodeValue,
     autoRotate,
-    setAutoRotate,
     isOrthographic,
-    setIsOrthographic,
     hoveredLayer,
     setHoveredLayer,
     selectedLayer,
     screenshotMode,
     setScreenshotMode,
+    showLabels,
+    syncZoom,
+    viewTarget,
+    spatialCard,
     handleLayerClick,
     handlePanelSelect,
-    handleBlankClick,
+    handleLayerClickWithCard,
+    handleBlankClickWithCard,
+    closeSpatialCard,
+    toggleAutoRotate,
+    toggleScreenshot,
+    toggleOrthographic,
+    toggleLabels,
+    toggleSyncZoom,
+    toggleExplode,
+    setViewTarget,
+    setShowLabels,
+    setSyncZoom,
   } = useModelInteraction();
 
-  const [showLabels, setShowLabels] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [syncZoom, setSyncZoom] = useState(false);
   const [diagramScale, setDiagramScale] = useState(1);
   const [panOffset, setPanOffset] = useState<{x:number,y:number,w:number,h:number,scale:number}|null>(null);
-  const [viewTarget, setViewTarget] = useState<string | null>("front");
-  const [spatialCard, setSpatialCard] = useState<{
-    layer: any; worldPosition: number[]; layerIndex: number;
-  } | null>(null);
 
   const viewerRef = useRef<HTMLDivElement>(null!);
   const controlsRef = useRef<any>(null);
@@ -88,51 +95,6 @@ function NodeDetail() {
   }, [screenshotMode]);
 
   /* ── keyboard shortcuts ── */
-  const toggleExplode = useCallback(() => {
-    if (data?.explodeAxis == null) return;
-    setExplodeValue((prev) => (prev < 50 ? 100 : 0));
-  }, [data?.explodeAxis, setExplodeValue]);
-
-  const toggleAutoRotate = useCallback(() => {
-    setAutoRotate((v) => !v);
-  }, [setAutoRotate]);
-
-  const toggleLabels = useCallback(() => {
-    if (data?.explodeAxis == null) return;
-    setShowLabels((v) => !v);
-  }, [data?.explodeAxis]);
-
-  const toggleScreenshot = useCallback(() => {
-    setScreenshotMode((v) => !v);
-  }, [setScreenshotMode]);
-
-  const toggleOrthographic = useCallback(() => {
-    setIsOrthographic((v) => !v);
-  }, [setIsOrthographic]);
-
-  const handleLayerClickWithCard = useCallback(
-    (index: number, layer: any, e: any, worldPos?: number[]) => {
-      handleLayerClick(index, layer, e);
-      if (worldPos) {
-        setSpatialCard({ layer, worldPosition: worldPos, layerIndex: index });
-      }
-    },
-    [handleLayerClick]
-  );
-
-  const handleBlankClickWithCard = useCallback(() => {
-    handleBlankClick();
-    setSpatialCard(null);
-  }, [handleBlankClick]);
-
-  const handleSpatialCardClose = useCallback(() => {
-    setSpatialCard(null);
-  }, []);
-
-  const clearSelection = useCallback(() => {
-    handleBlankClickWithCard();
-  }, [handleBlankClickWithCard]);
-
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
@@ -140,18 +102,18 @@ function NodeDetail() {
 
       if (e.key === "e" || e.key === "E") {
         e.preventDefault();
-        toggleExplode();
+        if (data?.explodeAxis != null) toggleExplode();
       } else if (e.key === "r" || e.key === "R") {
         e.preventDefault();
         toggleAutoRotate();
       } else if (e.key === "l" || e.key === "L") {
         e.preventDefault();
-        toggleLabels();
+        if (data?.explodeAxis != null) toggleLabels();
       } else if (e.key === "o" || e.key === "O") {
         e.preventDefault();
         toggleOrthographic();
       } else if (e.key === "Escape") {
-        clearSelection();
+        closeSpatialCard();
       } else if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
         e.preventDefault();
         toggleScreenshot();
@@ -160,7 +122,7 @@ function NodeDetail() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [toggleExplode, toggleAutoRotate, toggleLabels, clearSelection, toggleScreenshot, toggleOrthographic]);
+  }, [data?.explodeAxis, toggleExplode, toggleAutoRotate, toggleLabels, toggleScreenshot, toggleOrthographic, closeSpatialCard]);
 
   /* ── hotspot click → select layer ── */
   const handleHotspotClick = useCallback(
@@ -183,7 +145,7 @@ function NodeDetail() {
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </aside>
           <ModelViewerSkeleton />
-          <aside className="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-hairline bg-canvas overflow-y-auto">
+          <aside className="w-full lg:w-panel-kw flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-hairline bg-canvas overflow-y-auto">
             <div className="p-4 md:p-5 flex items-center justify-center">
               <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             </div>
@@ -263,7 +225,7 @@ function NodeDetail() {
                 onLayerClick={handleLayerClickWithCard}
                 onBlankClick={handleBlankClickWithCard}
                 spatialCard={spatialCard}
-                onSpatialCardClose={handleSpatialCardClose}
+                onSpatialCardClose={closeSpatialCard}
                 showLabels={showLabels}
                 onControlsReady={(ctrl: any) => { controlsRef.current = ctrl; }}
                 syncScale={syncZoom ? diagramScale : undefined}
@@ -282,14 +244,14 @@ function NodeDetail() {
                 onExplodeReset={() => setExplodeValue(0)}
                 onExplodeMax={() => setExplodeValue(100)}
                 autoRotate={autoRotate}
-                onAutoRotateToggle={() => setAutoRotate((v) => !v)}
+                onAutoRotateToggle={toggleAutoRotate}
                 screenshotActive={screenshotMode}
-                onScreenshotToggle={() => setScreenshotMode((v) => !v)}
+                onScreenshotToggle={toggleScreenshot}
                 showLabels={showLabels}
-                onLabelsToggle={() => setShowLabels((v) => !v)}
+                onLabelsToggle={toggleLabels}
                 explodeAxis={data.explodeAxis}
                 syncZoom={syncZoom}
-                onSyncZoomToggle={() => setSyncZoom((v) => !v)}
+                onSyncZoomToggle={toggleSyncZoom}
                 isOrthographic={isOrthographic}
                 onOrthographicToggle={toggleOrthographic}
               />
@@ -311,7 +273,7 @@ function NodeDetail() {
           </ModelErrorBoundary>
         </div>
 
-        <aside className="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-hairline bg-canvas overflow-y-auto">
+        <aside className="w-full lg:w-panel-kw flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-hairline bg-canvas overflow-y-auto">
           <motion.div
             className="p-4 md:p-5"
             initial={{ opacity: 0, y: 10 }}

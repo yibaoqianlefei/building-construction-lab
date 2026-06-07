@@ -5,23 +5,44 @@ const MIN_SCALE = 0.3;
 const MAX_SCALE = 3.0;
 const ZOOM_STEP = 0.1;
 
-function clampScale(s) {
+function clampScale(s: number): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
 }
 
 /* ref to latest callback without re-creating listeners */
-function useLatest(fn) {
+function useLatest<T extends (...args: any[]) => any>(fn: T) {
   const ref = useRef(fn);
   ref.current = fn;
   return ref;
 }
 
-export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotClick, onScaleChange, syncScale, onPositionChange }) {
+interface DiagramHotspot {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  layerIndex: number;
+}
+
+interface ZoomableImageProps {
+  src: string;
+  alt: string;
+  onError?: () => void;
+  hotspots?: DiagramHotspot[] | null;
+  onHotspotClick?: (layerIndex: number) => void;
+  onScaleChange?: (scale: number) => void;
+  syncScale?: number;
+  onPositionChange?: (pos: { x: number; y: number }, size: { width: number; height: number }) => void;
+}
+
+export default function ZoomableImage({
+  src, alt, onError, hotspots, onHotspotClick, onScaleChange, syncScale, onPositionChange,
+}: ZoomableImageProps) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null!);
   const onScaleRef = useLatest(onScaleChange);
   const dragRef = useRef({
     active: false,
@@ -40,7 +61,7 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
     const el = containerRef.current;
     if (!el) return;
 
-    const onWheel = (e) => {
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
       setScale((prev) => {
@@ -56,7 +77,7 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
 
   /* ── mouse drag ── */
   const handleMouseDown = useCallback(
-    (e) => {
+    (e: React.MouseEvent) => {
       if (scale <= 1) return;
       e.preventDefault();
       dragRef.current = {
@@ -84,7 +105,7 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
   useEffect(() => {
     if (!dragging) return;
 
-    const onMove = (e) => {
+    const onMove = (e: MouseEvent) => {
       const d = dragRef.current;
       if (!d.active) return;
       setPosition({
@@ -118,14 +139,14 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
   }, [onScaleChange, onPositionChange]);
 
   /* ── touch pinch zoom + single-finger drag ── */
-  const getDist = (touches) => {
+  const getDist = (touches: React.TouchList | TouchList) => {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
 
   const handleTouchStart = useCallback(
-    (e) => {
+    (e: React.TouchEvent) => {
       if (e.touches.length === 2) {
         pinchRef.current = {
           lastDist: getDist(e.touches),
@@ -145,7 +166,7 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
     [scale, position]
   );
 
-  const handleTouchMove = useCallback((e) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       e.preventDefault();
       const dist = getDist(e.touches);
@@ -173,7 +194,7 @@ export default function ZoomableImage({ src, alt, onError, hotspots, onHotspotCl
 
   /* ── hotspot click ── */
   const handleHotspotClick = useCallback(
-    (e, layerIndex) => {
+    (e: React.MouseEvent, layerIndex: number) => {
       e.stopPropagation();
       if (onHotspotClick) onHotspotClick(layerIndex);
     },

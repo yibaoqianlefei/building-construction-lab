@@ -304,3 +304,10 @@ export async function uploadMedia(file) {
 
   return publicUrl;
 }
+
+export async function deleteMedia(storagePath) {
+  const { error: storageError } = await supabase.storage.from("media").remove([storagePath]);
+  if (storageError) throw storageError;
+  const { error: dbError } = await supabase.from("media").delete().eq("storage_path", storagePath);
+  if (dbError) throw dbError;
+}

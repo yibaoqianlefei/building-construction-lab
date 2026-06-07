@@ -79,6 +79,25 @@ export interface BackgroundScene {
   position: number[];
 }
 
+export interface SpatialCardData {
+  layer: LayerData;
+  worldPosition: number[];
+  layerIndex: number;
+}
+
+export interface ModelInteractionState {
+  explodeValue: number;
+  autoRotate: boolean;
+  isOrthographic: boolean;
+  hoveredLayer: number | null;
+  selectedLayer: number | null;
+  screenshotMode: boolean;
+  showLabels: boolean;
+  syncZoom: boolean;
+  viewTarget: string | null;
+  spatialCard: SpatialCardData | null;
+}
+
 export interface PanelState {
   knowledgePanelExpanded: number;
   panelMode: string;

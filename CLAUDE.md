@@ -30,7 +30,9 @@ A digital interactive textbook for building construction education. Users explor
 
 ### Routing & Layout
 
-All routes are defined in [src/routes.jsx](src/routes.jsx) using `createBrowserRouter`. [src/App.jsx](src/App.jsx) is a backwards-compatible re-export. `AppLayout` wraps every route via `<Outlet />` and provides a sticky nav bar with back-button, system title link, and user menu (profile dropdown with role badge, sign-out). The home page (`/`) and auth page (`/auth`) suppress the nav bar.
+All routes are defined in [src/routes.jsx](src/routes.jsx) using `createHashRouter`. [src/App.jsx](src/App.jsx) is a backwards-compatible re-export. `AppLayout` wraps every route via `<Outlet />` and provides a sticky nav bar with back-button, system title link, and user menu (profile dropdown with role badge, sign-out). The home page (`/`) and auth page (`/auth`) suppress the nav bar.
+
+Non-critical pages (Games, Notes, Admin) use `React.lazy()` + `<Suspense>` for code splitting. A shared `<LazyFallback>` spinner is shown during chunk loading.
 
 Protected routes use `ProtectedRoute` which checks `useAuth()` and redirects to `/auth` if not logged in. Developer-only routes (`/admin`) use `DeveloperRoute` which checks `profile.role === 'developer'`.
 
@@ -106,9 +108,15 @@ The left and center panels share remaining space at a 2:3 ratio after the fixed 
 Data loading: tries Supabase DB first (`getNodeDefinition` from `contentService`), falls back to local import (`getNodeData` from `nodesIndex`).
 
 State is managed by two custom hooks:
-- [src/hooks/useModelInteraction.ts](src/hooks/useModelInteraction.ts) — explode/hover/select/screenshot
+- [src/hooks/useModelInteraction.ts](src/hooks/useModelInteraction.ts) — **single source of truth** for all 3D interaction state:
+  - `explodeValue` / `autoRotate` / `isOrthographic` — viewport controls
+  - `hoveredLayer` / `selectedLayer` / `screenshotMode` — interaction
+  - `showLabels` / `syncZoom` / `viewTarget` / `spatialCard` — UI overlays
+  - Provides setter functions, toggle functions, and composite callbacks (`handleLayerClickWithCard`, `handleBlankClickWithCard`, `closeSpatialCard`)
+  - Full `ModelInteractionState` type defined in [src/types/index.ts](src/types/index.ts)
 - [src/hooks/usePanelState.ts](src/hooks/usePanelState.ts) — panel mode (knowledge/practice/textbook)
 
+NodeDetail no longer declares any local 3D interaction state — it destructures everything from `useModelInteraction()` and passes props to ModelViewer/BottomControlBar.
 State flow: `selectedLayer` is shared between the 3D viewer (highlight/dim layers) and the knowledge panel (expand corresponding card via `activeLayer`/`onLayerSelect`). When explode is at 0, selection is cleared.
 
 ### Knowledge Card System (Post-V2 Refactor)
@@ -147,9 +155,9 @@ State flow: `selectedLayer` is shared between the 3D viewer (highlight/dim layer
 
 [src/pages/AdminContentPage.tsx](src/pages/AdminContentPage.tsx) (`/admin`) provides content management for developers:
 
-- **教材章节 Tab**: Markdown editor via `@uiw/react-md-editor` for editing textbook sections
-- **节点定义 Tab**: JSON editor for node data (`node_data` jsonb)
-- **媒体库 Tab**: Supabase Storage media upload and listing
+- **章节管理 Tab**: Three-column layout (tree + Markdown editor + properties). Supports JSON export of full section tree.
+- **节点管理 Tab**: Visual Layers table editor — inline editable columns (name/material/thickness/color chip/description/modelPath/layerObjectName), ▲▼ reorder, add/delete layers, per-layer GLB upload, saves full `node_data` JSON.
+- **媒体库 Tab**: Image preview thumbnails, file type badges, copy URL, delete with confirmation.
 
 Protected by [src/components/DeveloperRoute.tsx](src/components/DeveloperRoute.tsx) which checks `profile.role === 'developer'`.
 
@@ -163,11 +171,17 @@ Defined in [src/data/supabase_schema.sql](src/data/supabase_schema.sql). Tables:
 
 ### Styling Conventions
 
-- Tailwind CSS 4 with a custom `rose-*` color palette (rose-50 through rose-900) used as the accent color, defined in [src/index.css](src/index.css)
+- Tailwind CSS 4 with a custom semantic color palette defined via `@theme` in [src/index.css](src/index.css)
+  - Primary/coral: `#cc785c` (玫红调), secondary: `#5db8a6` (teal), `#e8a55a` (amber)
+  - Surfaces: `--color-canvas`, `--color-surface-soft`, `--color-surface-card`
+  - Text scale: `--color-ink`, `--color-body`, `--color-muted`, `--color-muted-soft`
+- **Design tokens** (`@theme` spacing): `--spacing-sidebar` (384px), `--spacing-panel-kw` (360px), `--spacing-menu-item-h` (38px), `--spacing-section-gap` (28px), `--spacing-page-pt` (64px), `--spacing-page-pb` (80px)
+- **Reusable component classes** (`@layer components`): `.card-glass`, `.card-frosted`, `.btn-ghost`, `.btn-primary-sm`
 - Chinese UI text throughout
-- Noto Serif SC font loaded from Google Fonts in [index.html](index.html)
+- Font: **Noto Sans SC** (思源黑体, SIL OFL 可免费商用), loaded from Google Fonts in [index.html](index.html)
 - Frosted glass effect: `bg-white/70 backdrop-blur-md` pattern used extensively
-- Rounded corners: `rounded-2xl` for cards, `rounded-full` for buttons/pills
+- Rounded corners: `rounded-2xl` for cards, `rounded-[10px]` for menu items, `rounded-full` for buttons/pills
+- Vite 8 code splitting: `manualChunks` separates three.js, r3f, and supabase into independent chunks
 
 ## Maintenance
 

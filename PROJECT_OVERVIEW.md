@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.2.0 | 更新: 2026-06-07 首页菜单4组重构 + 字体统一 + 案例节点03 + 悬停交互优化
+> 生成日期: 2026-05-23 | 版本: 2.0.0 | 更新: 2026-06-07 V3 架构升级（状态收敛 + 后台增强 + 设计令牌 + 性能优化）
 
 ---
 
@@ -655,3 +655,21 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | **统一** | `index.html` + `index.css` | 字体全站统一为 Noto Sans SC（思源黑体，SIL OFL 可免费商用），移除 Inter/Cormorant Garamond/Noto Serif SC |
 | **新增** | `UI_LAYOUT_REFERENCE.md` | UI 布局参考文档（页面总览、布局结构、状态管理、修改指南） |
 | **修改** | `nodesIndex.ts` | 注册 yuncheng-c-03 节点 |
+
+### 2026-06-07 V3 架构升级 — 状态收敛 + 后台增强 + 设计令牌 + 性能优化
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **重构** | `useModelInteraction.ts` | 迁移 showLabels/syncZoom/viewTarget/spatialCard 至 hook；新增 handleLayerClickWithCard/handleBlankClickWithCard/closeSpatialCard 回调；导出 toggle 函数（toggleLabels/toggleSyncZoom/toggleExplode/toggleScreenshot/toggleOrthographic）；完整类型接口 |
+| **新增** | `types/index.ts` | 新增 ModelInteractionState、SpatialCardData 接口 |
+| **精简** | `NodeDetail.tsx` | 移除 6 个本地状态声明和 9 个本地回调/函数，全部改用 hook；键盘快捷键逻辑简化 |
+| **重写** | `AdminContentPage.tsx` NodeEditor | 可视化 Layers 表格编辑器：7列 inline 编辑、颜色色块预览、GLB 上传/层、▲▼ 排序、添加/删除层；保存时自动构建 node_data JSON |
+| **增强** | `AdminContentPage.tsx` MediaLibrary | 图片预览缩略图、文件类型标识、删除功能、文件计数 |
+| **新增** | `AdminContentPage.tsx` SectionsManager | 导出 JSON 按钮：构建章节树 → Blob 下载 |
+| **新增** | `contentService.js` | deleteMedia() 函数（Storage + DB 清理） |
+| **扩展** | `index.css` | @theme 新增 6 个 spacing tokens；@layer components 新增 card-glass/card-frosted/btn-ghost/btn-primary-sm 可复用类 |
+| **替换** | `HomePage.jsx` + `NodeDetail.tsx` | 硬编码值 → design tokens（w-sidebar/w-panel-kw/h-menu-item-h/mb-section-gap/pt-page-pt/pb-page-pb） |
+| **新增** | `routes.jsx` | React.lazy 懒加载 GamesPage/NotesPage/AdminContentPage；统一 Suspense fallback |
+| **新增** | `vite.config.js` | manualChunks 代码分割：three/r3f/supabase 独立 chunk |
+| **新增** | `HomePage.jsx` | 菜单项 onMouseEnter 预加载（节点库 hover → preload 常用模型） |
+| **TS 迁移** | `SpatialLabel.tsx` `ZoomableImage.tsx` | JSX → TSX，添加完整 props 接口和类型标注 |

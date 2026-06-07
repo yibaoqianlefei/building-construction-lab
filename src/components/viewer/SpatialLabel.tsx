@@ -1,16 +1,24 @@
 import { Html } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import type { LayerData } from "../../types";
 
 const LABEL_SCALE = 0.55;
 
-function SpatialLabel({ layer, position, explodeAxis, onClose }) {
+interface SpatialLabelProps {
+  layer: LayerData;
+  position: number[];
+  explodeAxis?: string | null;
+  onClose?: () => void;
+}
+
+function SpatialLabel({ layer, position, explodeAxis, onClose }: SpatialLabelProps) {
   if (!layer || !position) return null;
 
   const isX = !explodeAxis || explodeAxis.replace("-", "") === "x";
-  const offset = isX ? [0, 0.4, 0] : [0, 0, 0.4];
+  const offset: [number, number, number] = isX ? [0, 0.4, 0] : [0, 0, 0.4];
 
-  const worldPos = [
+  const worldPos: [number, number, number] = [
     position[0] + offset[0],
     position[1] + offset[1],
     position[2] + offset[2],

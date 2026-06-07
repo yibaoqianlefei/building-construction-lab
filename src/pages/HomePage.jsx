@@ -85,7 +85,7 @@ function MenuItem({ item, onClick }) {
   );
 
   const baseClass =
-    "w-full flex items-center gap-[10px] pl-[12px] h-[38px] rounded-[10px]" +
+    "w-full flex items-center gap-[10px] pl-[12px] h-menu-item-h rounded-[10px]" +
     " transition-all duration-300 ease-out" +
     (disabled
       ? " cursor-not-allowed"
@@ -96,10 +96,10 @@ function MenuItem({ item, onClick }) {
   }
 
   if (onClick) {
-    return <button onClick={onClick} className={baseClass}>{content}</button>;
+    return <button onClick={onClick} onMouseEnter={item.onMouseEnter} className={baseClass}>{content}</button>;
   }
 
-  return <Link to={item.to} className={baseClass}>{content}</Link>;
+  return <Link to={item.to} onMouseEnter={item.onMouseEnter} className={baseClass}>{content}</Link>;
 }
 
 function MenuContent({ onModalOpen, onOpenChat }) {
@@ -116,7 +116,12 @@ function MenuContent({ onModalOpen, onOpenChat }) {
       title: "教学资源",
       items: [
         { icon: BookOpen, label: "原理支持", to: "/curriculum" },
-        { icon: Layers, label: "节点库", to: "/library" },
+        { icon: Layers, label: "节点库", to: "/library",
+          onMouseEnter: () => {
+            /* preload common node models on hover */
+            useGLTF.preload("/models/membrane-roof-01/membrane-roof-01.glb", true);
+          }
+        },
         { icon: Briefcase, label: "案例应用", to: "/curriculum/cases" },
       ],
     },
@@ -137,7 +142,7 @@ function MenuContent({ onModalOpen, onOpenChat }) {
   ];
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col h-full pt-16 pb-20">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col h-full pt-page-pt pb-page-pb">
       {/* ── Header ── */}
       <div className="flex-shrink-0">
         <motion.h1
@@ -155,7 +160,7 @@ function MenuContent({ onModalOpen, onOpenChat }) {
       {/* ── Navigation ── */}
       <div className="flex-1 mt-6">
         {menuGroups.map((group, gi) => (
-          <motion.div key={group.title} variants={itemVariants} className="mb-7">
+          <motion.div key={group.title} variants={itemVariants} className="mb-section-gap">
             <p className="text-[12px] font-medium tracking-[0.08em] text-[#9b948b] mb-[12px]">
               {group.title}
             </p>
@@ -301,7 +306,7 @@ function HomePage() {
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
       <aside
-        className="hidden md:flex w-96 flex-shrink-0
+        className="hidden md:flex w-sidebar flex-shrink-0
           bg-canvas border-r border-hairline
           flex-col h-full px-10"
       >

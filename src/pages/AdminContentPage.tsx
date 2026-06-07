@@ -360,6 +360,24 @@ function SectionsManager({ profile }: any) {
                   className="px-4 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-primary-active disabled:opacity-50 transition-colors cursor-pointer">
                   {saving ? "..." : "保存 ⌘S"}
                 </button>
+                <button onClick={async () => {
+                  const all = await listAllSections(true);
+                  /* build tree */
+                  const roots: any[] = [], map: Record<string, any> = {};
+                  all.forEach((s: any) => { map[s.id] = { ...s, children: [] }; });
+                  all.forEach((s: any) => {
+                    if (s.parent_id && map[s.parent_id]) map[s.parent_id].children.push(map[s.id]);
+                    else if (!s.parent_id) roots.push(map[s.id]);
+                  });
+                  const json = JSON.stringify(roots, null, 2);
+                  const blob = new Blob([json], { type: "application/json" });
+                  const a = document.createElement("a");
+                  a.href = URL.createObjectURL(blob); a.download = "sections-export.json";
+                  a.click(); URL.revokeObjectURL(a.href);
+                  toast.success("已导出");
+                }} className="px-4 py-1.5 text-xs rounded-lg border border-hairline text-muted hover:text-primary hover:border-primary/30 transition-colors cursor-pointer">
+                  导出 JSON
+                </button>
                 <label className={`px-3 py-1.5 text-xs rounded-lg border border-hairline text-muted hover:text-primary transition-colors cursor-pointer ${isDeleted ? "opacity-50 pointer-events-none" : ""}`}>
                   {uploading ? "上传中..." : "上传图片"}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
@@ -488,22 +506,62 @@ function NodeEditor() {
   const [nodes, setNodes] = useState<NodeRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState(""); const [category, setCategory] = useState("");
-  const [desc, setDesc] = useState(""); const [nodeData, setNodeData] = useState("");
+  const [desc, setDesc] = useState(""); const [layers, setLayers] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [nodeListOpen, setNodeListOpen] = useState(true);
 
   useEffect(() => { listNodeDefinitions().then(setNodes); }, []);
 
   function loadNode(id: string) {
     setSelectedId(id);
     getNodeDefinition(id).then((row: any) => {
-      if (row) { setTitle(row.title || ""); setCategory(row.category || ""); setDesc(row.description || ""); setNodeData(JSON.stringify(row.node_data, null, 2)); }
+      if (row) {
+        setTitle(row.title || ""); setCategory(row.category || "");
+        setDesc(row.description || "");
+        const nd = row.node_data || {};
+        setLayers(Array.isArray(nd.layers) ? nd.layers.map((l: any, i: number) => ({ ...l, _idx: i })) : []);
+      }
     });
+  }
+
+  /* ── layer mutations ── */
+  function addLayer() {
+    setLayers((prev) => [...prev, {
+      name: "新层", material: "", thickness: 0.05, color: "#cccccc",
+      description: "", modelPath: "", layerObjectName: "",
+    }]);
+  }
+  function removeLayer(idx: number) { setLayers((prev) => prev.filter((_, i) => i !== idx)); }
+  function updateLayer(idx: number, field: string, value: any) {
+    setLayers((prev) => prev.map((l, i) => i === idx ? { ...l, [field]: value } : l));
+  }
+  function moveLayer(from: number, to: number) {
+    setLayers((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }
+
+  /* ── model upload per layer ── */
+  async function handleLayerModelUpload(idx: number, e: any) {
+    const file = e.target.files?.[0]; if (!file) return;
+    try {
+      const url = await uploadMedia(file);
+      updateLayer(idx, "modelPath", url);
+      toast.success("模型已上传");
+    } catch (err: any) { toast.error("上传失败: " + err.message); }
   }
 
   async function handleSave() {
     if (!selectedId) return; setSaving(true);
     try {
-      await upsertNodeDefinition(selectedId, title, category, desc, JSON.parse(nodeData));
+      const nodeData = {
+        id: selectedId, title, description: desc,
+        layers: layers.map(({ _idx, ...l }: any) => l),
+      };
+      await upsertNodeDefinition(selectedId, title, category, desc, nodeData);
       listNodeDefinitions().then(setNodes); toast.success("已保存");
     } catch (e: any) { toast.error("保存失败: " + e.message); }
     finally { setSaving(false); }
@@ -511,10 +569,16 @@ function NodeEditor() {
 
   return (
     <div className="flex h-full">
-      <div className="w-56 border-r border-hairline overflow-y-auto p-2 flex flex-col gap-0.5">
-        <button onClick={() => { const id = prompt("node_id:"); if (id) { setSelectedId(id); setTitle(""); setCategory(""); setDesc(""); setNodeData("{}"); } }}
-          className="w-full py-1.5 text-xs rounded-lg bg-hairline text-primary hover:bg-surface-cream-strong transition-colors cursor-pointer">+ 新建</button>
-        {nodes.map((n) => (
+      {/* ── LEFT: node list ── */}
+      <div className={`${nodeListOpen ? "w-56" : "w-12"} flex-shrink-0 border-r border-hairline overflow-y-auto p-2 flex flex-col gap-0.5 transition-all`}>
+        <button onClick={() => setNodeListOpen(!nodeListOpen)}
+          className="text-[10px] text-muted-soft hover:text-body mb-1 cursor-pointer text-left">
+          {nodeListOpen ? "◀ 收起" : "▶"}
+        </button>
+        <button onClick={() => {
+          const id = prompt("node_id:"); if (id) { setSelectedId(id); setTitle(""); setCategory(""); setDesc(""); setLayers([]); }
+        }} className="w-full py-1.5 text-xs rounded-lg bg-hairline text-primary hover:bg-surface-cream-strong transition-colors cursor-pointer">+ 新建</button>
+        {nodeListOpen && nodes.map((n) => (
           <button key={n.node_id} onClick={() => loadNode(n.node_id)}
             className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedId === n.node_id ? "bg-hairline text-primary" : "hover:bg-surface-card text-body"}`}>
             <div className="font-medium truncate">{n.title || n.node_id}</div>
@@ -522,10 +586,13 @@ function NodeEditor() {
           </button>
         ))}
       </div>
+
+      {/* ── RIGHT: editor ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedId ? (
           <>
-            <div className="px-4 py-2 border-b border-hairline space-y-1.5">
+            {/* header */}
+            <div className="px-4 py-2 border-b border-hairline space-y-1.5 flex-shrink-0">
               <div className="flex gap-2">
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题"
                   className="flex-1 text-xs px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary" />
@@ -534,13 +601,98 @@ function NodeEditor() {
               </div>
               <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="描述"
                 className="w-full text-xs px-3 py-1.5 border border-hairline rounded-lg outline-none focus:border-primary" />
-              <button onClick={handleSave} disabled={saving}
-                className="px-4 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-primary-active disabled:opacity-50 transition-colors cursor-pointer">
-                {saving ? "..." : "保存"}
+              <div className="flex items-center gap-2">
+                <button onClick={handleSave} disabled={saving}
+                  className="px-4 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-primary-active disabled:opacity-50 transition-colors cursor-pointer">
+                  {saving ? "..." : "保存"}
+                </button>
+                <span className="text-[11px] text-muted-soft">{layers.length} 层</span>
+              </div>
+            </div>
+
+            {/* Layers Table */}
+            <div className="flex-1 overflow-auto p-4">
+              <div className="text-[11px] text-muted-soft uppercase tracking-wider font-medium mb-2">
+                Layers 编辑器
+              </div>
+              <div className="overflow-x-auto border border-hairline rounded-lg">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-surface-soft border-b border-hairline">
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium w-8">#</th>
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium">名称</th>
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium">材料</th>
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium w-16">厚度(m)</th>
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium w-14">颜色</th>
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium">描述</th>
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium">ModelPath</th>
+                      <th className="px-2 py-1.5 text-left text-muted-soft font-medium">ObjectName</th>
+                      <th className="px-2 py-1.5 text-muted-soft font-medium w-14"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {layers.map((layer, idx) => (
+                      <tr key={idx} className="border-b border-hairline hover:bg-surface-card/50 transition-colors">
+                        <td className="px-2 py-1 text-muted-soft text-center">
+                          <div className="flex items-center gap-0.5">
+                            <button onClick={() => idx > 0 && moveLayer(idx, idx - 1)}
+                              className="text-[10px] text-muted-soft hover:text-primary cursor-pointer disabled:opacity-30" disabled={idx === 0}>▲</button>
+                            <button onClick={() => idx < layers.length - 1 && moveLayer(idx, idx + 1)}
+                              className="text-[10px] text-muted-soft hover:text-primary cursor-pointer disabled:opacity-30" disabled={idx === layers.length - 1}>▼</button>
+                          </div>
+                        </td>
+                        <td className="px-2 py-1">
+                          <input value={layer.name || ""} onChange={(e) => updateLayer(idx, "name", e.target.value)}
+                            className="w-full text-xs px-1.5 py-1 border border-transparent hover:border-hairline focus:border-primary rounded outline-none bg-transparent" />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input value={layer.material || ""} onChange={(e) => updateLayer(idx, "material", e.target.value)}
+                            className="w-full text-xs px-1.5 py-1 border border-transparent hover:border-hairline focus:border-primary rounded outline-none bg-transparent" />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input type="number" step="0.001" value={layer.thickness ?? 0.05}
+                            onChange={(e) => updateLayer(idx, "thickness", parseFloat(e.target.value) || 0)}
+                            className="w-full text-xs px-1.5 py-1 border border-transparent hover:border-hairline focus:border-primary rounded outline-none bg-transparent" />
+                        </td>
+                        <td className="px-2 py-1">
+                          <div className="flex items-center gap-1">
+                            <div className="w-5 h-5 rounded border border-hairline flex-shrink-0" style={{ backgroundColor: layer.color || "#ccc" }} />
+                            <input value={layer.color || ""} onChange={(e) => updateLayer(idx, "color", e.target.value)}
+                              className="w-16 text-[10px] px-1 py-1 border border-transparent hover:border-hairline focus:border-primary rounded outline-none bg-transparent font-mono" />
+                          </div>
+                        </td>
+                        <td className="px-2 py-1">
+                          <input value={layer.description || ""} onChange={(e) => updateLayer(idx, "description", e.target.value)}
+                            className="w-full text-xs px-1.5 py-1 border border-transparent hover:border-hairline focus:border-primary rounded outline-none bg-transparent" />
+                        </td>
+                        <td className="px-2 py-1">
+                          <div className="flex items-center gap-1">
+                            <input value={layer.modelPath || ""} onChange={(e) => updateLayer(idx, "modelPath", e.target.value)}
+                              className="flex-1 text-[10px] px-1.5 py-1 border border-transparent hover:border-hairline focus:border-primary rounded outline-none bg-transparent font-mono"
+                              placeholder="/models/..." />
+                            <label className="text-[10px] text-primary hover:text-primary-active cursor-pointer px-1" title="上传模型">
+                              ↑<input type="file" accept=".glb,.gltf" className="hidden" onChange={(e) => handleLayerModelUpload(idx, e)} />
+                            </label>
+                          </div>
+                        </td>
+                        <td className="px-2 py-1">
+                          <input value={layer.layerObjectName || ""} onChange={(e) => updateLayer(idx, "layerObjectName", e.target.value)}
+                            className="w-full text-[10px] px-1.5 py-1 border border-transparent hover:border-hairline focus:border-primary rounded outline-none bg-transparent font-mono" />
+                        </td>
+                        <td className="px-2 py-1 text-center">
+                          <button onClick={() => { if (confirm("删除此层？")) removeLayer(idx); }}
+                            className="text-[10px] text-error hover:text-error transition-colors cursor-pointer">✕</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button onClick={addLayer}
+                className="mt-2 px-3 py-1.5 text-xs rounded-lg border border-dashed border-hairline text-muted-soft hover:text-primary hover:border-primary/30 transition-colors cursor-pointer">
+                + 添加层
               </button>
             </div>
-            <textarea value={nodeData} onChange={(e) => setNodeData(e.target.value)}
-              placeholder="JSON 数据" className="flex-1 p-4 text-xs font-mono outline-none resize-none" />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-soft text-sm">选择节点编辑</div>
@@ -619,8 +771,16 @@ function MediaLibrary() {
   useEffect(() => { loadFiles(); }, []);
 
   async function loadFiles() {
-    try { const { listMediaFiles } = await import("../services/contentService"); setFiles(await listMediaFiles() || []); }
-    catch { setFiles([]); }
+    try {
+      const { listMediaFiles, supabase } = await import("../lib/supabaseClient");
+      const { data, error } = await supabase.storage.from("media").list();
+      if (error) throw error;
+      setFiles((data || []).map((f: any) => ({
+        name: f.name,
+        url: supabase.storage.from("media").getPublicUrl(f.name).data.publicUrl,
+        isImage: /\.(png|jpe?g|gif|svg|webp)$/i.test(f.name),
+      })));
+    } catch { setFiles([]); }
   }
 
   async function handleUpload(e: any) {
@@ -628,6 +788,16 @@ function MediaLibrary() {
     try { await uploadMedia(file); loadFiles(); toast.success("上传成功"); }
     catch (err: any) { toast.error("上传失败: " + err.message); }
     finally { setUploading(false); }
+  }
+
+  async function handleDelete(name: string) {
+    if (!confirm(`删除 ${name}？`)) return;
+    try {
+      const { deleteMedia } = await import("../services/contentService");
+      await deleteMedia(name);
+      toast.success("已删除");
+      loadFiles();
+    } catch (err: any) { toast.error("删除失败: " + err.message); }
   }
 
   function copyUrl(url: string) { navigator.clipboard.writeText(url); toast.success("已复制"); }
@@ -639,13 +809,25 @@ function MediaLibrary() {
           {uploading ? "上传中..." : "上传文件"}
           <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
         </label>
-        <span className="text-xs text-muted-soft">上传到 Supabase Storage media bucket</span>
+        <span className="text-xs text-muted-soft">{files.length} 个文件</span>
       </div>
       <div className="grid grid-cols-4 gap-4">
         {files.map((f: any, i: number) => (
-          <div key={i} className="bg-canvas border border-hairline rounded-lg p-3 text-sm">
-            <p className="font-medium truncate text-body text-xs">{f.name}</p>
-            <button onClick={() => copyUrl(f.url)} className="text-xs text-primary hover:underline mt-1 cursor-pointer">复制链接</button>
+          <div key={i} className="bg-canvas border border-hairline rounded-lg overflow-hidden text-sm group">
+            {f.isImage ? (
+              <img src={f.url} alt={f.name} className="w-full h-24 object-cover" />
+            ) : (
+              <div className="w-full h-24 bg-surface-soft flex items-center justify-center text-[10px] text-muted-soft">
+                {f.name.split(".").pop()?.toUpperCase() || "FILE"}
+              </div>
+            )}
+            <div className="p-2.5">
+              <p className="font-medium truncate text-body text-xs mb-1.5">{f.name}</p>
+              <div className="flex gap-2">
+                <button onClick={() => copyUrl(f.url)} className="text-[11px] text-primary hover:underline cursor-pointer">复制</button>
+                <button onClick={() => handleDelete(f.name)} className="text-[11px] text-error hover:underline cursor-pointer">删除</button>
+              </div>
+            </div>
           </div>
         ))}
         {files.length === 0 && <p className="col-span-4 text-muted-soft text-sm">暂无文件</p>}
