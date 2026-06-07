@@ -13,15 +13,17 @@ import {
   X,
   LogIn,
   LogOut,
-  Users,
   SwitchCamera,
-  StickyNote,
   Pause,
   Play,
-  Settings,
+  Briefcase,
+  GraduationCap,
+  Sparkles,
+  BarChart3,
 } from "lucide-react";
 import MenuBackground from "../components/viewer/MenuBackground";
 import LoadingOverlay from "../components/viewer/LoadingOverlay";
+
 import backgroundScenes from "../data/backgroundScenes";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -67,43 +69,40 @@ const lineVariants = {
 };
 
 function MenuItem({ item, onClick }) {
+  const disabled = item.disabled;
+
   const content = (
     <>
-      <item.icon
-        size={22}
-        strokeWidth={1.5}
-        className="text-muted-soft group-hover:text-primary transition-all duration-300 ease-out flex-shrink-0"
-      />
-      <span className="text-base font-medium text-muted group-hover:text-ink transition-all duration-300 ease-out">
+      <item.icon size={18} strokeWidth={1.5}
+        className={`flex-shrink-0 ${disabled ? "text-black/15" : "text-muted-soft"}`} />
+      <span className={`text-[15px] font-medium ${disabled ? "text-black/15" : "text-muted"}`}>
         {item.label}
       </span>
+      {disabled && (
+        <span className="ml-auto text-[10px] text-muted-soft/40 font-normal">即将上线</span>
+      )}
     </>
   );
 
   const baseClass =
-    "w-full flex items-center gap-3.5 px-5 py-3 rounded-lg" +
-    " border-l-4 border-transparent hover:border-l-primary" +
+    "w-full flex items-center gap-[14px] pl-[12px] h-[52px] rounded-[12px]" +
     " transition-all duration-300 ease-out" +
-    " hover:bg-surface-card" +
-    " hover:-translate-y-0.5" +
-    " cursor-pointer group text-left";
+    (disabled
+      ? " cursor-not-allowed"
+      : " hover:bg-surface-card cursor-pointer group text-left");
 
-  if (onClick) {
-    return (
-      <button onClick={onClick} className={baseClass}>
-        {content}
-      </button>
-    );
+  if (disabled) {
+    return <div className={baseClass}>{content}</div>;
   }
 
-  return (
-    <Link to={item.to} className={baseClass}>
-      {content}
-    </Link>
-  );
+  if (onClick) {
+    return <button onClick={onClick} className={baseClass}>{content}</button>;
+  }
+
+  return <Link to={item.to} className={baseClass}>{content}</Link>;
 }
 
-function MenuContent({ onModalOpen }) {
+function MenuContent({ onModalOpen, onOpenChat }) {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -112,129 +111,98 @@ function MenuContent({ onModalOpen }) {
     navigate("/auth");
   }
 
+  const menuGroups = [
+    {
+      title: "教学资源",
+      items: [
+        { icon: BookOpen, label: "原理支持", to: "/curriculum" },
+        { icon: Layers, label: "节点库", to: "/library" },
+        { icon: Briefcase, label: "案例应用", to: "/curriculum/cases" },
+      ],
+    },
+    {
+      title: "学生实践",
+      items: [
+        { icon: GraduationCap, label: "自主学习", to: "/textbook/roof-membrane" },
+        { icon: Hammer, label: "作业训练", to: "/games" },
+      ],
+    },
+    {
+      title: "AI 与评价",
+      items: [
+        { icon: Sparkles, label: "AI 助手", onClick: onOpenChat },
+        { icon: BarChart3, label: "评价分析", disabled: true },
+      ],
+    },
+  ];
+
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show">
-      <motion.h1
-        className="text-3xl font-normal font-serif tracking-tight text-ink mb-1.5
-          hover:text-ink hover:scale-[1.02] transition-all duration-300 cursor-default origin-left"
-        variants={titleContainerVariants}
-      >
-        {"建筑构造".split("").map((ch, i) => (
-          <motion.span key={i} variants={charVariants} className="inline-block">
-            {ch}
-          </motion.span>
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col h-full pt-16 pb-20">
+      {/* ── Header ── */}
+      <div className="flex-shrink-0">
+        <motion.h1
+          className="text-3xl font-normal font-serif tracking-tight text-ink"
+          variants={titleContainerVariants}>
+          {"建筑构造".split("").map((ch, i) => (
+            <motion.span key={i} variants={charVariants} className="inline-block">{ch}</motion.span>
+          ))}
+        </motion.h1>
+        <motion.div
+          className="w-12 h-0.5 bg-primary rounded-full mt-8"
+          variants={lineVariants} />
+      </div>
+
+      {/* ── Navigation ── */}
+      <div className="flex-1 mt-10">
+        {menuGroups.map((group, gi) => (
+          <motion.div key={group.title} variants={itemVariants} className="mb-10">
+            <p className="text-[12px] font-medium tracking-[0.08em] text-[#9b948b] mb-[18px]">
+              {group.title}
+            </p>
+            {group.items.map((item) => (
+              <MenuItem key={item.label} item={item} onClick={item.onClick} />
+            ))}
+            {gi < menuGroups.length - 1 && (
+              <div className="border-t border-gray-200/50 mt-4" />
+            )}
+          </motion.div>
         ))}
-      </motion.h1>
-      <motion.div
-        className="w-12 h-0.5 bg-primary rounded-full my-5
-          hover:w-20 hover:bg-primary-active transition-all duration-300 origin-left"
-        variants={lineVariants}
-      />
+      </div>
 
-      {/* ── group 1: 学习探索 ── */}
-      <motion.div className="space-y-0.5" variants={itemVariants}>
-        <MenuItem item={{ icon: BookOpen, label: "课程目录", to: "/curriculum" }} />
-        <MenuItem item={{ icon: Layers, label: "节点库", to: "/library" }} />
-        <MenuItem item={{ icon: Hammer, label: "构建工坊", to: "/games" }} />
-      </motion.div>
 
-      <div className="border-t border-hairline my-3" />
-
-      {/* ── group 2: 个人中心 ── */}
-      <motion.div variants={itemVariants}>
+      {/* ── Footer ── */}
+      <div className="flex-shrink-0 mt-auto">
         {user ? (
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-3 px-5 py-2">
-              <div className="w-9 h-9 rounded-full bg-hairline flex items-center justify-center text-primary text-sm font-semibold flex-shrink-0">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="w-[44px] h-[44px] rounded-full bg-hairline flex items-center justify-center text-primary text-base font-semibold flex-shrink-0">
                 {(profile?.full_name || user.email || "?")[0]}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-body-strong truncate">
-                  {profile?.full_name || user.email}
-                </p>
-                <p className="text-xs text-muted-soft">
-                  {profile?.role === "developer" ? "开发者" : "用户"}
-                </p>
+                <p className="text-[16px] font-medium text-black/80 truncate">{profile?.full_name || user.email}</p>
+                <p className="text-[13px] text-black/40">{profile?.role === "developer" ? "开发者" : "用户"}</p>
               </div>
             </div>
-
-            <MenuItem
-              item={{ icon: StickyNote, label: "我的笔记", to: "/notes" }}
-            />
+            <button onClick={handleSwitchAccount}
+              className="w-full flex items-center gap-3.5 pl-[12px] h-[40px] rounded-[10px]
+                transition-all duration-300 ease-out hover:bg-surface-card cursor-pointer mt-4">
+              <SwitchCamera size={18} strokeWidth={1.5} className="text-muted-soft flex-shrink-0" />
+              <span className="text-[14px] text-muted">切换账号</span>
+            </button>
+            <button onClick={() => signOut()}
+              className="w-full flex items-center gap-3.5 pl-[12px] h-[40px] rounded-[10px]
+                transition-all duration-300 ease-out hover:bg-surface-card cursor-pointer">
+              <LogOut size={18} strokeWidth={1.5} className="text-muted-soft flex-shrink-0" />
+              <span className="text-[14px] text-muted-soft">退出登录</span>
+            </button>
           </div>
         ) : (
-          <MenuItem
-            item={{ icon: LogIn, label: "登录 / 注册", to: "/auth" }}
-          />
+          <MenuItem item={{ icon: LogIn, label: "登录 / 注册", to: "/auth" }} />
         )}
-      </motion.div>
+      </div>
 
-      <div className="border-t border-hairline my-3" />
-
-      {/* ── group 3: 项目与社区 ── */}
-      <motion.div className="space-y-0.5" variants={itemVariants}>
-        {profile?.role === "developer" && (
-          <MenuItem
-            item={{ icon: Settings, label: "管理后台", to: "/admin" }}
-          />
-        )}
-        <MenuItem
-          item={{ icon: GitPullRequest, label: "贡献节点", to: "/contribute" }}
-        />
-        <MenuItem
-          item={{ icon: Info, label: "关于项目" }}
-          onClick={onModalOpen}
-        />
-      </motion.div>
-
-      {/* ── bottom: 切换账号 / 退出登录 ── */}
-      {user && (
-        <motion.div variants={itemVariants}>
-          <div className="border-t border-hairline my-3" />
-
-          <button
-            onClick={handleSwitchAccount}
-            className="w-full flex items-center gap-3.5 px-5 py-3 rounded-lg
-              border-l-4 border-transparent
-              transition-all duration-300 ease-out
-              hover:bg-surface-card hover:border-l-primary hover:-translate-y-0.5
-              cursor-pointer group text-left"
-          >
-            <SwitchCamera
-              size={22}
-              strokeWidth={1.5}
-              className="text-muted-soft group-hover:text-primary transition-all duration-300 ease-out flex-shrink-0"
-            />
-            <span className="text-base font-medium text-muted group-hover:text-ink transition-all duration-300 ease-out">
-              切换账号
-            </span>
-          </button>
-
-          <button
-            onClick={() => signOut()}
-            className="w-full flex items-center gap-3.5 px-5 py-3 rounded-xl
-              border-l-4 border-transparent
-              transition-all duration-300 ease-out
-              hover:bg-surface-card
-              cursor-pointer group text-left"
-          >
-            <LogOut
-              size={22}
-              strokeWidth={1.5}
-              className="text-muted-soft group-hover:text-error transition-all duration-300 ease-out flex-shrink-0"
-            />
-            <span className="text-base font-medium text-muted-soft group-hover:text-error transition-all duration-300 ease-out">
-              退出登录
-            </span>
-          </button>
-        </motion.div>
-      )}
-
-      <motion.p
-        className="text-xs text-muted-soft mt-8 tracking-wide"
-        variants={itemVariants}
-      >
-        开源教育工具 · 探索建筑构造的空间逻辑
+      <motion.p className="text-xs text-muted-soft mt-6 tracking-wide" variants={itemVariants}>
+        探索建筑构造的空间逻辑
       </motion.p>
     </motion.div>
   );
@@ -335,12 +303,29 @@ function HomePage() {
       <aside
         className="hidden md:flex w-96 flex-shrink-0
           bg-canvas border-r border-hairline
-          flex-col justify-center h-full px-10"
+          flex-col h-full px-10"
       >
-        <MenuContent onModalOpen={() => setModalOpen(true)} />
+        <MenuContent onModalOpen={() => setModalOpen(true)} onOpenChat={() => {}} />
       </aside>
 
       <div className="hidden md:block flex-1 h-full relative">
+        {/* ── top nav bar ── */}
+        <div className="absolute top-0 left-0 right-0 z-20 flex justify-end items-center
+          h-10 px-4 bg-white/60 backdrop-blur-md border-b border-white/20">
+          <Link to="/contribute"
+            className="flex items-center gap-1.5 text-sm text-muted hover:text-primary
+              transition-colors px-2 py-1 rounded-md hover:bg-surface-card">
+            <GitPullRequest size={14} strokeWidth={1.5} />
+            <span>贡献节点</span>
+          </Link>
+          <button onClick={() => setModalOpen(true)}
+            className="flex items-center gap-1.5 text-sm text-muted hover:text-primary
+              transition-colors px-2 py-1 rounded-md hover:bg-surface-card ml-1">
+            <Info size={14} strokeWidth={1.5} />
+            <span>关于项目</span>
+          </button>
+        </div>
+
         <Canvas
           camera={{ near: 1, far: 100, position: [0, 0.5, 4.0], fov: 40 }}
           dpr={[1, 1.5]}
@@ -387,10 +372,11 @@ function HomePage() {
           bg-canvas
           flex-col justify-center px-8"
       >
-        <MenuContent onModalOpen={() => setModalOpen(true)} />
+        <MenuContent onModalOpen={() => setModalOpen(true)} onOpenChat={() => {}} />
       </div>
 
       <AboutModal open={modalOpen} onClose={() => setModalOpen(false)} />
+
     </div>
   );
 }
