@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 1.1.0 | 更新: 2026-06-02 模型性能优化 + 透视/正交切换 + UI 重构
+> 生成日期: 2026-05-23 | 版本: 1.2.0 | 更新: 2026-06-07 首页菜单4组重构 + 字体统一 + 案例节点03 + 悬停交互优化
 
 ---
 
@@ -23,7 +23,7 @@
 | 3D 渲染 | Three.js v0.184 + `@react-three/fiber` + `@react-three/drei` | 3D 模型加载、场景渲染、交互控制 |
 | 3D 压缩 | `@gltf-transform/functions` (Draco + textureCompress) + `draco3d` + `sharp` | GLB 模型网格压缩 + 纹理 WebP 转换 |
 | 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 rose-* 色板 |
-| 字体 | Noto Serif SC (Google Fonts) | 中文字体 |
+| 字体 | Noto Sans SC (Google Fonts, SIL OFL 可免费商用) | 统一中英文字体 |
 | 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
 | 状态管理 | React Context (AuthContext) + Custom Hooks | 认证全局共享 + 页面状态封装 |
 | 后端/数据库 | Supabase (PostgreSQL) | 用户认证、数据库、RLS 行级安全 |
@@ -54,7 +54,9 @@
 │   ├── images/                    # 教材插图
 │   ├── models/                    # GLB 3D 模型文件（已 Draco 压缩 + 纹理 WebP）
 │   │   ├── wall-model.glb         # 外墙整体模型 (154MB→5.8MB，55纹理+172网格)
-│   │   ├── yuncheng-c-01/         # 郓城C地块案例 (2.1MB→225KB)
+│   │   ├── yuncheng-c-01/         # 郓城C地块案例01 (2.1MB→225KB)
+│   │   ├── yuncheng-c-02.glb       # 郓城C地块案例02（单文件 GLB）
+│   │   ├── yuncheng-c-03.glb       # 郓城C地块案例03（单文件 GLB）
 │   │   ├── flat-roof-01/          # 平屋面：每层独立 GLB (6 个)
 │   │   ├── membrane-roof-01/      # 卷材防水屋面：单 GLB + layerObjectName
 │   │   └── roof-insulation-01/    # 卷材平面屋顶保温：单 GLB + layerObjectName
@@ -108,7 +110,7 @@
     │   ├── SectionTree.jsx       # 旧版章节树（保留兼容）
     │   └── SectionEditor.jsx     # 旧版章节编辑器（保留兼容）
     ├── pages/                     # 页面组件
-    │   ├── HomePage.jsx           # 首页：侧边菜单 + 3D 背景
+    │   ├── HomePage.jsx           # 首页：4组侧边菜单(教学资源/学生实践/AI与评价/账户) + 3D背景 + 顶部导航栏
     │   ├── AuthPage.jsx           # 登录/注册页
     │   ├── LibraryPage.jsx        # 节点库：按分类展示所有构造节点
     │   ├── CurriculumPage.jsx     # 课程目录：课程模块网格 → 章节列表
@@ -127,7 +129,9 @@
     │   ├── flatRoof.js            # 平屋面节点数据（6层，每层独立GLB）
     │   ├── membraneRoof.js        # 卷材防水屋面节点数据（6层，单GLB+layerObjectName）
     │   ├── roofInsulation.js      # 卷材平面屋顶保温节点数据（9层，单GLB+layerObjectName）
-    │   ├── yunchengC01.js         # 郓城C地块案例节点（1层整体模型，无爆炸）
+    │   ├── yunchengC01.js         # 郓城C地块案例节点01（9交互层+rest整体模型，含爆炸）
+│   ├── yunchengC02.js         # 郓城C地块案例节点02（3交互层+rest整体模型）
+│   ├── yunchengC03.js         # 郓城C地块案例节点03（5交互层+rest整体模型，屋面/花岗岩外墙/橡胶板地面/台阶/压顶封檐）
     │   ├── roofSections.js        # 屋顶章节数据
     │   ├── sections/              # 各模块章节数据（动态import）
     │   │   ├── introSections.js
@@ -138,7 +142,7 @@
     │   │   ├── stairsSections.js
     │   │   ├── windowSections.js
     │   │   ├── roofSections.js
-    │   │   └── caseSections.js    # 案例章节（3个占位 + 1个嵌套项目含1个子章节）
+    │   │   └── caseSections.js    # 案例章节（郓城C地块含 01/02/03 子章节）
     │   └── supabase_schema.sql    # 数据库建表 SQL（profiles/textbook_sections/node_definitions/course_sections/media）
     │
     └── services/                  # 业务逻辑层
@@ -494,17 +498,20 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | `flatRoof.js` | flat-roof-01 | 平屋面构造 | 6 层 | 每层独立 GLB | JavaScript |
 | `membraneRoof.js` | membrane-roof-01 | 卷材防水屋面 | 6 层 | 共享 GLB + layerObjectName | JavaScript |
 | `roofInsulation.js` | roof-insulation-01 | 卷材平面屋顶保温构造 | 9 层 | 共享 GLB + layerObjectName | JavaScript |
+| `yunchengC01.js` | yuncheng-c-01 | 郓城C地块 01 节点 | 9+(rest) | 共享 GLB + layerObjectName + excludeNames | JavaScript |
+| `yunchengC02.js` | yuncheng-c-02 | 郓城C地块 02 节点 | 3+(rest) | 共享 GLB + layerObjectName + excludeNames | JavaScript |
+| `yunchengC03.js` | yuncheng-c-03 | 郓城C地块 03 节点 | 5+(rest) | 共享 GLB + layerObjectName + excludeNames | JavaScript |
 | `backgroundScenes.js` | — | **背景场景列表** | — | GLB路径 + position 配置 | JavaScript |
 | `nodesIndex.ts` | — | **节点统一入口** | — | `nodeLoaders` 映射 + 元数据数组 | TypeScript |
 | `roofSections.js` | — | 屋顶章节索引 | — | — | JavaScript |
 | `courseModules.js` | — | 课程模块定义 | — | 9 个模块 (3 个 available) | JavaScript |
 | `sections/wallSections.js` | — | 墙体章节 | — | 5 个章节 (1 个 available) | JavaScript |
 | `sections/roofSections.js` | — | 屋顶章节（动态） | — | 2 个章节 (均 available) | JavaScript |
-| `sections/caseSections.js` | — | 案例章节（动态，含嵌套） | — | 4 个章节 (3 unavailable + 1 含 children) | JavaScript |
+| `sections/caseSections.js` | — | 案例章节（动态，含嵌套） | — | 1 个嵌套项目含 3 个子章节 (01/02/03) | JavaScript |
 | `sections/*.js` | — | 其他模块章节 | — | 均不可用 (available: false) | JavaScript |
 
-**已实现课程模块**: 墙体 (wall)、屋顶 (roof)、楼梯 (stairs)、案例 (cases)
-**可用节点**: ext-wall-01, flat-roof-01, membrane-roof-01, roof-insulation-04
+**已实现课程模块**: 墙体 (wall)、屋顶 (roof)、楼梯 (stairs)、案例 (cases，含 yuncheng-c 项目 01/02/03 子章节)
+**可用节点**: ext-wall-01, flat-roof-01, membrane-roof-01, roof-insulation-01, yuncheng-c-01, yuncheng-c-02, yuncheng-c-03
 
 ---
 
@@ -539,28 +546,39 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | `[side-by-side]...[/side-by-side]` | 并排布局 | 内含图片和 [model:] 标记 |
 | GFM 表格 | 材料/厚度表格 | `remarkGfm` 插件渲染 |
 
-### 8.5 样式约定
+### 8.5 首页菜单布局约定
 
-- rose-500 (`#ff3d58`) 为主强调色
+- **布局**: `pt-16 pb-20` 上下留白，`mt-auto` 将用户区推至底部
+- **分组**: 教学资源 / 学生实践 / AI与评价 / 账户（4组）
+- **菜单项**: `h-[38px]`，图标18px + 文字18px，`gap-[10px]`，`rounded-[10px]`
+- **分组间距**: `mb-7` (28px)，标题下距 `mb-[12px]`，分隔线 `mt-3`
+- **选项卡头**: `text-[12px] font-medium tracking-[0.08em] text-[#9b948b]`
+- **悬停效果**: `bg-primary/12` 玫红浅底 + `group-hover:text-primary` 文字 + `shadow-md` 浮起 + `-translate-y-[1px]` 上移
+- **禁用状态**: "即将上线" 灰色文字，`cursor-not-allowed`
+
+### 8.6 样式约定
+
+- primary (`#cc785c`) 为玫红/珊瑚主强调色
+- 菜单悬停: `bg-primary/12` 浅玫红底 + `group-hover:text-primary` 文字变色 + `shadow-md` 浮起效果
 - 毛玻璃效果: `bg-white/70 backdrop-blur-md`
-- 圆角: `rounded-2xl` (卡片), `rounded-full` (按钮)
-- 字体: Noto Serif SC + 系统回退
+- 圆角: `rounded-2xl` (卡片), `rounded-full` (按钮), `rounded-[10px]` (菜单项)
+- 字体: 统一 Noto Sans SC（思源黑体，SIL OFL 可免费商用）
 
-### 8.6 笔记系统
+### 8.7 笔记系统
 
 - 存储在 localStorage key `"construction_notes"`
 - 最大 30 条，超量自动删除最旧记录
 - 每条笔记: `{ id, nodeId, nodeTitle, image (dataURL), text, createdAt }`
 - 类型定义见 `src/types/index.ts` → `Note` interface
 
-### 8.7 Hooks 拆分约定
+### 8.8 Hooks 拆分约定
 
 - NodeDetail 的状态逻辑封装在 `src/hooks/` 目录下的独立 `.ts` 文件中
 - `useModelInteraction` 管理所有 3D 模型交互状态，不涉及 UI 面板
 - `usePanelState` 管理所有面板/标签 UI 状态
 - Hooks 返回原始值和方法，由页面组件自行传递给子组件
 
-### 8.8 新增节点流程
+### 8.9 新增节点流程
 
 在 `src/data/nodesIndex.ts` 中：
 1. `nodesIndex` 数组加一条 `NodeIndexEntry` 元数据 `{ id, title, description, category, thumbnail }`
@@ -568,7 +586,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 
 无需修改其他任何文件。
 
-### 8.9 TypeScript 约定（渐进迁移）
+### 8.10 TypeScript 约定（渐进迁移）
 
 - `tsconfig.json` 配置 `allowJs: true`，兼容现有 JSX 文件
 - `skitLibCheck: true` 跳过库类型检查
@@ -597,7 +615,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | 门窗模块 | courseModules.js | available: false |
 | 屋顶子章节 5/8 | roofSections.js | available: false |
 | 墙体子章节 4/5 | wallSections.js | available: false |
-| 案例子章节 3/4 | caseSections.js | available: false（砖混/幕墙/坡屋顶 → 01 已实现） |
+| 案例子章节 3/3 | caseSections.js | ✅ 全部已实现（01/02/03） |
 | TypeScript 全量迁移 | src/ 全部 .jsx → .tsx | 进行中（4 文件已迁移） |
 
 ### 2026-06-02 模型性能优化 + 透视/正交切换 + UI 重构
@@ -613,3 +631,27 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | **状态** | `useModelInteraction.ts` | 新增 `isOrthographic` 状态 |
 | **透传** | `NodeDetail.tsx` | 快捷键 O 切换正交/透视；ViewGizmo 覆盖层；BottomControlBar 精简 props |
 | **清理** | `.gitattributes` | 移除 `*.glb filter=lfs`，压缩后文件直接存 git |
+
+### 2026-06-07 案例节点02 + 知识卡片 + 混层交互
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `yunchengC02.js` | 郓城C地块02节点（3交互层 + rest，excludeNames 隐藏交互物体） |
+| **新增** | `caseSections.js` | 案例02子章节 (`case-yuncheng-c-02`) |
+| **修改** | `ConstructionLayer.jsx` | 新增 `excludeNames` 支持（rest层隐藏同名交互物体）和 `interactive` 属性（非交互层无事件） |
+| **修改** | `nodesIndex.ts` | 注册 yuncheng-c-02 节点 |
+| **新增** | `SpatialLabel.jsx` | 空间知识卡片：点击构件弹出悬浮卡片（drei Html, frosted glass, spring 动画） |
+| **修改** | `ModelViewer.jsx` | 支持独立爆炸（per-layer explosion）、PanSyncController 正交修复、边缘线对齐修复 (child.add) |
+| **修改** | `NodeDetail.tsx` | 新增 `spatialCard` 状态管理空间卡片 |
+| **修改** | `ExplosionLabels.jsx` | 统一 Html scale=0.55（正交/透视一致）、支持独立爆炸 |
+
+### 2026-06-07 案例节点03 + 首页菜单4组重构 + 字体统一
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `yunchengC03.js` | 郓城C地块03节点（5交互层+rest：屋面/花岗岩外墙/橡胶板地面/台阶/压顶封檐） |
+| **新增** | `caseSections.js` | 案例03子章节 (`case-yuncheng-c-03`) |
+| **重写** | `HomePage.jsx` | 4组菜单布局（教学资源/学生实践/AI与评价/账户），统一样式间距（h-[38px] item、mb-7 分组），移除学习卡片，顶部导航栏，玫红悬停浮动效果 |
+| **统一** | `index.html` + `index.css` | 字体全站统一为 Noto Sans SC（思源黑体，SIL OFL 可免费商用），移除 Inter/Cormorant Garamond/Noto Serif SC |
+| **新增** | `UI_LAYOUT_REFERENCE.md` | UI 布局参考文档（页面总览、布局结构、状态管理、修改指南） |
+| **修改** | `nodesIndex.ts` | 注册 yuncheng-c-03 节点 |

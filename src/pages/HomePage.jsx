@@ -74,8 +74,8 @@ function MenuItem({ item, onClick }) {
   const content = (
     <>
       <item.icon size={18} strokeWidth={1.5}
-        className={`flex-shrink-0 ${disabled ? "text-black/15" : "text-muted-soft"}`} />
-      <span className={`text-[18px] font-medium ${disabled ? "text-black/15" : "text-muted"}`}>
+        className={`flex-shrink-0 transition-colors duration-300 ${disabled ? "text-black/15" : "text-muted-soft group-hover:text-primary"}`} />
+      <span className={`text-[18px] font-medium transition-colors duration-300 ${disabled ? "text-black/15" : "text-muted group-hover:text-primary"}`}>
         {item.label}
       </span>
       {disabled && (
@@ -89,7 +89,7 @@ function MenuItem({ item, onClick }) {
     " transition-all duration-300 ease-out" +
     (disabled
       ? " cursor-not-allowed"
-      : " hover:bg-white/60 hover:shadow-md hover:-translate-y-[1px] active:scale-[0.98] cursor-pointer group text-left");
+      : " hover:bg-primary/12 hover:shadow-md hover:-translate-y-[1px] active:scale-[0.98] cursor-pointer group text-left");
 
   if (disabled) {
     return <div className={baseClass}>{content}</div>;
