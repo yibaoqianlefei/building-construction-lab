@@ -41,14 +41,14 @@
   --color-error: #c64545;
 
   /* ── Font families ── */
-  --font-serif: "Cormorant Garamond", "Noto Serif SC", "Times New Roman", serif;
-  --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-serif: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   html {
-    font-family: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
       "Hiragino Sans GB", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -63,9 +63,8 @@
   }
 
   h1, h2, h3 {
-    font-family: "Cormorant Garamond", "Noto Serif SC", "Times New Roman", serif;
-    font-weight: 400;
-    letter-spacing: -0.02em;
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-weight: 500;
   }
 }
 

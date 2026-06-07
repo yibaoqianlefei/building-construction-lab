@@ -75,7 +75,7 @@ function MenuItem({ item, onClick }) {
     <>
       <item.icon size={18} strokeWidth={1.5}
         className={`flex-shrink-0 ${disabled ? "text-black/15" : "text-muted-soft"}`} />
-      <span className={`text-[15px] font-medium ${disabled ? "text-black/15" : "text-muted"}`}>
+      <span className={`text-[18px] font-medium ${disabled ? "text-black/15" : "text-muted"}`}>
         {item.label}
       </span>
       {disabled && (
@@ -85,11 +85,11 @@ function MenuItem({ item, onClick }) {
   );
 
   const baseClass =
-    "w-full flex items-center gap-[14px] pl-[12px] h-[52px] rounded-[12px]" +
+    "w-full flex items-center gap-[10px] pl-[12px] h-[38px] rounded-[10px]" +
     " transition-all duration-300 ease-out" +
     (disabled
       ? " cursor-not-allowed"
-      : " hover:bg-surface-card cursor-pointer group text-left");
+      : " hover:bg-white/60 hover:shadow-md hover:-translate-y-[1px] active:scale-[0.98] cursor-pointer group text-left");
 
   if (disabled) {
     return <div className={baseClass}>{content}</div>;
@@ -141,29 +141,29 @@ function MenuContent({ onModalOpen, onOpenChat }) {
       {/* ── Header ── */}
       <div className="flex-shrink-0">
         <motion.h1
-          className="text-3xl font-normal font-serif tracking-tight text-ink"
+          className="text-[38px] font-normal font-serif tracking-tight text-ink"
           variants={titleContainerVariants}>
           {"建筑构造".split("").map((ch, i) => (
             <motion.span key={i} variants={charVariants} className="inline-block">{ch}</motion.span>
           ))}
         </motion.h1>
         <motion.div
-          className="w-12 h-0.5 bg-primary rounded-full mt-8"
+          className="w-12 h-0.5 bg-primary rounded-full mt-6"
           variants={lineVariants} />
       </div>
 
       {/* ── Navigation ── */}
-      <div className="flex-1 mt-10">
+      <div className="flex-1 mt-6">
         {menuGroups.map((group, gi) => (
-          <motion.div key={group.title} variants={itemVariants} className="mb-10">
-            <p className="text-[12px] font-medium tracking-[0.08em] text-[#9b948b] mb-[18px]">
+          <motion.div key={group.title} variants={itemVariants} className="mb-7">
+            <p className="text-[12px] font-medium tracking-[0.08em] text-[#9b948b] mb-[12px]">
               {group.title}
             </p>
             {group.items.map((item) => (
               <MenuItem key={item.label} item={item} onClick={item.onClick} />
             ))}
             {gi < menuGroups.length - 1 && (
-              <div className="border-t border-gray-200/50 mt-4" />
+              <div className="border-t border-gray-200/50 mt-3" />
             )}
           </motion.div>
         ))}
@@ -185,7 +185,7 @@ function MenuContent({ onModalOpen, onOpenChat }) {
             </div>
             <button onClick={handleSwitchAccount}
               className="w-full flex items-center gap-3.5 pl-[12px] h-[40px] rounded-[10px]
-                transition-all duration-300 ease-out hover:bg-surface-card cursor-pointer mt-4">
+                transition-all duration-300 ease-out hover:bg-surface-card cursor-pointer mt-3">
               <SwitchCamera size={18} strokeWidth={1.5} className="text-muted-soft flex-shrink-0" />
               <span className="text-[14px] text-muted">切换账号</span>
             </button>
@@ -201,7 +201,7 @@ function MenuContent({ onModalOpen, onOpenChat }) {
         )}
       </div>
 
-      <motion.p className="text-xs text-muted-soft mt-6 tracking-wide" variants={itemVariants}>
+      <motion.p className="text-xs text-muted-soft mt-4 tracking-wide" variants={itemVariants}>
         探索建筑构造的空间逻辑
       </motion.p>
     </motion.div>
