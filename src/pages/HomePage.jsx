@@ -115,7 +115,7 @@ function MenuContent({ onModalOpen, onOpenChat }) {
     {
       title: "教学资源",
       items: [
-        { icon: BookOpen, label: "原理支持", to: "/curriculum" },
+        { icon: BookOpen, label: "构造原理", to: "/curriculum" },
         { icon: Layers, label: "节点库", to: "/library",
           onMouseEnter: () => {
             /* preload common node models on hover */

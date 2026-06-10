@@ -7,12 +7,11 @@ import { getSectionsForModule, getChildSections } from "../services/contentServi
 
 const sectionsMap = {
   introduction: () => import("../data/sections/introSections"),
-  structures: () => import("../data/sections/structureSections"),
-  foundation: () => import("../data/sections/foundationSections"),
   wall: () => import("../data/sections/wallSections"),
+  "door-window": () => import("../data/sections/windowSections"),
+  foundation: () => import("../data/sections/foundationSections"),
   floor: () => import("../data/sections/floorSections"),
   stairs: () => import("../data/sections/stairsSections"),
-  "door-window": () => import("../data/sections/windowSections"),
   roof: () => import("../data/sections/roofSections"),
   cases: () => import("../data/sections/caseSections"),
 };
