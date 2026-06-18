@@ -8,14 +8,6 @@ interface NodeIndexEntry {
 
 const nodesIndex: NodeIndexEntry[] = [
   {
-    id: "ext-wall-01",
-    title: "外墙外保温系统",
-    description:
-      "适用于寒冷地区的外墙保温构造，由五层材料组成，涵盖内饰面、结构层、保温层、空气间层及外饰面。",
-    category: "墙体",
-    thumbnail: null,
-  },
-  {
     id: "flat-roof-01",
     title: "平屋面构造",
     description:
@@ -68,7 +60,6 @@ const nodesIndex: NodeIndexEntry[] = [
 type NodeLoader = () => Promise<{ default: any }>;
 
 const nodeLoaders: Record<string, NodeLoader> = {
-  "ext-wall-01": () => import("./externalWall"),
   "flat-roof-01": () => import("./flatRoof.js"),
   "membrane-roof-01": () => import("./membraneRoof.js"),
   "roof-insulation-01": () => import("./roofInsulation.js"),
