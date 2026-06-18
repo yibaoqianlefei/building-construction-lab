@@ -5,6 +5,7 @@ import * as THREE from "three";
 import ConstructionLayer from "./ConstructionLayer";
 import ExplosionLabels from "./ExplosionLabels";
 import SpatialLabel from "./SpatialLabel";
+import { ExplosionEngine } from "../../core/ExplosionEngine";
 
 const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
@@ -75,10 +76,15 @@ function WallAssembly({
   onLayerClick,
   wallRef,
   smoothExplodeRef,
+  useEngine = false,
 }) {
   const groupRefs = useRef([]);
+  const groupRefsById = useRef({}); // ID-keyed refs for ExplosionEngine
   const computedDirs = useRef(null); // cached per-layer direction vectors
   const dirsReady = useRef(false);
+  const engineRef = useRef(null);             // ExplosionEngine instance
+  const layersVersionRef = useRef(0);          // track layers changes for rebuild
+  const debugLoggedRef = useRef(false);        // throttle debug logging
 
   const useModelPositions = layers[0]?.layerObjectName != null;
   const hasExplosion = explodeAxis != null;
@@ -160,6 +166,21 @@ function WallAssembly({
 
   useFrame((_, delta) => {
     const target = hasExplosion ? explodeValue : 0;
+
+    /* ── Lazy init engine ── */
+    if (useEngine && !engineRef.current) {
+      engineRef.current = new ExplosionEngine();
+    }
+
+    /* ── Engine rebuild when layers/axis change ── */
+    if (useEngine && engineRef.current) {
+      const version = layers.map(l => l.name).join("|") + "|" + (explodeAxis || "none");
+      if (version !== layersVersionRef.current) {
+        layersVersionRef.current = version;
+        engineRef.current.rebuild(layers, explodeAxis, groupRefsById.current);
+      }
+    }
+
     const alpha = 1 - Math.exp(-EXPLODE_LERP * delta);
     smoothExplodeRef.current += (target - smoothExplodeRef.current) * alpha;
 
@@ -168,32 +189,73 @@ function WallAssembly({
 
     const t = smoothExplodeRef.current / 100;
 
+    /* ── Engine tick (parallel, independent smoothing) ── */
+    let engineT = 0;
+    if (useEngine && engineRef.current) {
+      engineT = engineRef.current.tick(delta, target);
+    }
+
+    /* ── Debug: reset log throttle every 120 frames (~2s at 60fps) ── */
+    const frame = Math.floor(Date.now() / 2000); // ~2s throttle
+    if (frame !== debugLoggedRef.current) {
+      debugLoggedRef.current = frame;
+    }
+
     layers.forEach((layer, i) => {
       const grp = groupRefs.current[i];
       if (!grp) return;
 
+      /* ── OLD position (always computed for debug) ── */
+      let oldPos;
       if (isIndividual) {
-        // per-layer explosion
         const dir = computedDirs.current?.[i];
         const dist = layer.explodeDistance || 0;
         if (dir && dist > 0) {
-          grp.position.set(
+          oldPos = [
             initialPositions[i] + dir.x * dist * t,
             initialPositions[i] + dir.y * dist * t,
-            initialPositions[i] + dir.z * dist * t
-          );
+            initialPositions[i] + dir.z * dist * t,
+          ];
         } else {
-          grp.position.set(0, 0, 0);
+          oldPos = [0, 0, 0];
         }
       } else {
-        // uniform explosion (backward compatible)
         const off = i * explodeDir * smoothExplodeRef.current * EXPLODE_STEP;
         if (isX) {
-          grp.position.x = initialPositions[i] + off;
-          grp.position.y = 0;
+          oldPos = [initialPositions[i] + off, 0, 0];
         } else {
-          grp.position.y = initialPositions[i] + off;
-          grp.position.x = 0;
+          oldPos = [0, initialPositions[i] + off, 0];
+        }
+      }
+
+      /* ── NEW engine position ── */
+      if (useEngine && engineRef.current) {
+        const layerId = `${layer.name || "layer"}-${i}`;
+        const enginePos = engineRef.current.getLayerOffset(layerId);
+
+        /* ── Debug: compare OLD vs NEW ── */
+        if ((i === 0 || i === layers.length - 1) && engineT > 0) {
+          console.log(
+            `[Engine] Layer ${i} "${layerId}" (t=${engineT.toFixed(3)})`,
+            "OLD:", oldPos.map(v => v.toFixed(4)),
+            "NEW:", enginePos.map(v => v.toFixed(4)),
+          );
+        }
+
+        /* Use engine position */
+        grp.position.set(enginePos[0], enginePos[1], enginePos[2]);
+      } else {
+        /* Use old position (default path) */
+        if (isIndividual) {
+          grp.position.set(oldPos[0], oldPos[1], oldPos[2]);
+        } else {
+          if (isX) {
+            grp.position.x = oldPos[0];
+            grp.position.y = 0;
+          } else {
+            grp.position.y = oldPos[1];
+            grp.position.x = 0;
+          }
         }
       }
     });
@@ -201,10 +263,15 @@ function WallAssembly({
 
   return (
     <group ref={wallRef}>
-      {layers.map((layer, i) => (
+      {layers.map((layer, i) => {
+        const layerId = `${layer.name || "layer"}-${i}`;
+        return (
         <group
           key={layer.name}
-          ref={(el) => (groupRefs.current[i] = el)}
+          ref={(el) => {
+            groupRefs.current[i] = el;
+            if (useEngine) groupRefsById.current[layerId] = el;
+          }}
           position={[isX && !isIndividual ? initialPositions[i] : 0, isX || isIndividual ? 0 : initialPositions[i], 0]}
         >
           <ConstructionLayer
@@ -228,7 +295,8 @@ function WallAssembly({
             }}
           />
         </group>
-      ))}
+        );
+      })}
     </group>
   );
 }
@@ -722,6 +790,7 @@ function Scene({
   isOrthographic,
   spatialCard,
   onSpatialCardClose,
+  useEngine = false,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -785,6 +854,7 @@ function Scene({
           onLayerClick={onLayerClick}
           wallRef={wallRef}
           smoothExplodeRef={smoothExplodeRef}
+          useEngine={useEngine}
         />
         {explodeAxis != null && (
           <ExplosionLabels
@@ -848,6 +918,7 @@ function ModelViewer({
   isOrthographic = false,
   spatialCard,
   onSpatialCardClose,
+  useEngine = false,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -881,6 +952,7 @@ function ModelViewer({
           isOrthographic={isOrthographic}
           spatialCard={spatialCard}
           onSpatialCardClose={onSpatialCardClose}
+          useEngine={useEngine}
         />
       </Canvas>
     </div>

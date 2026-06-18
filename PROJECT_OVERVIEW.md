@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 2.2.0 | 更新: 2026-06-18 屋顶拆分变形缝模块 + 课程目录8模块
+> 生成日期: 2026-05-23 | 版本: 2.3.0 | 更新: 2026-06-18 Phase1 核心引擎 + 屋顶拆分变形缝模块 + 课程目录8模块
 
 ---
 
@@ -25,7 +25,7 @@
 | 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 rose-* 色板 |
 | 字体 | Noto Sans SC (Google Fonts, SIL OFL 可免费商用) | 统一中英文字体 |
 | 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
-| 状态管理 | React Context (AuthContext) + Custom Hooks | 认证全局共享 + 页面状态封装 |
+| 状态管理 | Zustand (modelStore) + React Context (AuthContext) + Custom Hooks | 全局模型状态 + 认证全局共享 + 页面状态封装 |
 | 后端/数据库 | Supabase (PostgreSQL) | 用户认证、数据库、RLS 行级安全 |
 | Markdown 渲染 | `react-markdown` + `remark-gfm` | 教材内容渲染 |
 | 拖拽交互 | `@dnd-kit/core` | 2D 拼装游戏拖拽 |
@@ -72,6 +72,14 @@
     │
     ├── types/                     # TypeScript 类型定义
     │   └── index.ts               # 核心类型：NodeData (含 diagramImage), LayerData, UserProfile, Note 等
+    │
+    ├── core/                      # 🆕 核心引擎层（纯逻辑，无 React 依赖）
+    │   ├── modelStore.ts          # Zustand 全局 store（LayerState, ModelState, ID-keyed）
+    │   └── ExplosionEngine.ts     # V6 爆炸引擎：rebuild/tick/getLayerOffset，ID-driven
+    │
+    ├── runtime/                   # 🆕 运行时层（React hooks + 资源管理）
+    │   ├── AssetManager.ts        # 运行时资源管理器
+    │   └── useRuntimeNode.ts      # 运行时节点 Hook
     │
     ├── hooks/                     # 自定义 Hooks（页面状态封装）
     │   ├── useModelInteraction.ts # 3D 模型交互状态（explode/hover/select/screenshot）
@@ -689,6 +697,24 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | **修正** | `backgroundScenes.js` `MenuBackground.jsx` | 模型路径修正：`wall-model.glb` → `Exhibition model.glb` |
 | **优化** | `index.html` | 新增模型预加载链接，加速首页渲染 |
 | **清理** | `CLAUDE.md` `PROJECT_OVERVIEW.md` `CONTENT_GUIDE.md` | 清除所有 ext-wall-01/externalWall 过期引用 |
+
+### 2026-06-18 Phase 1: 核心引擎重构 — Store + ExplosionEngine 并行接入
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/core/modelStore.ts` | Zustand 全局状态 store（LayerState, ModelState），ID-keyed layer 管理 |
+| **已有** | `src/core/ExplosionEngine.ts` | V6 纯计算引擎：ID-driven 爆炸位置计算，`rebuild()`/`tick()`/`getLayerOffset()`，支持 uniform/individual 两种模式，三级缓存 |
+| **新建** | `src/runtime/AssetManager.ts` | 运行时资源管理器 |
+| **新建** | `src/runtime/useRuntimeNode.ts` | 运行时节点 Hook |
+| **新增** | `deps: zustand` | 轻量状态管理库 |
+| **接入** | `ModelViewer.jsx` | 新增 `useEngine` prop（默认false）；WallAssembly 内 ExplosionEngine 实例化 + rebuild + tick；并行运算新旧位置；debug console.log 对比 OLD vs NEW |
+| **接入** | `NodeDetail.tsx` | 传递 `useEngine={false}` 保持默认旧路径 |
+
+**设计要点:**
+- ExplosionEngine 纯函数计算（same input → same output），offsetCache 包含 mode 维度，不跨模式复用
+- explodeValue 内部 0-1 归一化
+- useEngine=true 时引擎路径与旧逻辑并行运行，不影响现有系统
+- debug 日志每 2s 节流输出首尾层的 OLD/NEW 位置对比
 
 ### 2026-06-18 屋顶拆分变形缝模块
 

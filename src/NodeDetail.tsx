@@ -141,7 +141,7 @@ function NodeDetail() {
           <span className="text-sm text-muted-soft">加载中…</span>
         </div>
         <main className="flex-1 flex flex-col lg:flex-row min-h-0">
-          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline flex-col items-center justify-center rounded-r-2xl m-4 mr-0 p-8">
+          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline flex-col items-center justify-center rounded-r-xl m-4 mr-0 p-8">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </aside>
           <ModelViewerSkeleton />
@@ -180,7 +180,7 @@ function NodeDetail() {
 
       <main className="flex-1 flex flex-col lg:flex-row min-h-0">
         {hasImage ? (
-          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline rounded-r-2xl m-4 mr-0 overflow-hidden p-8">
+          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline rounded-r-xl m-4 mr-0 overflow-hidden p-8">
             <ZoomableImage
               src={data.diagramImage!}
               alt={`${data.title} 剖面图`}
@@ -192,7 +192,7 @@ function NodeDetail() {
             />
           </aside>
         ) : (
-          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline flex-col items-center justify-center rounded-r-2xl m-4 mr-0 p-8">
+          <aside className="hidden lg:flex flex-[2] bg-canvas border-r border-hairline flex-col items-center justify-center rounded-r-xl m-4 mr-0 p-8">
             <Image size={40} className="text-muted-soft mb-3" strokeWidth={1} />
             <p className="text-sm text-muted font-light">剖面图</p>
             <p className="text-xs text-muted-soft mt-1">即将上线</p>
@@ -203,7 +203,7 @@ function NodeDetail() {
           <ModelErrorBoundary key={nodeId}>
             <motion.div
               ref={viewerRef}
-              className="flex-1 relative rounded-2xl overflow-hidden border border-hairline bg-canvas m-4 md:m-6 md:mx-3"
+              className="flex-1 relative rounded-xl overflow-hidden border border-hairline bg-canvas m-4 md:m-6 md:mx-3"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
@@ -233,6 +233,7 @@ function NodeDetail() {
                 viewTarget={viewTarget}
                 onViewDone={() => setViewTarget(null)}
                 isOrthographic={isOrthographic}
+                useEngine={false}
               />
 
               {/* Blender-style view gizmo — top-right overlay */}
@@ -259,7 +260,7 @@ function NodeDetail() {
               {screenshotMode && (
                 <ScreenshotTool
                   containerRef={viewerRef}
-                  onScreenshot={(dataUrl) => {
+                  onScreenshot={(dataUrl: string) => {
                     saveNote({
                       nodeId: data.id,
                       nodeTitle: data.title,
