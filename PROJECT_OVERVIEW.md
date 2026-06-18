@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 2.0.0 | 更新: 2026-06-07 V3 架构升级（状态收敛 + 后台增强 + 设计令牌 + 性能优化）
+> 生成日期: 2026-05-23 | 版本: 2.2.0 | 更新: 2026-06-18 屋顶拆分变形缝模块 + 课程目录8模块
 
 ---
 
@@ -53,7 +53,7 @@
 │   │   └── draco_wasm_wrapper.js
 │   ├── images/                    # 教材插图
 │   ├── models/                    # GLB 3D 模型文件（已 Draco 压缩 + 纹理 WebP）
-│   │   ├── wall-model.glb         # 外墙整体模型 (154MB→5.8MB，55纹理+172网格)
+│   │   ├── Exhibition model.glb    # 主界面3D背景模型 (6MB)
 │   │   ├── yuncheng-c-01/         # 郓城C地块案例01 (2.1MB→225KB)
 │   │   ├── yuncheng-c-02.glb       # 郓城C地块案例02（单文件 GLB）
 │   │   ├── yuncheng-c-03.glb       # 郓城C地块案例03（单文件 GLB）
@@ -125,7 +125,7 @@
     │   ├── backgroundScenes.js    # 主菜单背景场景列表（GLB路径 + position配置）
     │   ├── nodesIndex.ts          # 节点统一入口：NodeIndexEntry[] + nodeLoaders + getNodeData
     │   ├── courseModules.js       # 课程模块定义（绪论/墙体/屋顶/案例/...）
-    │   ├── externalWall.ts        # 外墙外保温节点数据（5层，程序化Box + 类型标注）
+    
     │   ├── flatRoof.js            # 平屋面节点数据（6层，每层独立GLB）
     │   ├── membraneRoof.js        # 卷材防水屋面节点数据（6层，单GLB+layerObjectName）
     │   ├── roofInsulation.js      # 卷材平面屋顶保温节点数据（9层，单GLB+layerObjectName）
@@ -156,7 +156,7 @@
 |----------|------|------|
 | **新建** | `ZoomableImage.jsx` | 可缩放拖拽图片组件：滚轮缩放(0.3x–3x)、鼠标拖拽、双击/按钮重置、触摸双指缩放 |
 | **新增** | `types/index.ts` | NodeData 新增 `diagramImage?: string` 字段 |
-| **新增** | `externalWall.ts` | 外墙节点添加 `diagramImage` 示例配置 |
+
 | **重构** | `NodeDetail.jsx` | 三栏 flex 比例布局（左 flex-[2] / 中 flex-[3] / 右 w-[360px]），左侧剖面图条件渲染 |
 | **新增** | `NodeDetail.jsx` | 左侧面板：有 diagramImage 显示 ZoomableImage，无则显示占位，加载失败回退 |
 
@@ -282,7 +282,7 @@
 
 | 变更类型 | 文件 | 说明 |
 |----------|------|------|
-| **TypeScript 迁移** | `src/data/externalWall.ts` | JS → TS，添加 `NodeData` 类型标注 |
+
 | **TypeScript 迁移** | `src/data/nodesIndex.ts` | JS → TS，添加 `NodeIndexEntry`/`NodeLoader` 类型 |
 | **TypeScript 迁移** | `src/hooks/useModelInteraction.ts` | JS → TS，添加返回值类型 |
 | **TypeScript 迁移** | `src/hooks/usePanelState.ts` | JS → TS，添加返回值类型 |
@@ -494,7 +494,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 
 | 文件 | 节点/章节 ID | 标题 | layers | 模型方式 | 语言 |
 |------|-------------|------|--------|----------|------|
-| `externalWall.ts` | ext-wall-01 | 外墙外保温系统 | 5 层 | 程序化 Box | TypeScript |
+
 | `flatRoof.js` | flat-roof-01 | 平屋面构造 | 6 层 | 每层独立 GLB | JavaScript |
 | `membraneRoof.js` | membrane-roof-01 | 卷材防水屋面 | 6 层 | 共享 GLB + layerObjectName | JavaScript |
 | `roofInsulation.js` | roof-insulation-01 | 卷材平面屋顶保温构造 | 9 层 | 共享 GLB + layerObjectName | JavaScript |
@@ -510,8 +510,8 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | `sections/caseSections.js` | — | 案例章节（动态，含嵌套） | — | 1 个嵌套项目含 3 个子章节 (01/02/03) | JavaScript |
 | `sections/*.js` | — | 其他模块章节 | — | 均不可用 (available: false) | JavaScript |
 
-**已实现课程模块**: 墙体 (wall)、屋顶 (roof)、楼梯 (stairs)、案例 (cases，含 yuncheng-c 项目 01/02/03 子章节)
-**可用节点**: ext-wall-01, flat-roof-01, membrane-roof-01, roof-insulation-01, yuncheng-c-01, yuncheng-c-02, yuncheng-c-03
+**已实现课程模块**: 绪论 (introduction)、墙体 (wall)、门窗 (door-window)、基础与地基 (foundation)、楼地层 (floor)、楼梯 (stairs)、屋顶 (roof)、变形缝 (deformation-joint)
+**可用节点**: flat-roof-01, membrane-roof-01, roof-insulation-01, yuncheng-c-01, yuncheng-c-02, yuncheng-c-03
 
 ---
 
@@ -532,7 +532,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 ### 8.3 模型路径与命名
 
 - GLB 文件放在 `public/models/{nodeId}/` 目录下
-    │   │   ├── wall-model.glb         # 外墙整体模型 (154MB→5.8MB，55纹理+172网格)
+    │   │   ├── Exhibition model.glb    # 主界面3D背景模型 (6MB)
     │   │   ├── yuncheng-c-01/         # 郓城C地块案例 (2.1MB→225KB)
 - 独立层模型命名: `layer_{NN}_{name}.glb` (如 `layer_01_protection.glb`)
 - 共享模型命名: `{nodeId}.glb` 或描述性名称
@@ -622,7 +622,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 
 | 变更类型 | 文件 | 说明 |
 |----------|------|------|
-| **P0 压缩** | `scripts/compress-models.cjs` | Draco 网格压缩 + sharp 纹理压缩（resize→1024, WebP）。wall-model 154MB→5.8MB |
+| **P0 压缩** | `scripts/compress-models.cjs` | Draco 网格压缩 + sharp 纹理压缩（resize→1024, WebP）。Exhibition model 压缩至 6MB |
 | **解码器** | `public/draco/gltf/` + `main.jsx` | 本地 Draco 解码器（替代 Google CDN），`useGLTF.setDecoderPath()` |
 | **加载指示** | `ConstructionLayer.jsx` | PlaceholderLayer：加载中显示脉动半透明方块（颜色继承图层色），替代空 fallback |
 | **透视/正交** | `ModelViewer.jsx` | CameraSwitcher 组件（`useThree().set()` 替换相机）+ CameraAdjuster 条件化 OrbitControls + ViewSwitcher/SyncZoomAdjuster 正交适配 |
@@ -673,3 +673,29 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | **新增** | `vite.config.js` | manualChunks 代码分割：three/r3f/supabase 独立 chunk |
 | **新增** | `HomePage.jsx` | 菜单项 onMouseEnter 预加载（节点库 hover → preload 常用模型） |
 | **TS 迁移** | `SpatialLabel.tsx` `ZoomableImage.tsx` | JSX → TSX，添加完整 props 接口和类型标注 |
+
+### 2026-06-18 新课程目录 + 外墙节点清理 + 案例模块重构
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **重写** | `courseModules.js` | 新课程目录：绪论/墙体/门窗/基础与地基/楼地层/楼梯/屋顶（7模块），移除"构筑物"模块，模块顺序完全更新 |
+| **重写** | `sections/` 7 个文件 | 全部替换为新子章节（共35个），按新课程目录编排，全部 `available: false` |
+| **删除** | `externalWall.ts` | 移除外墙外保温系统节点数据 |
+| **删除** | `wall-section.png.png` | 移除墙体剖面图 |
+| **修改** | `nodesIndex.ts` | 移除 ext-wall-01 条目和加载器 |
+| **修改** | `SectionSubPage.jsx` | sectionsMap 更新对齐新模块ID；案例单独映射（从课程目录移除但保留独立路由） |
+| **修改** | `courseModules.js` | 移除 cases 模块（案例不在课程目录中显示，通过首页"案例应用"菜单直达） |
+| **修改** | `HomePage.jsx` | "原理支持" → "构造原理"；案例应用指向 `/curriculum/cases` |
+| **修正** | `backgroundScenes.js` `MenuBackground.jsx` | 模型路径修正：`wall-model.glb` → `Exhibition model.glb` |
+| **优化** | `index.html` | 新增模型预加载链接，加速首页渲染 |
+| **清理** | `CLAUDE.md` `PROJECT_OVERVIEW.md` `CONTENT_GUIDE.md` | 清除所有 ext-wall-01/externalWall 过期引用 |
+
+### 2026-06-18 屋顶拆分变形缝模块
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `courseModules.js` | 新增"变形缝"模块（id: deformation-joint），置于屋顶之后 |
+| **新增** | `deformationJointSections.js` | 变形缝独立章节数据（3个子章节：概念/设置/构造） |
+| **修改** | `roofSections.js` | 移除变形缝相关子章节，屋顶从6减为3（概述/平屋面/坡屋面） |
+| **修改** | `SectionSubPage.jsx` | sectionsMap 新增 deformation-joint 映射 |
+| **修改** | `courseModules.js` | 屋顶描述更新为"平屋面与坡屋面构造" |

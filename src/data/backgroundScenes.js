@@ -2,7 +2,7 @@ const backgroundScenes = [
   {
     id: "wall",
     name: "墙体",
-    modelPath: "/models/wall-model.glb",
+    modelPath: "/models/Exhibition model.glb",
     position: [0, 0.5, 0],
   },
   {

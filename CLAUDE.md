@@ -69,7 +69,6 @@ Each construction node defines its layers as typed objects (see Data Model below
 
 Construction nodes are defined in [src/data/](src/data/) as JS/TS modules exporting a default object:
 
-- [src/data/externalWall.ts](src/data/externalWall.ts) — 外墙外保温系统 (5 layers, typed `NodeData`, includes `diagramImage`)
 - [src/data/flatRoof.js](src/data/flatRoof.js) — 上人平屋面 (6 layers, per-layer GLB)
 - [src/data/membraneRoof.js](src/data/membraneRoof.js) — 卷材防水屋面 (6 layers, shared GLB + layerObjectName)
 - [src/data/roofInsulation.js](src/data/roofInsulation.js) — 卷材平面屋顶保温构造 (9 layers)

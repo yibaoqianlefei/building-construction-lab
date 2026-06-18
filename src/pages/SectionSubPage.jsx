@@ -13,6 +13,7 @@ const sectionsMap = {
   floor: () => import("../data/sections/floorSections"),
   stairs: () => import("../data/sections/stairsSections"),
   roof: () => import("../data/sections/roofSections"),
+  "deformation-joint": () => import("../data/sections/deformationJointSections"),
   cases: () => import("../data/sections/caseSections"),
 };
 

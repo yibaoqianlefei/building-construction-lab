@@ -131,7 +131,7 @@ function LoadingFallback() {
   );
 }
 
-function MenuBackground({ autoRotate = true, modelPath = "/models/wall-model.glb", position = [0, 0, 0], onLoaded }) {
+function MenuBackground({ autoRotate = true, modelPath = "/models/Exhibition model.glb", position = [0, 0, 0], onLoaded }) {
   const groupRef = useRef();
 
   /* preload + handle model-ready callback */

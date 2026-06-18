@@ -15,7 +15,7 @@ src/data/
     stairsSections.js
     ...
   nodesIndex.js                 # 3D 模型节点注册（单一来源）
-  externalWall.js               # 节点数据（含 layers、modelPath 等）
+
   membraneRoof.js
   ...
 
