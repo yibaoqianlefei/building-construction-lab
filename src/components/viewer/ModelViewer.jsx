@@ -302,7 +302,7 @@ function WallAssembly({
   );
 }
 
-function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onControlsReady, isOrthographic }) {
+function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onControlsReady, isOrthographic, disabled = false }) {
   const { camera } = useThree();
   const controlsRef = useRef(null);
   const userInteracting = useRef(false);
@@ -328,6 +328,7 @@ function CameraAdjuster({ layers, autoRotate, explodeAxis, smoothExplodeRef, onC
      OrbitControls owns the camera and will orbit around the shifting target
      without any direction change. */
   useFrame((_, delta) => {
+    if (disabled) return; // Phase 2-4: Runtime controls camera
     const ctrl = controlsRef.current;
     if (!ctrl || !cacheReady.current) return;
 
@@ -813,11 +814,12 @@ function Scene({
 
       <color attach="background" args={["#f5f5f7"]} />
 
-      {/* sync camera zoom with diagram scale */}
-      {syncScale != null && <SyncZoomAdjuster syncScale={syncScale} isOrthographic={isOrthographic} />}
+      {/* sync camera zoom with diagram scale (disabled when Runtime controls camera) */}
+      {!useRuntime && syncScale != null && <SyncZoomAdjuster syncScale={syncScale} isOrthographic={isOrthographic} />}
       {/* sync camera pan with diagram drag */}
-      {panOffset != null && <PanSyncController panOffset={panOffset} syncScale={syncScale} isOrthographic={isOrthographic} />}
-      {viewTarget != null && <ViewSwitcher viewTarget={viewTarget} onDone={onViewDone} isOrthographic={isOrthographic} />}
+      {!useRuntime && panOffset != null && <PanSyncController panOffset={panOffset} syncScale={syncScale} isOrthographic={isOrthographic} />}
+      {/* view preset switcher */}
+      {!useRuntime && viewTarget != null && <ViewSwitcher viewTarget={viewTarget} onDone={onViewDone} isOrthographic={isOrthographic} />}
 
       <ambientLight intensity={1.2} color="#ffffff" />
 
@@ -890,6 +892,7 @@ function Scene({
         smoothExplodeRef={smoothExplodeRef}
         onControlsReady={onControlsReady}
         isOrthographic={isOrthographic}
+        disabled={useRuntime}
       />
 
       {/* ── Runtime observer (parallel, read-only) ── */}

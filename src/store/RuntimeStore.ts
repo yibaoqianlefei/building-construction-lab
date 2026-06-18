@@ -64,6 +64,35 @@ if (typeof window !== "undefined") {
     get debug() {
       return useRuntimeStore.getState().debug;
     },
+    /** Phase 2-4: Set camera goal for smooth writeback. */
+    setCameraGoal(goal: any) {
+      const rt = useRuntimeStore.getState().runtime;
+      if (rt) rt.setCameraGoal(goal);
+    },
+    /** Phase 2-5: Run a demo teaching sequence. */
+    runDemo() {
+      const rt = useRuntimeStore.getState().runtime;
+      if (!rt) return "No runtime";
+      const o = rt.orchestrator;
+      o.addAction({ id: "demo-explode", type: "explosion", duration: 1.5, payload: { value: 80 } });
+      o.addAction({ id: "demo-cam", type: "camera_move", duration: 2.0, payload: { position: { x: 3, y: 2, z: 3 }, target: { x: 0, y: 0.5, z: 0 } } });
+      o.addAction({ id: "demo-wait", type: "wait", duration: 1.0 });
+      o.addAction({ id: "demo-restore", type: "camera_move", duration: 1.5, payload: { position: null, target: null } });
+      return "Demo started (explode → camera → wait → restore)";
+    },
+    get orchestrator() {
+      const rt = useRuntimeStore.getState().runtime;
+      const o = rt?.orchestrator;
+      return o ? {
+        isIdle: o.isIdle(),
+        currentAction: o.currentAction,
+        pendingCount: o.pendingCount,
+      } : null;
+    },
+    /** Phase 2-4: Get current camera goal. */
+    get cameraGoal() {
+      return useRuntimeStore.getState().runtime?.state?.cameraGoal ?? null;
+    },
   };
 
   /* Phase 2-3: Camera Intent debugging */

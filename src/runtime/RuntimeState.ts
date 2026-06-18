@@ -53,6 +53,14 @@ export interface PerformanceState {
   frameCount: number;
 }
 
+/** Phase 2-4: Camera goal for writeback (null = no goal, skip writeback). */
+export interface CameraGoal {
+  position: { x: number; y: number; z: number } | null;
+  target: { x: number; y: number; z: number } | null;
+  zoom: number | null;
+  projectionMode: "persp" | "ortho" | null;
+}
+
 export interface RuntimeStateData {
   camera: CameraState | null;
   explode: ExplodeState | null;
@@ -62,6 +70,10 @@ export interface RuntimeStateData {
   performance: PerformanceState;
   /** Computed per-layer offsets from ExplosionSystem (ID-keyed) */
   layerOffsets: Record<string, [number, number, number]> | null;
+  /** Phase 2-4: Target camera state for writeback */
+  cameraGoal: CameraGoal;
+  /** Phase 2-5: UI flags for orchestrator ui_show/ui_hide */
+  ui: Record<string, boolean>;
 }
 
 export function createDefaultRuntimeState(): RuntimeStateData {
@@ -73,5 +85,7 @@ export function createDefaultRuntimeState(): RuntimeStateData {
     animation: null,
     performance: { frameTime: 0, frameCount: 0 },
     layerOffsets: null,
+    cameraGoal: { position: null, target: null, zoom: null, projectionMode: null },
+    ui: {},
   };
 }

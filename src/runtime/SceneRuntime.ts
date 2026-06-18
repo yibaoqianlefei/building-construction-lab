@@ -1,15 +1,15 @@
-/* ── V4 SceneRuntime ──
+/* ── V5 SceneRuntime ──
    Orchestrator: owns RuntimeState, runs registered systems each frame.
-   Registered: ExplosionSystem, CameraSystem, CameraTruthSync,
-               CameraIntentStore + CameraArbiter (Phase 2-3). */
+   Update order: Orchestrator → Explosion → Camera (+ truth + intents). */
 
-import { createDefaultRuntimeState, type RuntimeStateData } from "./RuntimeState";
+import { createDefaultRuntimeState, type RuntimeStateData, type CameraGoal } from "./RuntimeState";
 import { ExplosionSystem, type LayerMeta } from "../systems/ExplosionSystem";
 import { CameraSystem, type CameraContext } from "../systems/CameraSystem";
 import { CameraTruthSync } from "./sync/CameraTruthSync";
 import { CameraIntentStore } from "../systems/camera/intent/CameraIntentStore";
 import { CameraArbiter } from "../systems/camera/intent/CameraArbiter";
 import { createSnapshotIntent } from "../systems/camera/intent/intentSources/SnapshotIntent";
+import { SceneOrchestrator } from "../orchestrator/SceneOrchestrator";
 
 export class SceneRuntime {
   state: RuntimeStateData;
@@ -21,6 +21,9 @@ export class SceneRuntime {
   intentStore: CameraIntentStore;
   arbiter: CameraArbiter;
 
+  /** Phase 2-5: Scene orchestrator (director-level sequencer) */
+  orchestrator: SceneOrchestrator;
+
   constructor() {
     this.state = createDefaultRuntimeState();
     this.explosionSystem = new ExplosionSystem();
@@ -28,37 +31,33 @@ export class SceneRuntime {
     this.cameraTruthSync = new CameraTruthSync();
     this.intentStore = new CameraIntentStore();
     this.arbiter = new CameraArbiter();
+    this.orchestrator = new SceneOrchestrator(this);
   }
 
   /** Called each frame from SceneRuntimeRunner. ctx is prepared by the runner. */
   update(delta: number, cameraCtx?: CameraContext): void {
-    /* ── Explosion ── */
+    /* ── 0. Orchestrator (highest priority — may override explode/camera goals) ── */
+    this.orchestrator.update(delta);
+
+    /* ── 1. Explosion ── */
     this.explosionSystem.update(delta, this.state);
 
-    /* ── Camera ── */
+    /* ── 2. Camera ── */
     if (cameraCtx) {
-      /* 1. Observe current camera state */
       this.cameraSystem.update(delta, this.state, cameraCtx);
 
-      /* 2. Truth comparison */
       if (cameraCtx.camera && cameraCtx.controls) {
         this.cameraTruthSync.update(cameraCtx.camera, cameraCtx.controls, this);
       }
 
-      /* 3. Intent arbitration (Phase 2-3) */
-      // Clear stale snapshot intents, inject current observed state as snapshot intent
       this.intentStore.clearBySource("snapshot");
       this.intentStore.add(createSnapshotIntent(
         cameraCtx.position,
         cameraCtx.target,
         cameraCtx.zoom
       ));
-
-      // External intents (explosion/view/user/sync) are added by callers
       const intents = this.intentStore.getAll();
       const decision = this.arbiter.decide(intents);
-
-      // Write decision metadata to state
       if (this.state.camera) {
         this.state.camera.decision = {
           winner: decision.winner?.id ?? null,
@@ -68,6 +67,26 @@ export class SceneRuntime {
         this.state.camera.activeIntents = intents.length;
       }
     }
+  }
+
+  /** Phase 2-5: Set explode value programmatically (for orchestrator). */
+  setExplode(value: number): void {
+    if (!this.state.explode) {
+      this.state.explode = { value, target: value, axis: null };
+    } else {
+      this.state.explode.target = value;
+      this.state.explode.value = value;
+    }
+  }
+
+  /** Phase 2-4: Set camera goal for smooth writeback (partial merge). */
+  setCameraGoal(goal: Partial<CameraGoal>): void {
+    this.state.cameraGoal = {
+      position: goal.position !== undefined ? goal.position : this.state.cameraGoal.position,
+      target: goal.target !== undefined ? goal.target : this.state.cameraGoal.target,
+      zoom: goal.zoom !== undefined ? goal.zoom : this.state.cameraGoal.zoom,
+      projectionMode: goal.projectionMode !== undefined ? goal.projectionMode : this.state.cameraGoal.projectionMode,
+    };
   }
 
   /** Sync explode target from props (called before update). */
@@ -93,6 +112,7 @@ export class SceneRuntime {
   /** Reset all systems (call on unmount or node change). */
   reset(): void {
     this.explosionSystem.reset();
+    this.intentStore.clearAll();
     this.state = createDefaultRuntimeState();
   }
 }

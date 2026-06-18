@@ -70,6 +70,21 @@ function SceneRuntimeRunner({
     /* Sync props → state */
     runtime.syncExplodeValue(explodeValue, explodeAxis);
 
+    /* Phase 2-4: Explosion → Camera linkage */
+    if (explodeAxis && explodeValue > 10) {
+      runtime.setCameraGoal({
+        target: { x: 0, y: 0.5, z: 0 },
+        position: { x: 0, y: 1.8, z: 4.5 },
+      });
+    } else if (explodeAxis && explodeValue === 0) {
+      // Clear goal when explosion resets (camera snaps back to user control)
+      runtime.setCameraGoal({
+        target: null,
+        position: null,
+        zoom: null,
+      });
+    }
+
     /* Build camera context from live THREE objects.
        Plain data for CameraSystem, THREE refs for CameraTruthSync. */
     const ctrl = cameraControls;
