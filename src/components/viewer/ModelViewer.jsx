@@ -6,6 +6,7 @@ import ConstructionLayer from "./ConstructionLayer";
 import ExplosionLabels from "./ExplosionLabels";
 import SpatialLabel from "./SpatialLabel";
 import { ExplosionEngine } from "../../core/ExplosionEngine";
+import SceneRuntimeRunner from "../../runtime/SceneRuntimeRunner";
 
 const EXPLODE_STEP = 0.003;
 const EXPLODE_LERP = 1.0;   // slow explode speed, ~3s to 95%
@@ -791,6 +792,7 @@ function Scene({
   spatialCard,
   onSpatialCardClose,
   useEngine = false,
+  useRuntime = false,
 }) {
   const wallRef = useRef();
   const smoothExplodeRef = useRef(0);
@@ -889,6 +891,18 @@ function Scene({
         onControlsReady={onControlsReady}
         isOrthographic={isOrthographic}
       />
+
+      {/* ── Runtime observer (parallel, read-only) ── */}
+      {useRuntime && (
+        <SceneRuntimeRunner
+          layers={layers}
+          explodeValue={explodeValue}
+          explodeAxis={explodeAxis}
+          cameraControls={globalControls}
+          isOrthographic={isOrthographic}
+          viewTarget={viewTarget}
+        />
+      )}
     </>
   );
 }
@@ -919,6 +933,7 @@ function ModelViewer({
   spatialCard,
   onSpatialCardClose,
   useEngine = false,
+  useRuntime = false,
 }) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -953,6 +968,7 @@ function ModelViewer({
           spatialCard={spatialCard}
           onSpatialCardClose={onSpatialCardClose}
           useEngine={useEngine}
+          useRuntime={useRuntime}
         />
       </Canvas>
     </div>

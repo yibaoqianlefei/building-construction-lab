@@ -79,7 +79,16 @@
     │
     ├── runtime/                   # 🆕 运行时层（React hooks + 资源管理）
     │   ├── AssetManager.ts        # 运行时资源管理器
-    │   └── useRuntimeNode.ts      # 运行时节点 Hook
+    │   ├── useRuntimeNode.ts      # 运行时节点 Hook
+    │   ├── RuntimeState.ts        # 纯数据容器（Explode/Camera/Interaction 等状态）
+    │   ├── SceneRuntime.ts        # 编排器（持有 state + systems，update 驱动）
+    │   └── SceneRuntimeRunner.jsx # R3F useFrame 桥接（纯观察者，无视觉输出）
+    │
+    ├── store/                     # 🆕 全局状态管理
+    │   └── RuntimeStore.ts        # Zustand store + window.__RUNTIME__ DevTools
+    │
+    ├── systems/                   # 🆕 系统适配器层
+    │   └── ExplosionSystem.ts     # ExplosionEngine 适配器（读 state → tick → 写 offsets）
     │
     ├── hooks/                     # 自定义 Hooks（页面状态封装）
     │   ├── useModelInteraction.ts # 3D 模型交互状态（explode/hover/select/screenshot）
@@ -715,6 +724,47 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 - explodeValue 内部 0-1 归一化
 - useEngine=true 时引擎路径与旧逻辑并行运行，不影响现有系统
 - debug 日志每 2s 节流输出首尾层的 OLD/NEW 位置对比
+
+### 2026-06-18 Phase 2-1: SceneRuntime 基础设施
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/runtime/RuntimeState.ts` | 纯数据容器：ExplodeState, CameraState, InteractionState, LabelState, AnimationState, PerformanceState, layerOffsets。所有字段 nullable，无业务逻辑 |
+| **新建** | `src/systems/ExplosionSystem.ts` | 适配器：包装 ExplosionEngine，读取 RuntimeState.explode → engine.tick() → getLayerOffset() → 写入 RuntimeState.layerOffsets。不重新计算位置 |
+| **新建** | `src/runtime/SceneRuntime.ts` | 编排器：持有 RuntimeState + ExplosionSystem，update(delta) 驱动系统。预留 Camera/Interaction 系统注册位 |
+| **新建** | `src/runtime/SceneRuntimeRunner.jsx` | R3F useFrame 桥接：读取 props（layers/explodeValue/explodeAxis），同步至 RuntimeState，调用 runtime.update()，更新 RuntimeStore snapshot。返回 null，纯观察者 |
+| **新建** | `src/store/RuntimeStore.ts` | Zustand store：runtime 实例引用 + snapshot + debug 信息。挂载到 `window.__RUNTIME__` 用于 DevTools |
+| **接入** | `ModelViewer.jsx` | 新增 `useRuntime` prop（默认 false）；Scene 内条件渲染 `<SceneRuntimeRunner>`；Scene/M/ModelViewer 透传 |
+| **接入** | `NodeDetail.tsx` | 传递 `useRuntime={false}` 保持默认行为 |
+
+**架构层次:**
+```
+SceneRuntimeRunner (React useFrame bridge)
+  └─ SceneRuntime (orchestrator)
+       ├─ RuntimeState (pure data, no logic)
+       ├─ ExplosionSystem (adapter → ExplosionEngine)
+       │    └─ ExplosionEngine (V6 compute)
+       └─ [reserved] CameraSystem, InteractionSystem, ...
+RuntimeStore (zustand → window.__RUNTIME__)
+```
+
+**设计原则:**
+- Runtime 只读 — 不接管业务逻辑，旧 useFrame 全部保留
+- `useRuntime=false` 行为 100% 一致
+- `useRuntime=true` 画面 100% 一致（仅多了 RuntimeState 同步）
+- 可随时切换回旧系统，Runtime 层零影响
+
+### 2026-06-18 Phase 1: 核心引擎重构 — Store + ExplosionEngine 并行接入
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/core/modelStore.ts` | Zustand 全局状态 store（LayerState, ModelState），ID-keyed layer 管理 |
+| **已有** | `src/core/ExplosionEngine.ts` | V6 纯计算引擎：ID-driven 爆炸位置计算，`rebuild()`/`tick()`/`getLayerOffset()`，支持 uniform/individual 两种模式，三级缓存 |
+| **新建** | `src/runtime/AssetManager.ts` | 运行时资源管理器 |
+| **新建** | `src/runtime/useRuntimeNode.ts` | 运行时节点 Hook |
+| **新增** | `deps: zustand` | 轻量状态管理库 |
+| **接入** | `ModelViewer.jsx` | 新增 `useEngine` prop（默认false）；WallAssembly 内 ExplosionEngine 实例化 + rebuild + tick；并行运算新旧位置；debug console.log 对比 OLD vs NEW |
+| **接入** | `NodeDetail.tsx` | 传递 `useEngine={false}` 保持默认旧路径 |
 
 ### 2026-06-18 屋顶拆分变形缝模块
 

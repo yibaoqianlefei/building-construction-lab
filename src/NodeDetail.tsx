@@ -234,6 +234,7 @@ function NodeDetail() {
                 onViewDone={() => setViewTarget(null)}
                 isOrthographic={isOrthographic}
                 useEngine={false}
+                useRuntime={false}
               />
 
               {/* Blender-style view gizmo — top-right overlay */}
