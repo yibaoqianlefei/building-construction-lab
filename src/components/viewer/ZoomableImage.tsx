@@ -56,6 +56,11 @@ export default function ZoomableImage({
     scaleStart: 1,
   });
 
+  /* ── notify parent of scale changes (safe: fires after render, not during) ── */
+  useEffect(() => {
+    if (onScaleRef.current) onScaleRef.current(scale);
+  }, [scale]);
+
   /* ── wheel zoom (non-passive to preventDefault) ── */
   useEffect(() => {
     const el = containerRef.current;
@@ -64,11 +69,7 @@ export default function ZoomableImage({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-      setScale((prev) => {
-        const ns = clampScale(prev + delta);
-        if (onScaleRef.current) onScaleRef.current(ns);
-        return ns;
-      });
+      setScale((prev) => clampScale(prev + delta));
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -173,7 +174,6 @@ export default function ZoomableImage({
       const ratio = dist / pinchRef.current.lastDist;
       const ns = clampScale(pinchRef.current.scaleStart * ratio);
       setScale(ns);
-      if (onScaleRef.current) onScaleRef.current(ns);
     } else if (e.touches.length === 1 && dragRef.current.active) {
       const d = dragRef.current;
       setPosition({

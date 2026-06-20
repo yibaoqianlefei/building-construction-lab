@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export interface SpatialCardData {
   layer: any;
@@ -19,7 +19,14 @@ export interface ModelInteractionState {
   spatialCard: SpatialCardData | null;
 }
 
-export function useModelInteraction() {
+export function useModelInteraction(explodeAxis?: string | null) {
+  /** True when interaction can be blocked (non-case node). */
+  const interactionBlocked = explodeAxis != null && explodeAxis !== undefined;
+
+  /* Refs for latest values inside stale callbacks */
+  const explodeValueRef = useRef(0);
+  const blockedRef = useRef(interactionBlocked);
+  blockedRef.current = interactionBlocked;
   const [explodeValue, setExplodeValue] = useState(0);
   const [autoRotate, setAutoRotate] = useState(false);
   const [isOrthographic, setIsOrthographic] = useState(true);
@@ -31,14 +38,26 @@ export function useModelInteraction() {
   const [viewTarget, setViewTarget] = useState<string | null>("front");
   const [spatialCard, setSpatialCard] = useState<SpatialCardData | null>(null);
 
+  /* Keep ref in sync */
   useEffect(() => {
+    explodeValueRef.current = explodeValue;
     if (explodeValue === 0) {
       setSelectedLayer(null);
     }
   }, [explodeValue]);
 
+  /* ── Hover guard: blocked for non-case nodes when explodeValue ≤ 0 ── */
+  const handleLayerHover = useCallback(
+    (index: number | null) => {
+      if (blockedRef.current && explodeValueRef.current <= 0) return;
+      setHoveredLayer(index);
+    },
+    []
+  );
+
   const handleLayerClick = useCallback(
     (index: number, _layer: any, _e: { clientX: number; clientY: number }) => {
+      if (blockedRef.current && explodeValueRef.current <= 0) return;
       setSelectedLayer((prev) => (prev === index ? null : index));
     },
     []
@@ -46,6 +65,7 @@ export function useModelInteraction() {
 
   const handlePanelSelect = useCallback(
     (index: number) => {
+      if (blockedRef.current && explodeValueRef.current <= 0) return;
       setSelectedLayer((prev) => (prev === index ? null : index));
     },
     []
@@ -58,6 +78,7 @@ export function useModelInteraction() {
   /* ── spatial card helpers ── */
   const handleLayerClickWithCard = useCallback(
     (index: number, layer: any, e: { clientX: number; clientY: number }, worldPos?: number[]) => {
+      if (blockedRef.current && explodeValueRef.current <= 0) return;
       setSelectedLayer((prev) => (prev === index ? null : index));
       if (worldPos) {
         setSpatialCard({ layer, worldPosition: worldPos, layerIndex: index });
@@ -122,6 +143,7 @@ export function useModelInteraction() {
     setViewTarget,
     setSpatialCard,
     /* callbacks */
+    handleLayerHover,
     handleLayerClick,
     handlePanelSelect,
     handleBlankClick,

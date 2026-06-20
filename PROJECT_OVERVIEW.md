@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — 建筑构造交互系统
 
-> 生成日期: 2026-05-23 | 版本: 2.3.0 | 更新: 2026-06-18 Phase1 核心引擎 + 屋顶拆分变形缝模块 + 课程目录8模块
+> 生成日期: 2026-05-23 | 版本: 2.5.0 | 更新: 2026-06-18 Phase 2-5 SceneOrchestrator + Runtime 完整闭环
 
 ---
 
@@ -25,7 +25,8 @@
 | 样式方案 | Tailwind CSS 4 + `@tailwindcss/vite` | 原子化样式，自定义 rose-* 色板 |
 | 字体 | Noto Sans SC (Google Fonts, SIL OFL 可免费商用) | 统一中英文字体 |
 | 动画 | Framer Motion v12 | 页面过渡、弹性动画 |
-| 状态管理 | Zustand (modelStore) + React Context (AuthContext) + Custom Hooks | 全局模型状态 + 认证全局共享 + 页面状态封装 |
+| 状态管理 | Zustand (modelStore + RuntimeStore) + React Context (AuthContext) + Custom Hooks | 全局模型状态 + Runtime 状态 + 认证全局共享 + 页面状态封装 |
+| 运行时 | SceneRuntime + ExplosionSystem + CameraSystem + SceneOrchestrator | 每帧调度：编排器 → 爆炸 → 相机（读写 + 回写 + 漂移检测 + 意图仲裁）|
 | 后端/数据库 | Supabase (PostgreSQL) | 用户认证、数据库、RLS 行级安全 |
 | Markdown 渲染 | `react-markdown` + `remark-gfm` | 教材内容渲染 |
 | 拖拽交互 | `@dnd-kit/core` | 2D 拼装游戏拖拽 |
@@ -80,15 +81,29 @@
     ├── runtime/                   # 🆕 运行时层（React hooks + 资源管理）
     │   ├── AssetManager.ts        # 运行时资源管理器
     │   ├── useRuntimeNode.ts      # 运行时节点 Hook
-    │   ├── RuntimeState.ts        # 纯数据容器（Explode/Camera/Interaction 等状态）
-    │   ├── SceneRuntime.ts        # 编排器（持有 state + systems，update 驱动）
-    │   └── SceneRuntimeRunner.jsx # R3F useFrame 桥接（纯观察者，无视觉输出）
+    │   ├── RuntimeState.ts        # 纯数据容器（Explode/CameraGoal/UI 等状态）
+    │   ├── SceneRuntime.ts        # V5 编排器（持有 state + 7 systems，update 驱动）
+    │   ├── SceneRuntimeRunner.jsx # R3F useFrame 桥接（纯观察者，无视觉输出）
+    │   └── sync/
+    │       ├── CameraTruthSync.ts # 双真相校准（THREE vs Runtime，漂移检测）
+    │       └── useCameraDriftDebug.ts # React hook（rAF 轮询 drift）
     │
     ├── store/                     # 🆕 全局状态管理
     │   └── RuntimeStore.ts        # Zustand store + window.__RUNTIME__ DevTools
     │
     ├── systems/                   # 🆕 系统适配器层
-    │   └── ExplosionSystem.ts     # ExplosionEngine 适配器（读 state → tick → 写 offsets）
+    │   ├── ExplosionSystem.ts     # ExplosionEngine 适配器（读 state → tick → 写 offsets）
+    │   ├── CameraSystem.ts        # 相机系统：V3 双向（READ 观测 + WRITE 回写）
+    │   └── camera/intent/         # 相机意图子系统
+    │       ├── CameraIntent.ts    # 统一意图结构
+    │       ├── CameraIntentStore.ts # Intent 收集器
+    │       ├── CameraArbiter.ts   # 核心决策引擎（priority sort → weighted blend）
+    │       └── intentSources/     # 5 个意图源工厂
+    │
+    ├── orchestrator/              # 🆕 场景编排层（教学时间线）
+    │   ├── SceneActions.ts        # 6 种动作类型定义
+    │   ├── ActionQueue.ts         # FIFO 顺序队列 + 时长追踪
+    │   └── SceneOrchestrator.ts   # 导演：dispatch 动作 → SceneRuntime API
     │
     ├── hooks/                     # 自定义 Hooks（页面状态封装）
     │   ├── useModelInteraction.ts # 3D 模型交互状态（explode/hover/select/screenshot）
@@ -518,6 +533,8 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | `yunchengC01.js` | yuncheng-c-01 | 郓城C地块 01 节点 | 9+(rest) | 共享 GLB + layerObjectName + excludeNames | JavaScript |
 | `yunchengC02.js` | yuncheng-c-02 | 郓城C地块 02 节点 | 3+(rest) | 共享 GLB + layerObjectName + excludeNames | JavaScript |
 | `yunchengC03.js` | yuncheng-c-03 | 郓城C地块 03 节点 | 5+(rest) | 共享 GLB + layerObjectName + excludeNames | JavaScript |
+| `roofDrainage.js` | roof-drainage-01 | 无组织排水屋顶 | 3 层 | 共享 GLB + layerObjectName (01/02/03) | JavaScript |
+| `organizedDrainage.js` | organized-drainage-01 | 有组织排水屋顶 | 4 层 | 共享 GLB + layerObjectName (01/02/03/04) | JavaScript |
 | `backgroundScenes.js` | — | **背景场景列表** | — | GLB路径 + position 配置 | JavaScript |
 | `nodesIndex.ts` | — | **节点统一入口** | — | `nodeLoaders` 映射 + 元数据数组 | TypeScript |
 | `roofSections.js` | — | 屋顶章节索引 | — | — | JavaScript |
@@ -528,7 +545,7 @@ NodeDetail.jsx 本身仅保留组件组合、异步数据加载、截图笔记�
 | `sections/*.js` | — | 其他模块章节 | — | 均不可用 (available: false) | JavaScript |
 
 **已实现课程模块**: 绪论 (introduction)、墙体 (wall)、门窗 (door-window)、基础与地基 (foundation)、楼地层 (floor)、楼梯 (stairs)、屋顶 (roof)、变形缝 (deformation-joint)
-**可用节点**: flat-roof-01, membrane-roof-01, roof-insulation-01, yuncheng-c-01, yuncheng-c-02, yuncheng-c-03
+**可用节点**: flat-roof-01, membrane-roof-01, roof-insulation-01, roof-drainage-01, organized-drainage-01, yuncheng-c-01, yuncheng-c-02, yuncheng-c-03
 
 ---
 
@@ -754,17 +771,94 @@ RuntimeStore (zustand → window.__RUNTIME__)
 - `useRuntime=true` 画面 100% 一致（仅多了 RuntimeState 同步）
 - 可随时切换回旧系统，Runtime 层零影响
 
-### 2026-06-18 Phase 1: 核心引擎重构 — Store + ExplosionEngine 并行接入
+### 2026-06-18 Phase 2-2: CameraSystem 观测适配器
 
 | 变更类型 | 文件 | 说明 |
 |----------|------|------|
-| **新建** | `src/core/modelStore.ts` | Zustand 全局状态 store（LayerState, ModelState），ID-keyed layer 管理 |
-| **已有** | `src/core/ExplosionEngine.ts` | V6 纯计算引擎：ID-driven 爆炸位置计算，`rebuild()`/`tick()`/`getLayerOffset()`，支持 uniform/individual 两种模式，三级缓存 |
-| **新建** | `src/runtime/AssetManager.ts` | 运行时资源管理器 |
-| **新建** | `src/runtime/useRuntimeNode.ts` | 运行时节点 Hook |
-| **新增** | `deps: zustand` | 轻量状态管理库 |
-| **接入** | `ModelViewer.jsx` | 新增 `useEngine` prop（默认false）；WallAssembly 内 ExplosionEngine 实例化 + rebuild + tick；并行运算新旧位置；debug console.log 对比 OLD vs NEW |
-| **接入** | `NodeDetail.tsx` | 传递 `useEngine={false}` 保持默认旧路径 |
+| **新建** | `src/systems/CameraSystem.ts` | 纯观测适配器：读取 THREE camera/controls → 写入 RuntimeState.camera。不控制任何东西，不导入 THREE。ctx 由 SceneRuntimeRunner 准备 |
+| **新建** | `CameraContext` interface | 统一相机上下文：position/target/zoom/isOrthographic/viewTarget + THREE 引用（camera/controls） |
+| **修改** | `RuntimeState.ts` | CameraState 新增 projectionMode、viewTarget 字段 |
+| **修改** | `SceneRuntime.ts` | V2：注册 CameraSystem，update() 接受 CameraContext |
+| **修改** | `SceneRuntimeRunner.jsx` | V2：使用 useThree() 获取 camera，globalControls 获取 controls，构建 CameraContext 传入 runtime.update() |
+| **修改** | `ModelViewer.jsx` | SceneRuntimeRunner 新增 cameraControls、isOrthographic、viewTarget props |
+
+### 2026-06-18 Phase 2-2.5: CameraTruthSync 双真相校准
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/runtime/sync/CameraTruthSync.ts` | 核心对比引擎：THREE truth vs RuntimeState，计算 position/target/zoom 三项漂移。阈值 0.5 world-units，超限标记 isDriftWarning |
+| **新建** | `src/runtime/sync/useCameraDriftDebug.ts` | React hook：rAF 轮询 drift 数据，返回 drift + warning |
+| **修改** | `RuntimeState.ts` | CameraState position/target 改为 {x,y,z} 对象格式；新增 drift、isDriftWarning |
+| **修改** | `CameraSystem.ts` | 写 position/target 为对象格式；CameraContext 新增 camera/controls any 引用 |
+| **修改** | `SceneRuntime.ts` | V3：注册 CameraTruthSync，update 中调用 |
+| **修改** | `SceneRuntimeRunner.jsx` | cameraCtx 携带 THREE camera/controls 引用 |
+
+### 2026-06-18 Phase 2-3: Camera Intent System + Arbiter
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/systems/camera/intent/CameraIntent.ts` | 统一意图结构：id/source/position/target/priority(0–10)/strength(0–1)/timestamp/duration |
+| **新建** | `src/systems/camera/intent/CameraIntentStore.ts` | Intent 收集器：Map 存储 + add/remove/clearBySource/getAll/getBySource |
+| **新建** | `src/systems/camera/intent/CameraArbiter.ts` | 核心决策引擎：priority sort → weighted blend → CameraDecision(winner)。优先级: User(10) > View(8) > Explosion(6) > Sync(3) > Snapshot(0) |
+| **新建** | `intentSources/` (5个) | ExplosionIntent / ViewIntent / UserIntent / SyncIntent / SnapshotIntent 工厂函数 |
+| **修改** | `RuntimeState.ts` | CameraState 新增 decision(winner/source/intentsConsidered)、activeIntents |
+| **修改** | `SceneRuntime.ts` | V4：注册 intentStore + arbiter，update 中注入 snapshot intent → 仲裁 → 写入 decision |
+| **修改** | `RuntimeStore.ts` | window.__CAMERA_INTENTS__：all/count/winner/addIntent/clearBySource |
+
+### 2026-06-18 Phase 2-4: Camera Writeback System
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `RuntimeState.ts` | CameraGoal 接口（position/target/zoom/projectionMode，全部 nullable） |
+| **升级** | `CameraSystem.ts` | V3 双向：READ 观测 + WRITE 回写。写回使用 manual lerp（LERP 0.08/0.12/0.1），无 THREE 依赖 |
+| **修改** | `SceneRuntime.ts` | V5：新增 setCameraGoal()（partial merge），reset() 清除 goal |
+| **修改** | `SceneRuntimeRunner.jsx` | 爆炸联动：explodeValue > 10 → setCameraGoal(后退)，explodeValue = 0 → 清除 goal |
+| **修改** | `ModelViewer.jsx` | CameraAdjuster 新增 disabled prop（useRuntime=true 时跳过 useFrame）；SyncZoomAdjuster/PanSyncController/ViewSwitcher 条件渲染 |
+| **修改** | `RuntimeStore.ts` | window.__RUNTIME__ 新增 setCameraGoal() + cameraGoal getter |
+
+### 2026-06-18 Phase 2-5: SceneOrchestrator 场景编排
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新建** | `src/orchestrator/SceneActions.ts` | 6 种动作类型：explosion / camera_move / camera_view / ui_show / ui_hide / wait |
+| **新建** | `src/orchestrator/ActionQueue.ts` | FIFO 顺序队列 + 每动作时长追踪 + insertFront 插队 + getProgress |
+| **新建** | `src/orchestrator/SceneOrchestrator.ts` | 导演层：addAction/interrupt/clear，dispatch 动作 → setExplode/setCameraGoal/ui flags。update 先于所有系统 |
+| **修改** | `RuntimeState.ts` | 新增 ui: Record<string, boolean> |
+| **修改** | `SceneRuntime.ts` | V5：注册 orchestrator + setExplode()；update 顺序：orchestrator → explosion → camera |
+| **修改** | `RuntimeStore.ts` | window.__RUNTIME__ 新增 runDemo() + orchestrator getter |
+
+### 2026-06-20 新增节点：有组织排水屋顶
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `public/models/organized-drainage/organized-drainage.glb` | 有组织排水屋顶 GLB 模型（151KB，4 构件 01/02/03/04） |
+| **新建** | `src/data/organizedDrainage.js` | 节点数据：explodeAxis=y, 4 层共享 GLB + layerObjectName |
+| **修改** | `src/data/nodesIndex.ts` | 注册 organized-drainage-01 索引 + 动态加载器 |
+
+### 2026-06-19 新增节点：无组织排水屋顶
+
+| 变更类型 | 文件 | 说明 |
+|----------|------|------|
+| **新增** | `public/models/roof-drainage/roof-drainage.glb` | 无组织排水屋顶 GLB 模型（共享模型，3 构件 01/02/03） |
+| **新建** | `src/data/roofDrainage.js` | 节点数据：explodeAxis=y, floatDirection=z, 3 层共享 GLB + layerObjectName |
+| **修改** | `src/data/nodesIndex.ts` | 注册 roof-drainage-01 索引 + 动态加载器 |
+| **说明** | — | 不关联课程章节，仅通过节点库 /library 访问；无剖面图；无"其余构件"图层 |
+
+### 2026-06-18 Runtime 系统全景
+
+```
+window.__RUNTIME__.runDemo()    // 教学演示一键触发
+window.__RUNTIME__.state        // 实时状态快照
+window.__RUNTIME__.cameraGoal   // 相机目标
+window.__CAMERA_INTENTS__       // 意图系统
+
+SceneOrchestrator（导演）
+  └─ SceneRuntime.update()（每帧调度）
+       ├─ ExplosionSystem → ExplosionEngine
+       ├─ CameraSystem（READ + WRITE）
+       ├─ CameraTruthSync（漂移检测）
+       └─ CameraIntentStore → CameraArbiter（决策）
+```
 
 ### 2026-06-18 屋顶拆分变形缝模块
 

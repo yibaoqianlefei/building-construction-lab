@@ -84,7 +84,14 @@ function GLBModelRenderer({ modelPath, objectName, excludeNames, interactive = t
           const edgesGeo = new THREE.EdgesGeometry(child.geometry, 15);
           const line = new THREE.LineSegments(
             edgesGeo,
-            new THREE.LineBasicMaterial({ color: "#4B5563", transparent: true, opacity: 0.45 })
+            new THREE.LineBasicMaterial({
+              color: "#1F2937",
+              transparent: true,
+              opacity: 0.45,
+              polygonOffset: true,
+              polygonOffsetFactor: 1,
+              polygonOffsetUnits: 1,
+            })
           );
           child.add(line); // edge line inherits mesh transform automatically
         }
@@ -157,7 +164,7 @@ function PlaceholderLayer({ thickness, color }) {
         depthWrite
       />
       <Edges scale={1}>
-        <lineBasicMaterial color="#9CA3AF" transparent opacity={0.3} />
+        <lineBasicMaterial color="#1F2937" transparent opacity={0.3} polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
       </Edges>
     </mesh>
   );
@@ -190,7 +197,7 @@ function ConstructionLayer({
   const glowRoughness = useRef(0.45);
   const currentOpacity = useRef(layer.name.includes("空气") ? 0.3 : 1);
   const currentLineOpacity = useRef(0.45);
-  const currentLineColor = useRef(new THREE.Color("#4B5563"));
+  const currentLineColor = useRef(new THREE.Color("#1F2937"));
   const pulseTime = useRef(0);
   const selectedAt = useRef(0);
   const hasGLB = !!layer.modelPath;
@@ -277,7 +284,7 @@ function ConstructionLayer({
     } else if (isPlaced) {
       opacityTarget = layer.name.includes("空气") ? 0.3 : 1;
       lineOpacityTarget = 0.45;
-      lineColorTarget.set("#4B5563");
+      lineColorTarget.set("#1F2937");
     } else if (isSelected) {
       opacityTarget = 1;
       lineOpacityTarget = 0.95;
@@ -290,12 +297,12 @@ function ConstructionLayer({
       } else {
         opacityTarget = 0.25;
         lineOpacityTarget = 0.25;
-        lineColorTarget.set("#4B5563");
+        lineColorTarget.set("#1F2937");
       }
     } else {
       opacityTarget = layer.name.includes("空气") ? 0.3 : 1;
       lineOpacityTarget = isHovered ? 0.85 : 0.45;
-      lineColorTarget.set(isHovered ? "#1F2937" : "#4B5563");
+      lineColorTarget.set("#1F2937");
     }
 
     currentOpacity.current = THREE.MathUtils.lerp(currentOpacity.current, opacityTarget, DIM_LERP);
@@ -374,10 +381,13 @@ function ConstructionLayer({
           <Edges scale={1}>
             <lineBasicMaterial
               ref={lineMatRef}
-              color="#4B5563"
+              color="#1F2937"
               linewidth={1}
               transparent
               opacity={0.45}
+              polygonOffset
+              polygonOffsetFactor={1}
+              polygonOffsetUnits={1}
             />
           </Edges>
         </mesh>

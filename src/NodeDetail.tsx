@@ -40,6 +40,7 @@ function NodeDetail() {
     syncZoom,
     viewTarget,
     spatialCard,
+    handleLayerHover,
     handleLayerClick,
     handlePanelSelect,
     handleLayerClickWithCard,
@@ -54,7 +55,7 @@ function NodeDetail() {
     setViewTarget,
     setShowLabels,
     setSyncZoom,
-  } = useModelInteraction();
+  } = useModelInteraction(data?.explodeAxis);
 
   const [imageError, setImageError] = useState(false);
   const [diagramScale, setDiagramScale] = useState(1);
@@ -221,7 +222,7 @@ function NodeDetail() {
                 autoRotate={autoRotate}
                 hoveredLayer={hoveredLayer}
                 selectedLayer={selectedLayer}
-                onHoverLayer={setHoveredLayer}
+                onHoverLayer={handleLayerHover}
                 onLayerClick={handleLayerClickWithCard}
                 onBlankClick={handleBlankClickWithCard}
                 spatialCard={spatialCard}

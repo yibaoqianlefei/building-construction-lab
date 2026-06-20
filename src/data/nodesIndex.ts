@@ -32,6 +32,22 @@ const nodesIndex: NodeIndexEntry[] = [
     thumbnail: null,
   },
   {
+    id: "roof-drainage-01",
+    title: "无组织排水屋顶",
+    description:
+      "无组织排水屋面构造节点，包含防水层、保温层、结构层等关键构件。",
+    category: "屋顶",
+    thumbnail: null,
+  },
+  {
+    id: "organized-drainage-01",
+    title: "有组织排水屋顶",
+    description:
+      "有组织排水屋面构造节点，包含天沟、雨水斗、落水管等构件。",
+    category: "屋顶",
+    thumbnail: null,
+  },
+  {
     id: "yuncheng-c-01",
     title: "01",
     description:
@@ -63,6 +79,8 @@ const nodeLoaders: Record<string, NodeLoader> = {
   "flat-roof-01": () => import("./flatRoof.js"),
   "membrane-roof-01": () => import("./membraneRoof.js"),
   "roof-insulation-01": () => import("./roofInsulation.js"),
+  "roof-drainage-01": () => import("./roofDrainage.js"),
+  "organized-drainage-01": () => import("./organizedDrainage.js"),
   "yuncheng-c-01": () => import("./yunchengC01"),
   "yuncheng-c-02": () => import("./yunchengC02"),
   "yuncheng-c-03": () => import("./yunchengC03"),
